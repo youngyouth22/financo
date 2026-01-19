@@ -14,7 +14,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 final sl = GetIt.instance;
 
 /// Initialise toutes les dépendances de l'application.
-/// 
+///
 /// Cette fonction doit être appelée au démarrage de l'application,
 /// avant le lancement du widget principal.
 Future<void> initializeDependencies() async {
@@ -29,15 +29,9 @@ Future<void> initializeDependencies() async {
   );
 
   // Enregistrement du client Supabase
-  sl.registerLazySingleton<SupabaseClient>(
-    () => Supabase.instance.client,
-  );
+  sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);
 
-  // Configuration de Google Sign-In avec les clés du fichier .env
-  final GoogleSignIn googleSignIn = GoogleSignIn(
-    clientId: dotenv.env['WEB_CLIENT_AUTH'],
-    serverClientId: dotenv.env['ANDROID_CLIENT_AUTH'],
-  );
+  final GoogleSignIn googleSignIn = GoogleSignIn.instance;
 
   sl.registerLazySingleton<GoogleSignIn>(() => googleSignIn);
 
@@ -47,17 +41,12 @@ Future<void> initializeDependencies() async {
 
   // Data Sources
   sl.registerLazySingleton<AuthRemoteDataSource>(
-    () => AuthRemoteDataSourceImpl(
-      supabaseClient: sl(),
-      googleSignIn: sl(),
-    ),
+    () => AuthRemoteDataSourceImpl(supabaseClient: sl(), googleSignIn: sl()),
   );
 
   // Repositories
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(
-      remoteDataSource: sl(),
-    ),
+    () => AuthRepositoryImpl(remoteDataSource: sl()),
   );
 
   // Use Cases

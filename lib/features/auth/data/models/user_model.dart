@@ -1,4 +1,4 @@
-import 'package:financo/features/auth/domain/entities/auth_user.dart';
+import 'package:financo/features/auth/domain/entities/auth_user.dart' as user_entity;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Modèle de données représentant un utilisateur.
@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Ce modèle est utilisé dans la couche Data pour la sérialisation/désérialisation
 /// des données provenant de Supabase. Il peut être converti en entité AuthUser
 /// pour la couche Domain.
-class UserModel extends AuthUser {
+class UserModel extends user_entity.AuthUser {
   const UserModel({
     required super.id,
     required super.email,
@@ -47,8 +47,8 @@ class UserModel extends AuthUser {
   }
 
   /// Convertit le UserModel en entité AuthUser.
-  AuthUser toEntity() {
-    return AuthUser(
+  user_entity.AuthUser toEntity() {
+    return user_entity.AuthUser(
       id: id,
       email: email,
       name: name,
@@ -57,7 +57,7 @@ class UserModel extends AuthUser {
   }
 
   /// Crée un UserModel à partir d'une entité AuthUser.
-  factory UserModel.fromEntity(AuthUser entity) {
+  factory UserModel.fromEntity(user_entity.AuthUser entity) {
     return UserModel(
       id: entity.id,
       email: entity.email,
