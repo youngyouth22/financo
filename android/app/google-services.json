@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "998190074728",
+    "project_id": "financo-13f01",
+    "storage_bucket": "financo-13f01.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:998190074728:android:09e605d519606099daa4dd",
+        "android_client_info": {
+          "package_name": "com.example.financo"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "998190074728-9enmdatgfl75ubk3omq5k9pnfjj7g1i4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.financo",
+            "certificate_hash": "dbfd7880bd425b20731f6d0ccbf53d62192eddf8"
+          }
+        },
+        {
+          "client_id": "998190074728-j738nsvjfi68jm14846i73eccmdm4u2l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0aWbIRtqd3wk3MTx83q2LuITjWrKcJQY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "998190074728-j738nsvjfi68jm14846i73eccmdm4u2l.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "998190074728-dkce9gmuds1ohknffn3lo5euvcqsetgd.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.financo"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
