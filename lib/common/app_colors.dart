@@ -31,6 +31,7 @@ class AppColors {
   static Color get border => const Color(0xffCFCFFC);
   static Color get white => Colors.white;
   static Color get card => const Color(0xff2A2A30);
+  static Color get background => const Color(0xff0D0D1B);
 
   // Status color
   static Color get success => const Color(0xff00D16C);
@@ -41,7 +42,7 @@ class AppColors {
   static Gradient get primaryGradient => LinearGradient(
         colors: [
           AppColors.accent,
-          Color.fromARGB(255, 249, 132, 116),
+          const Color.fromARGB(255, 249, 132, 116),
           AppColors.accent,
         ],
         begin: Alignment.topRight,
