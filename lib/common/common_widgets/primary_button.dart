@@ -3,6 +3,8 @@ import 'package:financo/common/app_spacing.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:flutter/material.dart';
 
+import 'custom_circular_loading_indicator.dart';
+
 class PrimaryButton extends StatelessWidget {
   final String text;
   final VoidCallback onClick;
@@ -47,7 +49,9 @@ class PrimaryButton extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: color,
-        gradient: color != null ? null : disabled || loading
+        gradient: color != null
+            ? null
+            : disabled || loading
             ? AppColors.grayGradientDisabled
             : gradient ?? AppColors.primaryGradient,
         borderRadius: BorderRadius.circular(borderRadius),
@@ -76,16 +80,18 @@ class PrimaryButton extends StatelessWidget {
                     : MainAxisAlignment.center,
                 spacing: icon != null ? AppSpacing.ten : 0,
                 crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (icon != null) icon!,
-                  Text(
-                    text,
-                    style: AppTypography.headline3Bold.copyWith(
-                      color: textColor ?? Colors.white,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+                children: loading
+                    ? [CustomCircularLoadingIndicator()]
+                    : [
+                        if (icon != null) icon!,
+                        Text(
+                          text,
+                          style: AppTypography.headline3Bold.copyWith(
+                            color: textColor ?? Colors.white,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
               ),
             ),
           ),

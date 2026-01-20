@@ -39,7 +39,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       await dotenv.load(fileName: ".env");
       await googleSignIn.initialize(
-        clientId: dotenv.env['WEB_CLIENT_AUTH']!,
         serverClientId: dotenv.env['WEB_CLIENT_AUTH']!,
       );
       _isGoogleSignInInitialized = true;
@@ -63,7 +62,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         throw AuthException('Google is not initialize');
       }
 
-      final googleUser = await googleSignIn.authenticate(scopeHint: ['email']);
+      final googleUser = await googleSignIn.authenticate();
       final googleAuth = googleUser.authentication;
       final idToken = googleAuth.idToken;
 
@@ -72,7 +71,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
 
       // Étape 3: Authentification avec Supabase en utilisant les tokens Google
-     final response = await supabaseClient.auth.signInWithIdToken(
+      final response = await supabaseClient.auth.signInWithIdToken(
         provider: OAuthProvider.google,
         idToken: idToken,
         // accessToken: accessToken,
@@ -87,6 +86,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } on AuthException {
       rethrow;
     } catch (e) {
+      debugPrint('Failed to sign in with Google: $e');
       throw AuthException(
         'Erreur lors de la connexion Google: ${e.toString()}',
       );

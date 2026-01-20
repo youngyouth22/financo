@@ -9,7 +9,7 @@ import 'package:financo/features/auth/presentation/bloc/auth_event.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_state.dart';
 
 /// BLoC gérant l'état d'authentification de l'application.
-/// 
+///
 /// Ce BLoC orchestre les cas d'utilisation d'authentification et
 /// maintient l'état d'authentification de l'utilisateur.
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
@@ -17,7 +17,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LogoutUseCase logoutUseCase;
   final GetCurrentUserUseCase getCurrentUserUseCase;
   final AuthRepository authRepository;
-  
+
   StreamSubscription? _authStateSubscription;
 
   AuthBloc({
@@ -33,15 +33,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthStateChanged>(_onAuthStateChanged);
 
     // Écoute des changements d'état d'authentification
-    _authStateSubscription = authRepository.authStateChanges.listen(
-      (user) {
+    _authStateSubscription = authRepository.authStateChanges.listen((user) {
+      // N'émettre que si on n'est pas déjà en cours de traitement
+      if (state is! AuthLoading) {
         if (user != null) {
           emit(Authenticated(user));
         } else {
           emit(const Unauthenticated());
         }
-      },
-    );
+      }
+    });
   }
 
   /// Handler pour vérifier l'état d'authentification actuel.
@@ -53,16 +54,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     final result = await getCurrentUserUseCase(const NoParams());
 
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
-      (user) {
-        if (user != null) {
-          emit(Authenticated(user));
-        } else {
-          emit(const Unauthenticated());
-        }
-      },
-    );
+    result.fold((failure) => emit(AuthError(failure.message)), (user) {
+      if (user != null) {
+        emit(Authenticated(user));
+      } else {
+        emit(const Unauthenticated());
+      }
+    });
   }
 
   /// Handler pour la connexion avec Google.
@@ -96,10 +94,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   /// Handler pour les changements d'état d'authentification externes.
-  void _onAuthStateChanged(
-    AuthStateChanged event,
-    Emitter<AuthState> emit,
-  ) {
+  void _onAuthStateChanged(AuthStateChanged event, Emitter<AuthState> emit) {
     if (event.isAuthenticated) {
       // L'état sera mis à jour par le stream authStateChanges
     } else {
