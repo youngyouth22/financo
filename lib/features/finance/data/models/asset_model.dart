@@ -10,6 +10,7 @@ class AssetModel extends Asset {
     required super.userId,
     required super.name,
     required super.type,
+    required super.assetGroup,
     required super.provider,
     required super.balanceUsd,
     required super.assetAddressOrId,
@@ -25,6 +26,7 @@ class AssetModel extends Asset {
       userId: json['user_id'] as String,
       name: json['name'] as String,
       type: _parseAssetType(json['type'] as String),
+      assetGroup: _parseAssetGroup(json['asset_group'] as String),
       provider: _parseAssetProvider(json['provider'] as String),
       balanceUsd: _parseDecimal(json['balance_usd']),
       assetAddressOrId: json['asset_address_or_id'] as String,
@@ -41,6 +43,7 @@ class AssetModel extends Asset {
       'user_id': userId,
       'name': name,
       'type': _assetTypeToString(type),
+      'asset_group': _assetGroupToString(assetGroup),
       'provider': _assetProviderToString(provider),
       'balance_usd': balanceUsd,
       'asset_address_or_id': assetAddressOrId,
@@ -57,6 +60,7 @@ class AssetModel extends Asset {
       userId: entity.userId,
       name: entity.name,
       type: entity.type,
+      assetGroup: entity.assetGroup,
       provider: entity.provider,
       balanceUsd: entity.balanceUsd,
       assetAddressOrId: entity.assetAddressOrId,
@@ -73,6 +77,7 @@ class AssetModel extends Asset {
       userId: userId,
       name: name,
       type: type,
+      assetGroup: assetGroup,
       provider: provider,
       balanceUsd: balanceUsd,
       assetAddressOrId: assetAddressOrId,
@@ -127,6 +132,32 @@ class AssetModel extends Asset {
         return 'moralis';
       case AssetProvider.plaid:
         return 'plaid';
+    }
+  }
+
+  /// Parse asset group from string
+  static AssetGroup _parseAssetGroup(String group) {
+    switch (group.toLowerCase()) {
+      case 'crypto':
+        return AssetGroup.crypto;
+      case 'stocks':
+        return AssetGroup.stocks;
+      case 'cash':
+        return AssetGroup.cash;
+      default:
+        throw ArgumentError('Unknown asset group: $group');
+    }
+  }
+
+  /// Convert asset group to string
+  static String _assetGroupToString(AssetGroup group) {
+    switch (group) {
+      case AssetGroup.crypto:
+        return 'crypto';
+      case AssetGroup.stocks:
+        return 'stocks';
+      case AssetGroup.cash:
+        return 'cash';
     }
   }
 
