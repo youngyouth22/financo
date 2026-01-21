@@ -17,6 +17,9 @@ class Asset extends Equatable {
   /// Type of asset: 'crypto' or 'bank'
   final AssetType type;
 
+  /// Asset group for categorization: 'crypto', 'stocks', or 'cash'
+  final AssetGroup assetGroup;
+
   /// Provider of the asset data: 'moralis' or 'plaid'
   final AssetProvider provider;
 
@@ -40,6 +43,7 @@ class Asset extends Equatable {
     required this.userId,
     required this.name,
     required this.type,
+    required this.assetGroup,
     required this.provider,
     required this.balanceUsd,
     required this.assetAddressOrId,
@@ -76,6 +80,7 @@ class Asset extends Equatable {
         userId,
         name,
         type,
+        assetGroup,
         provider,
         balanceUsd,
         assetAddressOrId,
@@ -106,4 +111,16 @@ enum AssetProvider {
 
   /// Plaid provider for bank accounts
   plaid,
+}
+
+/// Enum representing the asset group for dashboard categorization
+enum AssetGroup {
+  /// Cryptocurrency assets
+  crypto,
+
+  /// Stocks and ETFs
+  stocks,
+
+  /// Cash and bank accounts
+  cash,
 }
