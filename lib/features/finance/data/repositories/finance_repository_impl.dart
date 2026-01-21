@@ -1,12 +1,14 @@
 import 'package:dartz/dartz.dart';
 import 'package:financo/core/error/exceptions.dart';
 import 'package:financo/core/error/failures.dart';
+import 'package:financo/di/injection_container.dart';
 import 'package:financo/features/finance/data/datasources/finance_remote_datasource.dart';
 import 'package:financo/features/finance/data/models/asset_model.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:financo/features/finance/domain/entities/global_wealth.dart';
 import 'package:financo/features/finance/domain/entities/wealth_snapshot.dart';
 import 'package:financo/features/finance/domain/repositories/finance_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Implementation of FinanceRepository
 ///
@@ -23,9 +25,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
       final assets = assetModels.map((model) => model.toEntity()).toList();
       return Right(assets);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Unexpected error: $e'));
+      return Left(ServerFailure('Unexpected error: $e'));
     }
   }
 
@@ -35,9 +37,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
       final assetModel = await remoteDataSource.getAssetById(assetId);
       return Right(assetModel.toEntity());
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Unexpected error: $e'));
+      return Left(ServerFailure('Unexpected error: $e'));
     }
   }
 
@@ -51,11 +53,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
   }) async {
     try {
       // Get current user ID from data source
-      final userId = remoteDataSource.supabaseClient.auth.currentUser?.id;
+      final userId = sl<SupabaseClient>().auth.currentUser?.id;
       if (userId == null) {
-        return const Left(
-          ServerFailure(message: 'User not authenticated'),
-        );
+        return const Left(ServerFailure('User not authenticated'));
       }
 
       final now = DateTime.now();
@@ -81,9 +81,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
       return Right(createdAsset.toEntity());
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Unexpected error: $e'));
+      return Left(ServerFailure('Unexpected error: $e'));
     }
   }
 
@@ -94,9 +94,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
       final updatedAsset = await remoteDataSource.updateAsset(assetModel);
       return Right(updatedAsset.toEntity());
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Unexpected error: $e'));
+      return Left(ServerFailure('Unexpected error: $e'));
     }
   }
 
@@ -105,7 +105,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
     try {
       // Get asset details before deletion
       final assetResult = await getAssetById(assetId);
-      
+
       await remoteDataSource.deleteAsset(assetId);
 
       // If it's a crypto asset, remove from Moralis stream
@@ -123,9 +123,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Unexpected error: $e'));
+      return Left(ServerFailure('Unexpected error: $e'));
     }
   }
 
@@ -134,7 +134,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
     try {
       final assetModels = await remoteDataSource.getAssets();
       final assets = assetModels.map((model) => model.toEntity()).toList();
-      
+
       final globalWealth = GlobalWealth(
         assets: assets,
         lastUpdated: DateTime.now(),
@@ -142,9 +142,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
       return Right(globalWealth);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Unexpected error: $e'));
+      return Left(ServerFailure('Unexpected error: $e'));
     }
   }
 
@@ -160,15 +160,16 @@ class FinanceRepositoryImpl implements FinanceRepository {
         endDate: endDate,
         limit: limit,
       );
-      
-      final snapshots =
-          snapshotModels.map((model) => model.toEntity()).toList();
-      
+
+      final snapshots = snapshotModels
+          .map((model) => model.toEntity())
+          .toList();
+
       return Right(snapshots);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Unexpected error: $e'));
+      return Left(ServerFailure('Unexpected error: $e'));
     }
   }
 
@@ -178,9 +179,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
       final netWorth = await remoteDataSource.calculateNetWorth();
       return Right(netWorth);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Unexpected error: $e'));
+      return Left(ServerFailure('Unexpected error: $e'));
     }
   }
 
@@ -190,34 +191,33 @@ class FinanceRepositoryImpl implements FinanceRepository {
       await remoteDataSource.recordWealthSnapshot();
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Unexpected error: $e'));
+      return Left(ServerFailure('Unexpected error: $e'));
     }
   }
 
   @override
   Stream<Either<Failure, List<Asset>>> watchAssets() {
     try {
-      return remoteDataSource.watchAssets().map(
-        (assetModels) {
-          final assets = assetModels.map((model) => model.toEntity()).toList();
-          return Right<Failure, List<Asset>>(assets);
-        },
-      ).handleError((error) {
-        if (error is ServerException) {
-          return Left<Failure, List<Asset>>(
-            ServerFailure(message: error.message),
-          );
-        }
-        return Left<Failure, List<Asset>>(
-          ServerFailure(message: 'Unexpected error: $error'),
-        );
-      });
+      return remoteDataSource
+          .watchAssets()
+          .map((assetModels) {
+            final assets = assetModels
+                .map((model) => model.toEntity())
+                .toList();
+            return Right<Failure, List<Asset>>(assets);
+          })
+          .handleError((error) {
+            if (error is ServerException) {
+              return Left<Failure, List<Asset>>(ServerFailure(error.message));
+            }
+            return Left<Failure, List<Asset>>(
+              ServerFailure('Unexpected error: $error'),
+            );
+          });
     } catch (e) {
-      return Stream.value(
-        Left(ServerFailure(message: 'Failed to watch assets: $e')),
-      );
+      return Stream.value(Left(ServerFailure('Failed to watch assets: $e')));
     }
   }
 
@@ -227,9 +227,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
       await remoteDataSource.addWalletToStream(walletAddress);
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Unexpected error: $e'));
+      return Left(ServerFailure('Unexpected error: $e'));
     }
   }
 
@@ -241,9 +241,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
       await remoteDataSource.removeWalletFromStream(walletAddress);
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Unexpected error: $e'));
+      return Left(ServerFailure('Unexpected error: $e'));
     }
   }
 
@@ -253,9 +253,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
       await remoteDataSource.setupMoralisStream();
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Unexpected error: $e'));
+      return Left(ServerFailure('Unexpected error: $e'));
     }
   }
 
@@ -265,9 +265,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
       await remoteDataSource.cleanupUserCryptoAssets();
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Unexpected error: $e'));
+      return Left(ServerFailure('Unexpected error: $e'));
     }
   }
 
@@ -279,9 +279,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
       await remoteDataSource.recordWealthSnapshot();
       return const Right(null);
     } on ServerException catch (e) {
-      return Left(ServerFailure(message: e.message));
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(message: 'Unexpected error: $e'));
+      return Left(ServerFailure('Unexpected error: $e'));
     }
   }
 }

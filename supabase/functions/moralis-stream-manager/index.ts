@@ -10,26 +10,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 // TYPES & INTERFACES
 // ============================================================================
 
-interface StreamConfig {
-  chains: string[];
-  description: string;
-  tag: string;
-  webhookUrl: string;
-  includeNativeTxs: boolean;
-  includeContractLogs: boolean;
-  includeInternalTxs: boolean;
-  getNativeBalances: Array<{
-    selectors: string[];
-    type: string;
-  }>;
-}
-
 interface MoralisStream {
-  id: string;
+  id?: string;
+  streamId?: string; // Moralis uses both id and streamId in different responses
   tag: string;
   description: string;
   webhookUrl: string;
-  chains: string[];
+  chainIds: string[];
   status: string;
 }
 
@@ -46,23 +33,41 @@ interface RequestPayload {
 const MORALIS_API_KEY = Deno.env.get("MORALIS_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const WEBHOOK_URL = Deno.env.get("FINANCE_WEBHOOK_URL") || 
+
+// Use provided Webhook URL or default to the finance-webhook edge function
+const WEBHOOK_URL =
+  Deno.env.get("FINANCE_WEBHOOK_URL") ||
   `${SUPABASE_URL}/functions/v1/finance-webhook`;
 
 const STREAM_TAG = "financo-global-stream";
 const SUPPORTED_CHAINS = [
-  "0x1",      // Ethereum
-  "0x89",     // Polygon
-  "0x38",     // BSC
-  "0xa86a",   // Avalanche
-  "0xa4b1",   // Arbitrum
-  "0xa",      // Optimism
-  "0x2105",   // Base
+  "0x1", // Ethereum
+  "0x89", // Polygon
+  "0x38", // BSC
+  "0xa86a", // Avalanche
+  "0xa4b1", // Arbitrum
+  "0xa", // Optimism
+  "0x2105", // Base
 ];
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
 
 // ============================================================================
 // MORALIS API HELPERS
 // ============================================================================
+
+/**
+ * Helper to extract Stream ID from inconsistent Moralis responses
+ */
+function extractStreamId(stream: MoralisStream): string {
+  const id = stream.id || stream.streamId;
+  if (!id) throw new Error("Could not find Stream ID in Moralis response");
+  return id;
+}
 
 /**
  * Make authenticated request to Moralis API
@@ -70,7 +75,7 @@ const SUPPORTED_CHAINS = [
 async function moralisRequest(
   endpoint: string,
   method: string = "GET",
-  body?: any
+  body?: any,
 ): Promise<any> {
   if (!MORALIS_API_KEY) {
     throw new Error("MORALIS_API_KEY not configured");
@@ -81,7 +86,7 @@ async function moralisRequest(
     headers: {
       "X-API-Key": MORALIS_API_KEY,
       "Content-Type": "application/json",
-      "accept": "application/json",
+      accept: "application/json",
     },
   };
 
@@ -91,15 +96,18 @@ async function moralisRequest(
 
   const response = await fetch(
     `https://api.moralis-streams.com/streams/evm${endpoint}`,
-    options
+    options,
   );
 
+  const responseData = await response.json();
+
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Moralis API error: ${response.status} - ${errorText}`);
+    throw new Error(
+      `Moralis API error: ${response.status} - ${JSON.stringify(responseData)}`,
+    );
   }
 
-  return response.json();
+  return responseData;
 }
 
 /**
@@ -109,7 +117,6 @@ async function findStreamByTag(tag: string): Promise<MoralisStream | null> {
   try {
     const response = await moralisRequest("");
     const streams = response.result || [];
-    
     return streams.find((s: MoralisStream) => s.tag === tag) || null;
   } catch (error) {
     console.error("Error finding stream:", error);
@@ -118,23 +125,17 @@ async function findStreamByTag(tag: string): Promise<MoralisStream | null> {
 }
 
 /**
- * Create new Moralis stream
+ * Create a new Moralis stream
  */
 async function createStream(): Promise<MoralisStream> {
-  const config: StreamConfig = {
-    chains: SUPPORTED_CHAINS,
-    description: "Financo global wallet monitoring stream",
+  const config = {
+    chainIds: SUPPORTED_CHAINS,
+    description: "Financo global wallet monitoring",
     tag: STREAM_TAG,
     webhookUrl: WEBHOOK_URL,
     includeNativeTxs: true,
     includeContractLogs: true,
     includeInternalTxs: true,
-    getNativeBalances: [
-      {
-        selectors: ["$from", "$to"],
-        type: "tx",
-      },
-    ],
   };
 
   console.log("Creating new stream with config:", config);
@@ -142,69 +143,44 @@ async function createStream(): Promise<MoralisStream> {
 }
 
 /**
- * Setup or verify Moralis stream exists
+ * Orchestrator: Find or Create the stream
  */
 async function setupMoralisStream(): Promise<MoralisStream> {
-  // Check if stream already exists
   let stream = await findStreamByTag(STREAM_TAG);
 
   if (stream) {
-    console.log("Stream already exists:", stream.id);
+    console.log("Existing stream found:", extractStreamId(stream));
     return stream;
   }
 
-  // Create new stream
-  console.log("Creating new stream...");
-  stream = await createStream();
-  console.log("Stream created:", stream.id);
-
-  return stream;
+  console.log("No stream found with tag. Creating new one...");
+  return await createStream();
 }
 
 /**
- * Add wallet address to stream
+ * Add a wallet address to a stream
  */
 async function addAddressToStream(
   streamId: string,
-  address: string
+  address: string,
 ): Promise<void> {
   console.log(`Adding address ${address} to stream ${streamId}`);
-  
   await moralisRequest(`/${streamId}/address`, "POST", {
     address: address.toLowerCase(),
   });
-
-  console.log(`Address ${address} added successfully`);
 }
 
 /**
- * Remove wallet address from stream
+ * Remove a wallet address from a stream
  */
 async function removeAddressFromStream(
   streamId: string,
-  address: string
+  address: string,
 ): Promise<void> {
   console.log(`Removing address ${address} from stream ${streamId}`);
-  
-  await moralisRequest(
-    `/${streamId}/address?address=${address.toLowerCase()}`,
-    "DELETE"
-  );
-
-  console.log(`Address ${address} removed successfully`);
-}
-
-/**
- * Get all addresses in a stream
- */
-async function getStreamAddresses(streamId: string): Promise<string[]> {
-  try {
-    const response = await moralisRequest(`/${streamId}/address`);
-    return response.result?.map((item: any) => item.address) || [];
-  } catch (error) {
-    console.error("Error getting stream addresses:", error);
-    return [];
-  }
+  await moralisRequest(`/${streamId}/address`, "DELETE", {
+    address: address.toLowerCase(),
+  });
 }
 
 // ============================================================================
@@ -212,11 +188,11 @@ async function getStreamAddresses(streamId: string): Promise<string[]> {
 // ============================================================================
 
 /**
- * Get all wallet addresses for a user
+ * Get all crypto wallet addresses for a specific user from Supabase
  */
 async function getUserWalletAddresses(
   supabase: any,
-  userId: string
+  userId: string,
 ): Promise<string[]> {
   const { data, error } = await supabase
     .from("assets")
@@ -225,20 +201,16 @@ async function getUserWalletAddresses(
     .eq("provider", "moralis")
     .eq("type", "crypto");
 
-  if (error) {
-    console.error("Error fetching user wallets:", error);
-    return [];
-  }
-
+  if (error) throw error;
   return data?.map((asset: any) => asset.asset_address_or_id) || [];
 }
 
 /**
- * Delete user's crypto assets from database
+ * Delete a user's crypto assets from Supabase
  */
 async function deleteUserCryptoAssets(
   supabase: any,
-  userId: string
+  userId: string,
 ): Promise<void> {
   const { error } = await supabase
     .from("assets")
@@ -247,137 +219,7 @@ async function deleteUserCryptoAssets(
     .eq("provider", "moralis")
     .eq("type", "crypto");
 
-  if (error) {
-    console.error("Error deleting user crypto assets:", error);
-    throw error;
-  }
-
-  console.log(`Deleted crypto assets for user ${userId}`);
-}
-
-// ============================================================================
-// ACTION HANDLERS
-// ============================================================================
-
-/**
- * Handle setup action
- */
-async function handleSetup(): Promise<any> {
-  const stream = await setupMoralisStream();
-  return {
-    success: true,
-    message: "Stream setup completed",
-    streamId: stream.id,
-    tag: stream.tag,
-  };
-}
-
-/**
- * Handle add address action
- */
-async function handleAddAddress(address: string): Promise<any> {
-  if (!address) {
-    throw new Error("Address is required");
-  }
-
-  const stream = await setupMoralisStream();
-  await addAddressToStream(stream.id, address);
-
-  return {
-    success: true,
-    message: `Address ${address} added to stream`,
-    streamId: stream.id,
-  };
-}
-
-/**
- * Handle remove address action
- */
-async function handleRemoveAddress(address: string): Promise<any> {
-  if (!address) {
-    throw new Error("Address is required");
-  }
-
-  const stream = await findStreamByTag(STREAM_TAG);
-  if (!stream) {
-    throw new Error("Stream not found");
-  }
-
-  await removeAddressFromStream(stream.id, address);
-
-  // Also remove from database
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error("Supabase configuration missing");
-  }
-
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  
-  const { error } = await supabase
-    .from("assets")
-    .delete()
-    .eq("asset_address_or_id", address.toLowerCase())
-    .eq("provider", "moralis");
-
-  if (error) {
-    console.error("Error removing asset from database:", error);
-  }
-
-  return {
-    success: true,
-    message: `Address ${address} removed from stream and database`,
-    streamId: stream.id,
-  };
-}
-
-/**
- * Handle cleanup user action
- */
-async function handleCleanupUser(userId: string): Promise<any> {
-  if (!userId) {
-    throw new Error("User ID is required");
-  }
-
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-    throw new Error("Supabase configuration missing");
-  }
-
-  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-  // Get all user wallet addresses
-  const walletAddresses = await getUserWalletAddresses(supabase, userId);
-
-  if (walletAddresses.length === 0) {
-    return {
-      success: true,
-      message: "No wallets to cleanup",
-      removedCount: 0,
-    };
-  }
-
-  // Find stream
-  const stream = await findStreamByTag(STREAM_TAG);
-  if (!stream) {
-    console.warn("Stream not found, skipping Moralis cleanup");
-  } else {
-    // Remove each address from stream
-    const removePromises = walletAddresses.map((address) =>
-      removeAddressFromStream(stream.id, address).catch((error) => {
-        console.error(`Error removing address ${address}:`, error);
-      })
-    );
-
-    await Promise.all(removePromises);
-  }
-
-  // Delete from database
-  await deleteUserCryptoAssets(supabase, userId);
-
-  return {
-    success: true,
-    message: `Cleaned up ${walletAddresses.length} wallet addresses`,
-    removedCount: walletAddresses.length,
-    addresses: walletAddresses,
-  };
+  if (error) throw error;
 }
 
 // ============================================================================
@@ -385,52 +227,81 @@ async function handleCleanupUser(userId: string): Promise<any> {
 // ============================================================================
 
 serve(async (req: Request) => {
-  // Handle CORS preflight
+  // Handle CORS Preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      },
-    });
-  }
-
-  // Only accept POST requests
-  if (req.method !== "POST") {
-    return new Response(
-      JSON.stringify({ error: "Method not allowed" }),
-      {
-        status: 405,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // Parse request payload
     const payload: RequestPayload = await req.json();
     const { action, address, userId } = payload;
+
+    // Initialize Supabase client
+    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
     let result;
 
     switch (action) {
-      case "setup":
-        result = await handleSetup();
+      case "setup": {
+        const stream = await setupMoralisStream();
+        result = {
+          success: true,
+          message: "Stream is active",
+          streamId: extractStreamId(stream),
+          tag: stream.tag,
+        };
         break;
+      }
 
-      case "add_address":
-        result = await handleAddAddress(address!);
+      case "add_address": {
+        if (!address) throw new Error("Address is required");
+        const stream = await setupMoralisStream();
+        await addAddressToStream(extractStreamId(stream), address);
+        result = { success: true, message: `Address ${address} added` };
         break;
+      }
 
-      case "remove_address":
-        result = await handleRemoveAddress(address!);
-        break;
+      case "remove_address": {
+        if (!address) throw new Error("Address is required");
+        const stream = await findStreamByTag(STREAM_TAG);
+        if (!stream) throw new Error("Stream not found");
 
-      case "cleanup_user":
-        result = await handleCleanupUser(userId!);
+        const sId = extractStreamId(stream);
+        await removeAddressFromStream(sId, address);
+
+        // Cleanup database record
+        await supabase
+          .from("assets")
+          .delete()
+          .eq("asset_address_or_id", address.toLowerCase())
+          .eq("provider", "moralis");
+
+        result = { success: true, message: `Address ${address} removed` };
         break;
+      }
+
+      case "cleanup_user": {
+        if (!userId) throw new Error("User ID is required");
+        const walletAddresses = await getUserWalletAddresses(supabase, userId);
+
+        if (walletAddresses.length > 0) {
+          const stream = await findStreamByTag(STREAM_TAG);
+          if (stream) {
+            const sId = extractStreamId(stream);
+            await Promise.all(
+              walletAddresses.map((addr) =>
+                removeAddressFromStream(sId, addr).catch((e) =>
+                  console.error(e),
+                ),
+              ),
+            );
+          }
+          await deleteUserCryptoAssets(supabase, userId);
+        }
+
+        result = { success: true, count: walletAddresses.length };
+        break;
+      }
 
       default:
         throw new Error(`Unknown action: ${action}`);
@@ -438,19 +309,20 @@ serve(async (req: Request) => {
 
     return new Response(JSON.stringify(result), {
       status: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Stream manager error:", error);
+    console.error("Manager Error:", error.message);
     return new Response(
-      JSON.stringify({
-        error: "Internal server error",
-        message: error instanceof Error ? error.message : "Unknown error",
-      }),
+      JSON.stringify({ error: "Internal Error", message: error.message }),
       {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });
+
+// supabase functions deploy finance-webhook --no-verify-jwt
+// supabase functions deploy moralis-stream-manager --no-verify-jwt
+// // curl -X POST https://nbdfdlvbouoaoprbkbme.supabase.co/functions/v1/moralis-stream-manager -H "Content-Type: application/json" -d '{"action": "setup"}'

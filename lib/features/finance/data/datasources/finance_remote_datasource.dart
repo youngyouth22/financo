@@ -63,7 +63,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
   String get _currentUserId {
     final userId = supabaseClient.auth.currentUser?.id;
     if (userId == null) {
-      throw const ServerException(message: 'User not authenticated');
+      throw ServerException( 'User not authenticated');
     }
     return userId;
   }
@@ -81,7 +81,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
           .map((json) => AssetModel.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      throw ServerException(message: 'Failed to fetch assets: $e');
+      throw ServerException( 'Failed to fetch assets: $e');
     }
   }
 
@@ -95,9 +95,9 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
           .eq('user_id', _currentUserId)
           .single();
 
-      return AssetModel.fromJson(response as Map<String, dynamic>);
+      return AssetModel.fromJson(response);
     } catch (e) {
-      throw ServerException(message: 'Failed to fetch asset: $e');
+      throw ServerException( 'Failed to fetch asset: $e');
     }
   }
 
@@ -110,9 +110,9 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
           .select()
           .single();
 
-      return AssetModel.fromJson(response as Map<String, dynamic>);
+      return AssetModel.fromJson(response);
     } catch (e) {
-      throw ServerException(message: 'Failed to add asset: $e');
+      throw ServerException( 'Failed to add asset: $e');
     }
   }
 
@@ -127,9 +127,9 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
           .select()
           .single();
 
-      return AssetModel.fromJson(response as Map<String, dynamic>);
+      return AssetModel.fromJson(response);
     } catch (e) {
-      throw ServerException(message: 'Failed to update asset: $e');
+      throw ServerException( 'Failed to update asset: $e');
     }
   }
 
@@ -142,7 +142,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
           .eq('id', assetId)
           .eq('user_id', _currentUserId);
     } catch (e) {
-      throw ServerException(message: 'Failed to delete asset: $e');
+      throw ServerException( 'Failed to delete asset: $e');
     }
   }
 
@@ -159,13 +159,13 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
           .eq('user_id', _currentUserId)
           .order('timestamp', ascending: false);
 
-      if (startDate != null) {
-        query = query.gte('timestamp', startDate.toIso8601String());
-      }
+      // if (startDate != null) {
+      //   query = query.gte('timestamp', startDate.toIso8601String());
+      // }
 
-      if (endDate != null) {
-        query = query.lte('timestamp', endDate.toIso8601String());
-      }
+      // if (endDate != null) {
+      //   query = query.lte('timestamp', endDate.toIso8601String());
+      // }
 
       if (limit != null) {
         query = query.limit(limit);
@@ -178,7 +178,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
               WealthSnapshotModel.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      throw ServerException(message: 'Failed to fetch wealth history: $e');
+      throw ServerException( 'Failed to fetch wealth history: $e');
     }
   }
 
@@ -196,7 +196,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
 
       return 0.0;
     } catch (e) {
-      throw ServerException(message: 'Failed to calculate net worth: $e');
+      throw ServerException( 'Failed to calculate net worth: $e');
     }
   }
 
@@ -208,7 +208,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
         params: {'p_user_id': _currentUserId},
       );
     } catch (e) {
-      throw ServerException(message: 'Failed to record wealth snapshot: $e');
+      throw ServerException( 'Failed to record wealth snapshot: $e');
     }
   }
 
@@ -247,7 +247,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
             onError: (error) {
               if (!controller.isClosed) {
                 controller.addError(
-                  ServerException(message: 'Real-time update error: $error'),
+                  ServerException( 'Real-time update error: $error'),
                 );
               }
             },
@@ -260,7 +260,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
 
       return controller.stream;
     } catch (e) {
-      throw ServerException(message: 'Failed to watch assets: $e');
+      throw ServerException( 'Failed to watch assets: $e');
     }
   }
 
@@ -276,7 +276,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
       );
     } catch (e) {
       throw ServerException(
-          message: 'Failed to add wallet to stream: $e');
+           'Failed to add wallet to stream: $e');
     }
   }
 
@@ -292,7 +292,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
       );
     } catch (e) {
       throw ServerException(
-          message: 'Failed to remove wallet from stream: $e');
+           'Failed to remove wallet from stream: $e');
     }
   }
 
@@ -306,7 +306,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
         },
       );
     } catch (e) {
-      throw ServerException(message: 'Failed to setup Moralis stream: $e');
+      throw ServerException( 'Failed to setup Moralis stream: $e');
     }
   }
 
@@ -322,7 +322,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
       );
     } catch (e) {
       throw ServerException(
-          message: 'Failed to cleanup user crypto assets: $e');
+           'Failed to cleanup user crypto assets: $e');
     }
   }
 }

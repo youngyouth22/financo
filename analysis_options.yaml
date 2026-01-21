@@ -14,3 +14,6 @@ bloc:
     - avoid_public_fields
     - prefer_file_naming_conventions
     - prefer_void_public_cubit_methods
+analyzer:
+  errors:
+    unintended_html_in_doc_comment: ignore
