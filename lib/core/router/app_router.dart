@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:financo/di/injection_container.dart';
+import 'package:financo/features/app_shell/presentation/pages/app_shell_page.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_state.dart';
 import 'package:financo/features/auth/presentation/pages/auth_page.dart';
-import 'package:financo/features/home/presentation/pages/app_shell_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 

@@ -92,7 +92,7 @@ class _DashboardPageState extends State<DashboardPage>
           IconButton(
             onPressed: () {
               // Refresh data
-              context.read<FinanceBloc>().add(const SyncAssetsEvent());
+              // context.read<FinanceBloc>().add(const SyncAssetsEvent());
             },
             icon: Icon(
               Icons.refresh,

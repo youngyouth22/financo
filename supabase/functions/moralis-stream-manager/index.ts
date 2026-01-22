@@ -254,10 +254,66 @@ serve(async (req: Request) => {
       }
 
       case "add_address": {
-        if (!address) throw new Error("Address is required");
+        if (!address || !userId) throw new Error("Address and userId are required");
+        
+        const cleanAddress = address.toLowerCase();
+
+        // 1. REGISTER FOR FUTURE UPDATES (Moralis Stream)
+        // This ensures the 'finance-webhook' will be called for every future transaction
         const stream = await setupMoralisStream();
-        await addAddressToStream(extractStreamId(stream), address);
-        result = { success: true, message: `Address ${address} added` };
+        await addAddressToStream(extractStreamId(stream), cleanAddress);
+
+        // 2. FETCH CURRENT NET WORTH IMMEDIATELY (Moralis API)
+        // We call the Net Worth API now so the user sees their balance instantly
+        console.log(`Fetching initial net worth for ${cleanAddress}...`);
+        let currentBalanceUsd = 0;
+        
+        try {
+          const nwResponse = await fetch(
+            `https://deep-index.moralis.io/api/v2.2/wallets/${cleanAddress}/net-worth?exclude_spam=true`,
+            {
+              headers: {
+                "X-API-Key": MORALIS_API_KEY!,
+                "accept": "application/json",
+              },
+            }
+          );
+          
+          if (nwResponse.ok) {
+            const nwData = await nwResponse.json();
+            currentBalanceUsd = parseFloat(nwData.total_networth_usd || "0");
+          } else {
+            console.error("Moralis Networth API error during initial sync");
+          }
+        } catch (e) {
+          console.error("Failed to fetch initial net worth:", e.message);
+          // We continue anyway, the balance will stay 0 until the next webhook
+        }
+
+        // 3. SAVE TO ASSETS TABLE (Supabase)
+        // Linking the address to the user_id is mandatory here
+        const { error: dbError } = await supabase
+          .from("assets")
+          .upsert({
+            user_id: userId,
+            asset_address_or_id: cleanAddress,
+            provider: "moralis",
+            type: "crypto", // Your enum type
+            name: "Crypto Wallet",
+            balance_usd: currentBalanceUsd,
+            last_sync: new Date().toISOString(),
+          }, { onConflict: 'asset_address_or_id' });
+
+        if (dbError) throw dbError;
+
+        // 4. OPTIONAL: Trigger a snapshot for history charts
+        await supabase.rpc("record_wealth_snapshot", { p_user_id: userId });
+
+        result = { 
+          success: true, 
+          message: "Wallet added and initial balance synced", 
+          balance: currentBalanceUsd 
+        };
         break;
       }
 

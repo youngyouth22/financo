@@ -1,9 +1,9 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/common/common_widgets/primary_button.dart';
+import 'package:financo/di/injection_container.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
-import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -67,85 +67,91 @@ class _AddBankAccountPageState extends State<AddBankAccountPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<FinanceBloc, FinanceState>(
-      listener: (context, state) {
-        if (state is AssetAdded) {
-          Navigator.of(context).pop(true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Bank account added successfully'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-        } else if (state is FinanceError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        }
-      },
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
+    return BlocProvider(
+      create: (context) => sl<FinanceBloc>(),
+      child: BlocListener<FinanceBloc, FinanceState>(
+        listener: (context, state) {
+          // if (state is AssetAdded) {
+          //   Navigator.of(context).pop(true);
+          //   ScaffoldMessenger.of(context).showSnackBar(
+          //     SnackBar(
+          //       content: const Text('Bank account added successfully'),
+          //       backgroundColor: AppColors.success,
+          //     ),
+          //   );
+          // } else if (state is FinanceError) {
+          //   ScaffoldMessenger.of(context).showSnackBar(
+          //     SnackBar(
+          //       content: Text(state.message),
+          //       backgroundColor: AppColors.error,
+          //     ),
+          //   );
+          // }
+        },
+        child: Scaffold(
           backgroundColor: AppColors.background,
-          elevation: 0,
-          leading: IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: Icon(
-              Icons.arrow_back,
-              color: AppColors.white,
+          appBar: AppBar(
+            backgroundColor: AppColors.background,
+            elevation: 0,
+            leading: IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: Icon(Icons.arrow_back, color: AppColors.white),
+            ),
+            title: Text(
+              'Add Bank Account',
+              style: AppTypography.headline4Bold.copyWith(
+                color: AppColors.white,
+              ),
             ),
           ),
-          title: Text(
-            'Add Bank Account',
-            style: AppTypography.headline4Bold.copyWith(
-              color: AppColors.white,
-            ),
+          body: SafeArea(
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  )
+                : Builder(
+                    builder: (innerContext) {
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Info card
+                            _buildInfoCard(),
+
+                            const SizedBox(height: 32),
+
+                            // Plaid logo and description
+                            _buildPlaidInfo(),
+
+                            const SizedBox(height: 32),
+
+                            // Features list
+                            _buildFeaturesList(),
+
+                            const SizedBox(height: 32),
+
+                            // Connect button
+                            PrimaryButton(
+                              text: 'Connect with Plaid',
+                              onClick: () {
+                                if (_linkToken != null) {
+                                  _handleConnectBank(innerContext);
+                                }
+                              },
+                              // icon: Icons.link,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Security note
+                            _buildSecurityNote(),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
           ),
-        ),
-        body: SafeArea(
-          child: _isLoading
-              ? Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.primary,
-                  ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Info card
-                      _buildInfoCard(),
-                      
-                      const SizedBox(height: 32),
-                      
-                      // Plaid logo and description
-                      _buildPlaidInfo(),
-                      
-                      const SizedBox(height: 32),
-                      
-                      // Features list
-                      _buildFeaturesList(),
-                      
-                      const SizedBox(height: 32),
-                      
-                      // Connect button
-                      PrimaryButton(
-                        text: 'Connect with Plaid',
-                        onPressed: _linkToken != null ? _handleConnectBank : null,
-                        icon: Icons.link,
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Security note
-                      _buildSecurityNote(),
-                    ],
-                  ),
-                ),
         ),
       ),
     );
@@ -158,18 +164,11 @@ class _AddBankAccountPageState extends State<AddBankAccountPage> {
       decoration: BoxDecoration(
         color: AppColors.accentS.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.accentS.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.accentS.withOpacity(0.3), width: 1),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.security,
-            color: AppColors.accentS,
-            size: 24,
-          ),
+          Icon(Icons.security, color: AppColors.accentS, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -204,9 +203,7 @@ class _AddBankAccountPageState extends State<AddBankAccountPage> {
         const SizedBox(height: 16),
         Text(
           'Powered by Plaid',
-          style: AppTypography.headline4Bold.copyWith(
-            color: AppColors.white,
-          ),
+          style: AppTypography.headline4Bold.copyWith(color: AppColors.white),
         ),
         const SizedBox(height: 8),
         Text(
@@ -250,47 +247,49 @@ class _AddBankAccountPageState extends State<AddBankAccountPage> {
           ),
         ),
         const SizedBox(height: 16),
-        ...features.map((feature) => Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.card,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      feature['icon'] as IconData,
-                      color: AppColors.accentS,
-                      size: 24,
-                    ),
+        ...features.map(
+          (feature) => Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.card,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          feature['title'] as String,
-                          style: AppTypography.headline3SemiBold.copyWith(
-                            color: AppColors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          feature['description'] as String,
-                          style: AppTypography.headline1Regular.copyWith(
-                            color: AppColors.gray40,
-                          ),
-                        ),
-                      ],
-                    ),
+                  child: Icon(
+                    feature['icon'] as IconData,
+                    color: AppColors.accentS,
+                    size: 24,
                   ),
-                ],
-              ),
-            )),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        feature['title'] as String,
+                        style: AppTypography.headline3SemiBold.copyWith(
+                          color: AppColors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        feature['description'] as String,
+                        style: AppTypography.headline1Regular.copyWith(
+                          color: AppColors.gray40,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -305,11 +304,7 @@ class _AddBankAccountPageState extends State<AddBankAccountPage> {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline,
-            color: AppColors.gray50,
-            size: 16,
-          ),
+          Icon(Icons.info_outline, color: AppColors.gray50, size: 16),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -325,7 +320,7 @@ class _AddBankAccountPageState extends State<AddBankAccountPage> {
   }
 
   /// Handle connect bank
-  Future<void> _handleConnectBank() async {
+  Future<void> _handleConnectBank(BuildContext context) async {
     if (_linkToken == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -340,13 +335,11 @@ class _AddBankAccountPageState extends State<AddBankAccountPage> {
     // For now, show a dialog explaining the process
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.card,
         title: Text(
           'Plaid Integration',
-          style: AppTypography.headline4Bold.copyWith(
-            color: AppColors.white,
-          ),
+          style: AppTypography.headline4Bold.copyWith(color: AppColors.white),
         ),
         content: Text(
           'Plaid Link SDK integration requires native platform setup. '
@@ -357,16 +350,13 @@ class _AddBankAccountPageState extends State<AddBankAccountPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Close',
-              style: TextStyle(color: AppColors.primary),
-            ),
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text('Close', style: TextStyle(color: AppColors.primary)),
           ),
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
-              _simulateBankConnection();
+              Navigator.of(dialogContext).pop();
+              _simulateBankConnection(context);
             },
             child: Text(
               'Simulate Connection',
@@ -379,17 +369,19 @@ class _AddBankAccountPageState extends State<AddBankAccountPage> {
   }
 
   /// Simulate bank connection for testing
-  void _simulateBankConnection() {
+  void _simulateBankConnection(BuildContext context) {
     // Add a simulated bank account
-    context.read<FinanceBloc>().add(
-          AddAssetEvent(
-            name: 'Chase Checking',
-            type: AssetType.bank,
-            assetGroup: AssetGroup.cash,
-            provider: AssetProvider.plaid,
-            assetAddressOrId: 'plaid_account_${DateTime.now().millisecondsSinceEpoch}',
-            initialBalance: 5000.0,
-          ),
-        );
+    // context.read<FinanceBloc>().add(
+    //   AddAssetEvent(
+    //     assetGroup: AssetGroup.cash,
+    //     name: 'Chase Checking',
+    //     type: AssetType.bank,
+    //     // assetGroup: AssetGroup.cash,
+    //     provider: AssetProvider.plaid,
+    //     assetAddressOrId:
+    //         'plaid_account_${DateTime.now().millisecondsSinceEpoch}',
+    //     initialBalance: 5000.0,
+    //   ),
+    // );
   }
 }

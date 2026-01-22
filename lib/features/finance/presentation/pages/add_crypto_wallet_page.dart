@@ -1,6 +1,7 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/common/common_widgets/primary_button.dart';
+import 'package:financo/di/injection_container.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
@@ -38,103 +39,112 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<FinanceBloc, FinanceState>(
-      listener: (context, state) {
-        if (state is AssetAdded) {
-          // Success - go back
-          Navigator.of(context).pop(true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Crypto wallet added successfully'),
-              backgroundColor: AppColors.success,
-            ),
-          );
-        } else if (state is FinanceError) {
-          // Error
-          setState(() => _isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        } else if (state is FinanceLoading) {
-          setState(() => _isLoading = true);
-        }
-      },
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
+    return BlocProvider(
+      create: (context) => sl<FinanceBloc>(),
+      child: BlocListener<FinanceBloc, FinanceState>(
+        listener: (context, state) {
+        //   if (state is AssetAdded) {
+        //     // Success - go back
+        //     Navigator.of(context).pop(true);
+        //     ScaffoldMessenger.of(context).showSnackBar(
+        //       SnackBar(
+        //         content: const Text('Crypto wallet added successfully'),
+        //         backgroundColor: AppColors.success,
+        //       ),
+        //     );
+        //   } else if (state is FinanceError) {
+        //     // Error
+        //     setState(() => _isLoading = false);
+        //     ScaffoldMessenger.of(context).showSnackBar(
+        //       SnackBar(
+        //         content: Text(state.message),
+        //         backgroundColor: AppColors.error,
+        //       ),
+        //     );
+        //   } else if (state is FinanceLoading) {
+        //     setState(() => _isLoading = true);
+        //   }
+        },
+        child: Scaffold(
           backgroundColor: AppColors.background,
-          elevation: 0,
-          leading: IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: Icon(
-              Icons.arrow_back,
-              color: AppColors.white,
+          appBar: AppBar(
+            backgroundColor: AppColors.background,
+            elevation: 0,
+            leading: IconButton(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: Icon(Icons.arrow_back, color: AppColors.white),
             ),
-          ),
-          title: Text(
-            'Add Crypto Wallet',
-            style: AppTypography.headline4Bold.copyWith(
-              color: AppColors.white,
-            ),
-          ),
-        ),
-        body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Info card
-                  _buildInfoCard(),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Wallet name field
-                  Text(
-                    'Wallet Name',
-                    style: AppTypography.headline3SemiBold.copyWith(
-                      color: AppColors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildNameField(),
-                  
-                  const SizedBox(height: 24),
-                  
-                  // Wallet address field
-                  Text(
-                    'Wallet Address',
-                    style: AppTypography.headline3SemiBold.copyWith(
-                      color: AppColors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildAddressField(),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Supported chains info
-                  _buildSupportedChains(),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Add button
-                  PrimaryButton(
-                    text: _isLoading ? 'Adding...' : 'Add Wallet',
-                    onPressed: _isLoading ? null : _handleAddWallet,
-                    isLoading: _isLoading,
-                  ),
-                ],
+            title: Text(
+              'Add Crypto Wallet',
+              style: AppTypography.headline4Bold.copyWith(
+                color: AppColors.white,
               ),
+            ),
+          ),
+          body: SafeArea(
+            child: Builder(
+              builder: (innerContext) {
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Info card
+                        _buildInfoCard(),
+
+                        const SizedBox(height: 32),
+
+                        // Wallet name field
+                        Text(
+                          'Wallet Name',
+                          style: AppTypography.headline3SemiBold.copyWith(
+                            color: AppColors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildNameField(),
+
+                        const SizedBox(height: 24),
+
+                        // Wallet address field
+                        Text(
+                          'Wallet Address',
+                          style: AppTypography.headline3SemiBold.copyWith(
+                            color: AppColors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildAddressField(),
+
+                        const SizedBox(height: 32),
+
+                        // Supported chains info
+                        _buildSupportedChains(),
+
+                        const SizedBox(height: 32),
+
+                        // Add button
+                        _buildAddButton(innerContext),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
       ),
+    );
+  }
+
+  /// Build add button with proper context
+  Widget _buildAddButton(BuildContext context) {
+    return PrimaryButton(
+      text: _isLoading ? 'Adding...' : 'Add Wallet',
+      onClick: () => _handleAddWallet(context),
+      isLoading: _isLoading,
     );
   }
 
@@ -145,18 +155,11 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.info_outline,
-            color: AppColors.primary,
-            size: 24,
-          ),
+          Icon(Icons.info_outline, color: AppColors.primary, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -175,9 +178,7 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
   Widget _buildNameField() {
     return TextFormField(
       controller: _nameController,
-      style: AppTypography.headline3Regular.copyWith(
-        color: AppColors.white,
-      ),
+      style: AppTypography.headline3Regular.copyWith(color: AppColors.white),
       decoration: InputDecoration(
         hintText: 'e.g., My Ethereum Wallet',
         hintStyle: AppTypography.headline3Regular.copyWith(
@@ -201,10 +202,7 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: AppColors.error),
         ),
-        prefixIcon: Icon(
-          Icons.label_outline,
-          color: AppColors.gray50,
-        ),
+        prefixIcon: Icon(Icons.label_outline, color: AppColors.gray50),
       ),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
@@ -257,10 +255,7 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
               _addressController.text = data.text!;
             }
           },
-          icon: Icon(
-            Icons.content_paste,
-            color: AppColors.primary,
-          ),
+          icon: Icon(Icons.content_paste, color: AppColors.primary),
         ),
       ),
       validator: (value) {
@@ -302,24 +297,16 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
           runSpacing: 8,
           children: chains.map((chain) {
             return Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: AppColors.card,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: AppColors.gray70,
-                ),
+                border: Border.all(color: AppColors.gray70),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    chain['icon']!,
-                    style: const TextStyle(fontSize: 16),
-                  ),
+                  Text(chain['icon']!, style: const TextStyle(fontSize: 16)),
                   const SizedBox(width: 6),
                   Text(
                     chain['name']!,
@@ -337,22 +324,22 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
   }
 
   /// Handle add wallet
-  void _handleAddWallet() {
+  void _handleAddWallet(BuildContext context) {
     if (_formKey.currentState!.validate()) {
       final name = _nameController.text.trim();
       final address = _addressController.text.trim().toLowerCase();
 
       // Add asset via BLoC
-      context.read<FinanceBloc>().add(
-            AddAssetEvent(
-              name: name,
-              type: AssetType.crypto,
-              assetGroup: AssetGroup.crypto,
-              provider: AssetProvider.moralis,
-              assetAddressOrId: address,
-              initialBalance: 0.0, // Will be fetched by Moralis
-            ),
-          );
+      // context.read<FinanceBloc>().add(
+      //   AddAssetEvent(
+      //     name: name,
+      //     type: AssetType.crypto,
+      //    assetGroup: AssetGroup.crypto,
+      //     provider: AssetProvider.moralis,
+      //     assetAddressOrId: address,
+      //     initialBalance: 0.0, // Will be fetched by Moralis
+      //   ),
+      // );
     }
   }
 }

@@ -8,13 +8,11 @@ import 'package:financo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:financo/features/finance/data/datasources/finance_remote_datasource.dart';
 import 'package:financo/features/finance/data/repositories/finance_repository_impl.dart';
 import 'package:financo/features/finance/domain/repositories/finance_repository.dart';
-import 'package:financo/features/finance/domain/usecases/add_asset_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/delete_asset_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_assets_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_global_wealth_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_net_worth_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_wealth_history_usecase.dart';
-import 'package:financo/features/finance/domain/usecases/sync_assets_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/watch_assets_usecase.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -94,11 +92,9 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => GetGlobalWealthUseCase(sl()));
   sl.registerLazySingleton(() => GetAssetsUseCase(sl()));
   sl.registerLazySingleton(() => WatchAssetsUseCase(sl()));
-  sl.registerLazySingleton(() => AddAssetUseCase(sl()));
   sl.registerLazySingleton(() => DeleteAssetUseCase(sl()));
   sl.registerLazySingleton(() => GetNetWorthUseCase(sl()));
   sl.registerLazySingleton(() => GetWealthHistoryUseCase(sl()));
-  sl.registerLazySingleton(() => SyncAssetsUseCase(sl()));
 
   // BLoC
   sl.registerFactory(
@@ -106,11 +102,9 @@ Future<void> initializeDependencies() async {
       getGlobalWealthUseCase: sl(),
       getAssetsUseCase: sl(),
       watchAssetsUseCase: sl(),
-      addAssetUseCase: sl(),
       deleteAssetUseCase: sl(),
       getNetWorthUseCase: sl(),
       getWealthHistoryUseCase: sl(),
-      syncAssetsUseCase: sl(),
     ),
   );
 }

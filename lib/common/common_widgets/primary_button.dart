@@ -14,7 +14,7 @@ class PrimaryButton extends StatelessWidget {
   final double height;
   final double borderRadius;
   final bool disabled;
-  final bool loading;
+  final bool isLoading;
   final Widget? icon;
   final Color? color;
   const PrimaryButton({
@@ -29,7 +29,7 @@ class PrimaryButton extends StatelessWidget {
     this.disabled = false,
     this.icon,
     this.color,
-    this.loading = false,
+    this.isLoading = false,
   });
   // TODO: Animation de shimmer pour faire briller le bouton surtout sur les bordures lorsque isDisable passe a true
 
@@ -51,7 +51,7 @@ class PrimaryButton extends StatelessWidget {
         color: color,
         gradient: color != null
             ? null
-            : disabled || loading
+            : disabled || isLoading
             ? AppColors.grayGradientDisabled
             : gradient ?? AppColors.primaryGradient,
         borderRadius: BorderRadius.circular(borderRadius),
@@ -59,7 +59,7 @@ class PrimaryButton extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: disabled || loading ? null : onClick,
+          onTap: disabled || isLoading ? null : onClick,
           borderRadius: BorderRadius.circular(borderRadius),
           child: Container(
             height: height,
@@ -68,7 +68,7 @@ class PrimaryButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(borderRadius),
               border:
                   border ??
-                  (disabled || loading
+                  (disabled || isLoading
                       ? disabledButtonBorder
                       : primaryButtonBorder),
             ),
@@ -80,7 +80,7 @@ class PrimaryButton extends StatelessWidget {
                     : MainAxisAlignment.center,
                 spacing: icon != null ? AppSpacing.ten : 0,
                 crossAxisAlignment: CrossAxisAlignment.center,
-                children: loading
+                children: isLoading
                     ? [CustomCircularLoadingIndicator()]
                     : [
                         if (icon != null) icon!,

@@ -49,7 +49,6 @@ class _AuthPageState extends State<AuthPage> {
             }
           },
           builder: (context, state) {
-          
             // Main authentication UI
             return Stack(
               children: [
@@ -200,7 +199,7 @@ class _AuthPageState extends State<AuthPage> {
                           border: Border.all(color: AppColors.white),
                           color: AppColors.white,
                           textColor: AppColors.gray,
-                          loading: state is AuthLoading,
+                          isLoading: state is AuthLoading,
                           onClick: () {
                             sl<AuthBloc>().add(
                               const AuthGoogleSignInRequested(),

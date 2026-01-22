@@ -15,31 +15,6 @@ abstract class FinanceRepository {
   /// Returns [Left(Failure)] on error
   Future<Either<Failure, List<Asset>>> getAssets();
 
-  /// Get a specific asset by ID
-  ///
-  /// Returns [Right(Asset)] on success
-  /// Returns [Left(Failure)] on error
-  Future<Either<Failure, Asset>> getAssetById(String assetId);
-
-  /// Add a new asset
-  ///
-  /// Returns [Right(Asset)] on success
-  /// Returns [Left(Failure)] on error
-  Future<Either<Failure, Asset>> addAsset({
-    required String name,
-    required AssetType type,
-    required AssetGroup assetGroup,
-    required AssetProvider provider,
-    required String assetAddressOrId,
-    double initialBalance = 0.0,
-  });
-
-  /// Update an existing asset
-  ///
-  /// Returns [Right(Asset)] on success
-  /// Returns [Left(Failure)] on error
-  Future<Either<Failure, Asset>> updateAsset(Asset asset);
-
   /// Delete an asset
   ///
   /// Returns [Right(void)] on success
@@ -56,11 +31,7 @@ abstract class FinanceRepository {
   ///
   /// Returns [Right(List<WealthSnapshot>)] on success
   /// Returns [Left(Failure)] on error
-  Future<Either<Failure, List<WealthSnapshot>>> getWealthHistory({
-    DateTime? startDate,
-    DateTime? endDate,
-    int? limit,
-  });
+  Future<Either<Failure, List<WealthSnapshot>>> getWealthHistory({int? limit});
 
   /// Calculate current net worth
   ///
@@ -68,45 +39,36 @@ abstract class FinanceRepository {
   /// Returns [Left(Failure)] on error
   Future<Either<Failure, double>> calculateNetWorth();
 
-  /// Record a wealth snapshot
-  ///
-  /// Returns [Right(void)] on success
-  /// Returns [Left(Failure)] on error
-  Future<Either<Failure, void>> recordWealthSnapshot();
-
   /// Stream of real-time asset updates
   ///
   /// Returns a stream that emits [Right(List<Asset>)] on updates
   /// or [Left(Failure)] on errors
   Stream<Either<Failure, List<Asset>>> watchAssets();
 
-  /// Add wallet address to Moralis stream
+  /// Add crypto wallet to Moralis stream
   ///
   /// Returns [Right(void)] on success
   /// Returns [Left(Failure)] on error
-  Future<Either<Failure, void>> addWalletToStream(String walletAddress);
+  Future<Either<Failure, void>> addCryptoWallet(String walletAddress);
 
-  /// Remove wallet address from Moralis stream
+  /// Remove crypto wallet from Moralis stream
   ///
   /// Returns [Right(void)] on success
   /// Returns [Left(Failure)] on error
-  Future<Either<Failure, void>> removeWalletFromStream(String walletAddress);
+  Future<Either<Failure, void>> removeCryptoWallet(String walletAddress);
 
-  /// Setup Moralis stream (idempotent)
+  /// Get Plaid link token for bank account connection
   ///
-  /// Returns [Right(void)] on success
+  /// Returns [Right(String)] link token on success
   /// Returns [Left(Failure)] on error
-  Future<Either<Failure, void>> setupMoralisStream();
+  Future<Either<Failure, String>> getPlaidLinkToken();
 
-  /// Cleanup user's crypto assets on account deletion
+  /// Exchange Plaid public token for access token
   ///
   /// Returns [Right(void)] on success
   /// Returns [Left(Failure)] on error
-  Future<Either<Failure, void>> cleanupUserCryptoAssets();
-
-  /// Sync all assets (trigger manual refresh)
-  ///
-  /// Returns [Right(void)] on success
-  /// Returns [Left(Failure)] on error
-  Future<Either<Failure, void>> syncAssets();
+  Future<Either<Failure, void>> exchangePlaidToken(
+    String publicToken,
+    Map<String, dynamic> metadata,
+  );
 }

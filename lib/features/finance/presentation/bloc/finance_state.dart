@@ -35,10 +35,7 @@ class GlobalWealthLoaded extends FinanceState {
   List<Object?> get props => [globalWealth, isWatching];
 
   /// Create a copy with updated fields
-  GlobalWealthLoaded copyWith({
-    GlobalWealth? globalWealth,
-    bool? isWatching,
-  }) {
+  GlobalWealthLoaded copyWith({GlobalWealth? globalWealth, bool? isWatching}) {
     return GlobalWealthLoaded(
       globalWealth: globalWealth ?? this.globalWealth,
       isWatching: isWatching ?? this.isWatching,
@@ -51,19 +48,13 @@ class AssetsLoaded extends FinanceState {
   final List<Asset> assets;
   final bool isWatching;
 
-  const AssetsLoaded({
-    required this.assets,
-    this.isWatching = false,
-  });
+  const AssetsLoaded({required this.assets, this.isWatching = false});
 
   @override
   List<Object?> get props => [assets, isWatching];
 
   /// Create a copy with updated fields
-  AssetsLoaded copyWith({
-    List<Asset>? assets,
-    bool? isWatching,
-  }) {
+  AssetsLoaded copyWith({List<Asset>? assets, bool? isWatching}) {
     return AssetsLoaded(
       assets: assets ?? this.assets,
       isWatching: isWatching ?? this.isWatching,
@@ -91,16 +82,6 @@ class NetWorthCalculated extends FinanceState {
   List<Object?> get props => [netWorth];
 }
 
-/// State when an asset is successfully added
-class AssetAdded extends FinanceState {
-  final Asset asset;
-
-  const AssetAdded(this.asset);
-
-  @override
-  List<Object?> get props => [asset];
-}
-
 /// State when an asset is successfully deleted
 class AssetDeleted extends FinanceState {
   final String assetId;
@@ -109,16 +90,6 @@ class AssetDeleted extends FinanceState {
 
   @override
   List<Object?> get props => [assetId];
-}
-
-/// State when assets are being synced
-class AssetsSyncing extends FinanceState {
-  const AssetsSyncing();
-}
-
-/// State when assets sync is complete
-class AssetsSynced extends FinanceState {
-  const AssetsSynced();
 }
 
 /// State when an error occurs
@@ -136,10 +107,7 @@ class AssetsRealTimeUpdated extends FinanceState {
   final List<Asset> assets;
   final DateTime updatedAt;
 
-  const AssetsRealTimeUpdated({
-    required this.assets,
-    required this.updatedAt,
-  });
+  const AssetsRealTimeUpdated({required this.assets, required this.updatedAt});
 
   @override
   List<Object?> get props => [assets, updatedAt];

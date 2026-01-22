@@ -17,14 +17,13 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage>  {
+class _DashboardPageState extends State<DashboardPage> {
   bool isSubscription = true;
   List<ArcValueModel> arcs = [
-    ArcValueModel(color: AppColors.accentS, value: 0.3),
-      ArcValueModel(color: AppColors.accent, value: 0.5),
-      ArcValueModel(color: AppColors.primary10, value: 0.2),
+    // ArcValueModel(color: AppColors.accentS, value: 0.8),
+    ArcValueModel(color: AppColors.accent, value: 0.5),
+    // ArcValueModel(color: AppColors.primary10, value: 0.2),
   ];
-
 
   List subArr = [
     {"name": "Spotify", "icon": "assets/img/spotify_logo.png", "price": "5.99"},

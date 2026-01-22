@@ -39,32 +39,6 @@ class AssetsUpdatedEvent extends FinanceEvent {
   List<Object?> get props => [assets];
 }
 
-/// Event to add a new asset
-class AddAssetEvent extends FinanceEvent {
-  final String name;
-  final AssetType type;
-  final AssetProvider provider;
-  final String assetAddressOrId;
-  final double initialBalance;
-
-  const AddAssetEvent({
-    required this.name,
-    required this.type,
-    required this.provider,
-    required this.assetAddressOrId,
-    this.initialBalance = 0.0,
-  });
-
-  @override
-  List<Object?> get props => [
-        name,
-        type,
-        provider,
-        assetAddressOrId,
-        initialBalance,
-      ];
-}
-
 /// Event to delete an asset
 class DeleteAssetEvent extends FinanceEvent {
   final String assetId;
@@ -77,23 +51,12 @@ class DeleteAssetEvent extends FinanceEvent {
 
 /// Event to load wealth history
 class LoadWealthHistoryEvent extends FinanceEvent {
-  final DateTime? startDate;
-  final DateTime? endDate;
   final int? limit;
 
-  const LoadWealthHistoryEvent({
-    this.startDate,
-    this.endDate,
-    this.limit,
-  });
+  const LoadWealthHistoryEvent({this.limit});
 
   @override
-  List<Object?> get props => [startDate, endDate, limit];
-}
-
-/// Event to sync assets manually (pull-to-refresh)
-class SyncAssetsEvent extends FinanceEvent {
-  const SyncAssetsEvent();
+  List<Object?> get props => [limit];
 }
 
 /// Event to calculate net worth

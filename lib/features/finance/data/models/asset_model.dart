@@ -43,7 +43,7 @@ class AssetModel extends Asset {
       'user_id': userId,
       'name': name,
       'type': _assetTypeToString(type),
-      'asset_group': _assetGroupToString(assetGroup),
+      // 'asset_group': _assetGroupToString(assetGroup),
       'provider': _assetProviderToString(provider),
       'balance_usd': balanceUsd,
       'asset_address_or_id': assetAddressOrId,

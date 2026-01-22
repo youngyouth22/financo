@@ -19,8 +19,6 @@ class GetWealthHistoryUseCase
     GetWealthHistoryParams params,
   ) async {
     return await repository.getWealthHistory(
-      startDate: params.startDate,
-      endDate: params.endDate,
       limit: params.limit,
     );
   }

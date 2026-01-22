@@ -1,13 +1,11 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:financo/core/usecase/usecase.dart';
-import 'package:financo/features/finance/domain/usecases/add_asset_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/delete_asset_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_assets_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_global_wealth_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_net_worth_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_wealth_history_usecase.dart';
-import 'package:financo/features/finance/domain/usecases/sync_assets_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/watch_assets_usecase.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_state.dart';
@@ -17,18 +15,16 @@ import 'package:financo/features/finance/presentation/bloc/finance_state.dart';
 /// Handles all finance operations including:
 /// - Loading and watching assets
 /// - Real-time updates via Supabase
-/// - Adding/deleting assets
+/// - Deleting assets
 /// - Calculating net worth
 /// - Loading wealth history
 class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
   final GetGlobalWealthUseCase getGlobalWealthUseCase;
   final GetAssetsUseCase getAssetsUseCase;
   final WatchAssetsUseCase watchAssetsUseCase;
-  final AddAssetUseCase addAssetUseCase;
   final DeleteAssetUseCase deleteAssetUseCase;
   final GetNetWorthUseCase getNetWorthUseCase;
   final GetWealthHistoryUseCase getWealthHistoryUseCase;
-  final SyncAssetsUseCase syncAssetsUseCase;
 
   StreamSubscription? _assetsSubscription;
 
@@ -36,21 +32,17 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     required this.getGlobalWealthUseCase,
     required this.getAssetsUseCase,
     required this.watchAssetsUseCase,
-    required this.addAssetUseCase,
     required this.deleteAssetUseCase,
     required this.getNetWorthUseCase,
     required this.getWealthHistoryUseCase,
-    required this.syncAssetsUseCase,
   }) : super(const FinanceInitial()) {
     on<LoadGlobalWealthEvent>(_onLoadGlobalWealth);
     on<LoadAssetsEvent>(_onLoadAssets);
     on<WatchAssetsEvent>(_onWatchAssets);
     on<StopWatchingAssetsEvent>(_onStopWatchingAssets);
     on<AssetsUpdatedEvent>(_onAssetsUpdated);
-    on<AddAssetEvent>(_onAddAsset);
     on<DeleteAssetEvent>(_onDeleteAsset);
     on<LoadWealthHistoryEvent>(_onLoadWealthHistory);
-    on<SyncAssetsEvent>(_onSyncAssets);
     on<CalculateNetWorthEvent>(_onCalculateNetWorth);
   }
 
@@ -93,14 +85,12 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     await _assetsSubscription?.cancel();
 
     // Start watching assets
-    _assetsSubscription = watchAssetsUseCase().listen(
-      (result) {
-        result.fold(
-          (failure) => add(const LoadAssetsEvent()), // Fallback to regular load
-          (assets) => add(AssetsUpdatedEvent(assets)),
-        );
-      },
-    );
+    _assetsSubscription = watchAssetsUseCase().listen((result) {
+      result.fold(
+        (failure) => add(const LoadAssetsEvent()), // Fallback to regular load
+        (assets) => add(AssetsUpdatedEvent(assets)),
+      );
+    });
 
     // Update state to indicate watching is active
     if (state is AssetsLoaded) {
@@ -131,10 +121,9 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     AssetsUpdatedEvent event,
     Emitter<FinanceState> emit,
   ) async {
-    emit(AssetsRealTimeUpdated(
-      assets: event.assets,
-      updatedAt: DateTime.now(),
-    ));
+    emit(
+      AssetsRealTimeUpdated(assets: event.assets, updatedAt: DateTime.now()),
+    );
 
     // Also update the main state
     if (state is AssetsLoaded) {
@@ -142,33 +131,6 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     } else {
       emit(AssetsLoaded(assets: event.assets, isWatching: true));
     }
-  }
-
-  /// Handle AddAssetEvent
-  Future<void> _onAddAsset(
-    AddAssetEvent event,
-    Emitter<FinanceState> emit,
-  ) async {
-    emit(const FinanceLoading());
-
-    final params = AddAssetParams(
-      name: event.name,
-      type: event.type,
-      provider: event.provider,
-      assetAddressOrId: event.assetAddressOrId,
-      initialBalance: event.initialBalance,
-    );
-
-    final result = await addAssetUseCase(params);
-
-    result.fold(
-      (failure) => emit(FinanceError(failure.message)),
-      (asset) {
-        emit(AssetAdded(asset));
-        // Reload assets after adding
-        add(const LoadAssetsEvent());
-      },
-    );
   }
 
   /// Handle DeleteAssetEvent
@@ -181,14 +143,11 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     final params = DeleteAssetParams(assetId: event.assetId);
     final result = await deleteAssetUseCase(params);
 
-    result.fold(
-      (failure) => emit(FinanceError(failure.message)),
-      (_) {
-        emit(AssetDeleted(event.assetId));
-        // Reload assets after deleting
-        add(const LoadAssetsEvent());
-      },
-    );
+    result.fold((failure) => emit(FinanceError(failure.message)), (_) {
+      emit(AssetDeleted(event.assetId));
+      // Reload assets after deleting
+      add(const LoadAssetsEvent());
+    });
   }
 
   /// Handle LoadWealthHistoryEvent
@@ -198,36 +157,13 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
   ) async {
     emit(const FinanceLoading());
 
-    final params = GetWealthHistoryParams(
-      startDate: event.startDate,
-      endDate: event.endDate,
-      limit: event.limit,
-    );
+    final params = GetWealthHistoryParams(limit: event.limit);
 
     final result = await getWealthHistoryUseCase(params);
 
     result.fold(
       (failure) => emit(FinanceError(failure.message)),
       (snapshots) => emit(WealthHistoryLoaded(snapshots)),
-    );
-  }
-
-  /// Handle SyncAssetsEvent
-  Future<void> _onSyncAssets(
-    SyncAssetsEvent event,
-    Emitter<FinanceState> emit,
-  ) async {
-    emit(const AssetsSyncing());
-
-    final result = await syncAssetsUseCase(NoParams());
-
-    result.fold(
-      (failure) => emit(FinanceError(failure.message)),
-      (_) {
-        emit(const AssetsSynced());
-        // Reload assets after syncing
-        add(const LoadAssetsEvent());
-      },
     );
   }
 
@@ -247,8 +183,8 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
   }
 
   @override
-  Future<void> close() {
-    _assetsSubscription?.cancel();
+  Future<void> close() async {
+    await _assetsSubscription?.cancel();
     return super.close();
   }
 }
