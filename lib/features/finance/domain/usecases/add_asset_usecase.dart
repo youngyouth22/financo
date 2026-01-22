@@ -18,6 +18,7 @@ class AddAssetUseCase implements UseCase<Asset, AddAssetParams> {
     return await repository.addAsset(
       name: params.name,
       type: params.type,
+      assetGroup: params.assetGroup,
       provider: params.provider,
       assetAddressOrId: params.assetAddressOrId,
       initialBalance: params.initialBalance,
@@ -33,6 +34,9 @@ class AddAssetParams extends Equatable {
   /// Type of asset (crypto or bank)
   final AssetType type;
 
+  /// Asset group for categorization
+  final AssetGroup assetGroup;
+
   /// Provider (moralis or plaid)
   final AssetProvider provider;
 
@@ -45,6 +49,7 @@ class AddAssetParams extends Equatable {
   const AddAssetParams({
     required this.name,
     required this.type,
+    required this.assetGroup,
     required this.provider,
     required this.assetAddressOrId,
     this.initialBalance = 0.0,
@@ -54,6 +59,7 @@ class AddAssetParams extends Equatable {
   List<Object?> get props => [
         name,
         type,
+        assetGroup,
         provider,
         assetAddressOrId,
         initialBalance,

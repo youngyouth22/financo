@@ -47,6 +47,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
   Future<Either<Failure, Asset>> addAsset({
     required String name,
     required AssetType type,
+    required AssetGroup assetGroup,
     required AssetProvider provider,
     required String assetAddressOrId,
     double initialBalance = 0.0,
@@ -64,6 +65,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
         userId: userId,
         name: name,
         type: type,
+        assetGroup: assetGroup,
         provider: provider,
         balanceUsd: initialBalance,
         assetAddressOrId: assetAddressOrId.toLowerCase(),

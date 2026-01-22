@@ -28,6 +28,7 @@ abstract class FinanceRepository {
   Future<Either<Failure, Asset>> addAsset({
     required String name,
     required AssetType type,
+    required AssetGroup assetGroup,
     required AssetProvider provider,
     required String assetAddressOrId,
     double initialBalance = 0.0,

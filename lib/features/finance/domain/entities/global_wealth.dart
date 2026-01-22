@@ -27,12 +27,17 @@ class GlobalWealth extends Equatable {
 
   /// Get all crypto assets
   List<Asset> get cryptoAssets {
-    return assets.where((asset) => asset.isCrypto).toList();
+    return assets.where((asset) => asset.assetGroup == AssetGroup.crypto).toList();
   }
 
-  /// Get all bank assets
-  List<Asset> get bankAssets {
-    return assets.where((asset) => asset.isBank).toList();
+  /// Get all stocks and ETFs assets
+  List<Asset> get stocksAssets {
+    return assets.where((asset) => asset.assetGroup == AssetGroup.stocks).toList();
+  }
+
+  /// Get all cash and bank assets
+  List<Asset> get cashAssets {
+    return assets.where((asset) => asset.assetGroup == AssetGroup.cash).toList();
   }
 
   /// Calculate total crypto balance
@@ -40,17 +45,26 @@ class GlobalWealth extends Equatable {
     return cryptoAssets.fold(0.0, (sum, asset) => sum + asset.balanceUsd);
   }
 
-  /// Calculate total bank balance
-  double get totalBankBalance {
-    return bankAssets.fold(0.0, (sum, asset) => sum + asset.balanceUsd);
+  /// Calculate total stocks balance
+  double get totalStocksBalance {
+    return stocksAssets.fold(0.0, (sum, asset) => sum + asset.balanceUsd);
+  }
+
+  /// Calculate total cash balance
+  double get totalCashBalance {
+    return cashAssets.fold(0.0, (sum, asset) => sum + asset.balanceUsd);
   }
 
   /// Get formatted crypto balance
   String get formattedCryptoBalance =>
       '\$${totalCryptoBalance.toStringAsFixed(2)}';
 
-  /// Get formatted bank balance
-  String get formattedBankBalance => '\$${totalBankBalance.toStringAsFixed(2)}';
+  /// Get formatted stocks balance
+  String get formattedStocksBalance =>
+      '\$${totalStocksBalance.toStringAsFixed(2)}';
+
+  /// Get formatted cash balance
+  String get formattedCashBalance => '\$${totalCashBalance.toStringAsFixed(2)}';
 
   /// Calculate percentage of wealth in crypto
   double get cryptoPercentage {
@@ -58,17 +72,26 @@ class GlobalWealth extends Equatable {
     return (totalCryptoBalance / netWorth) * 100;
   }
 
-  /// Calculate percentage of wealth in bank accounts
-  double get bankPercentage {
+  /// Calculate percentage of wealth in stocks
+  double get stocksPercentage {
     if (netWorth == 0) return 0.0;
-    return (totalBankBalance / netWorth) * 100;
+    return (totalStocksBalance / netWorth) * 100;
+  }
+
+  /// Calculate percentage of wealth in cash
+  double get cashPercentage {
+    if (netWorth == 0) return 0.0;
+    return (totalCashBalance / netWorth) * 100;
   }
 
   /// Get number of crypto assets
   int get cryptoAssetCount => cryptoAssets.length;
 
-  /// Get number of bank assets
-  int get bankAssetCount => bankAssets.length;
+  /// Get number of stocks assets
+  int get stocksAssetCount => stocksAssets.length;
+
+  /// Get number of cash assets
+  int get cashAssetCount => cashAssets.length;
 
   /// Get total number of assets
   int get totalAssetCount => assets.length;
@@ -79,8 +102,11 @@ class GlobalWealth extends Equatable {
   /// Check if user has crypto assets
   bool get hasCryptoAssets => cryptoAssets.isNotEmpty;
 
-  /// Check if user has bank assets
-  bool get hasBankAssets => bankAssets.isNotEmpty;
+  /// Check if user has stocks assets
+  bool get hasStocksAssets => stocksAssets.isNotEmpty;
+
+  /// Check if user has cash assets
+  bool get hasCashAssets => cashAssets.isNotEmpty;
 
   /// Check if any asset data is stale
   bool get hasStaleData {
