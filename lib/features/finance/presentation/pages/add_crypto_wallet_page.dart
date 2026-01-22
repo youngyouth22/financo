@@ -43,27 +43,27 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
       create: (context) => sl<FinanceBloc>(),
       child: BlocListener<FinanceBloc, FinanceState>(
         listener: (context, state) {
-        //   if (state is AssetAdded) {
-        //     // Success - go back
-        //     Navigator.of(context).pop(true);
-        //     ScaffoldMessenger.of(context).showSnackBar(
-        //       SnackBar(
-        //         content: const Text('Crypto wallet added successfully'),
-        //         backgroundColor: AppColors.success,
-        //       ),
-        //     );
-        //   } else if (state is FinanceError) {
-        //     // Error
-        //     setState(() => _isLoading = false);
-        //     ScaffoldMessenger.of(context).showSnackBar(
-        //       SnackBar(
-        //         content: Text(state.message),
-        //         backgroundColor: AppColors.error,
-        //       ),
-        //     );
-        //   } else if (state is FinanceLoading) {
-        //     setState(() => _isLoading = true);
-        //   }
+          if (state is AssetAdded) {
+            // Success - go back
+            Navigator.of(context).pop(true);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Crypto wallet added successfully'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+          } else if (state is FinanceError) {
+            // Error
+            setState(() => _isLoading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          } else if (state is FinanceLoading) {
+            setState(() => _isLoading = true);
+          }
         },
         child: Scaffold(
           backgroundColor: AppColors.background,
@@ -329,17 +329,13 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
       final name = _nameController.text.trim();
       final address = _addressController.text.trim().toLowerCase();
 
-      // Add asset via BLoC
-      // context.read<FinanceBloc>().add(
-      //   AddAssetEvent(
-      //     name: name,
-      //     type: AssetType.crypto,
-      //    assetGroup: AssetGroup.crypto,
-      //     provider: AssetProvider.moralis,
-      //     assetAddressOrId: address,
-      //     initialBalance: 0.0, // Will be fetched by Moralis
-      //   ),
-      // );
+      // Add crypto wallet via BLoC
+      context.read<FinanceBloc>().add(
+        AddCryptoWalletEvent(
+          name: name,
+          walletAddress: address,
+        ),
+      );
     }
   }
 }

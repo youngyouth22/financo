@@ -1,3 +1,4 @@
+import 'package:financo/features/finance/presentation/pages/add_crypto_wallet_page.dart';
 import 'package:financo/features/home/presentation/pages/dashboard_page.dart';
 import 'package:financo/features/home/presentation/widgets/custom_floating_button.dart';
 import 'package:financo/features/home/presentation/widgets/custom_nav_bar.dart';
@@ -45,7 +46,13 @@ class _AppShellPageState extends State<AppShellPage> {
     return Scaffold(
       extendBody: true,
       floatingActionButton: CustomFloatingButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const AddCryptoWalletPage(),
+            ),
+          );
+        },
         isMenuOpen: false,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
