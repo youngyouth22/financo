@@ -23,6 +23,7 @@ abstract class FinanceRemoteDataSource {
 
   // --- WEALTH & HISTORY ---
   Future<double> calculateNetWorth();
+  
   Future<List<WealthSnapshotModel>> getWealthHistory({int? limit});
 }
 
