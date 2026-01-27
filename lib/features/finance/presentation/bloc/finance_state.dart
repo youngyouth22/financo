@@ -1,9 +1,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
-import 'package:financo/features/finance/domain/entities/global_wealth.dart';
+import 'package:financo/features/finance/domain/entities/networth_response.dart';
 import 'package:financo/features/finance/domain/entities/wealth_snapshot.dart';
 
-/// Base class for all finance-related states
+/// Base class for all Finance states
 abstract class FinanceState extends Equatable {
   const FinanceState();
 
@@ -11,102 +11,17 @@ abstract class FinanceState extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Initial state before any data is loaded
+/// Initial state
 class FinanceInitial extends FinanceState {
   const FinanceInitial();
 }
 
-/// State when data is being loaded
+/// Loading state
 class FinanceLoading extends FinanceState {
   const FinanceLoading();
 }
 
-/// State when global wealth data is successfully loaded
-class GlobalWealthLoaded extends FinanceState {
-  final GlobalWealth globalWealth;
-  final bool isWatching;
-
-  const GlobalWealthLoaded({
-    required this.globalWealth,
-    this.isWatching = false,
-  });
-
-  @override
-  List<Object?> get props => [globalWealth, isWatching];
-
-  /// Create a copy with updated fields
-  GlobalWealthLoaded copyWith({GlobalWealth? globalWealth, bool? isWatching}) {
-    return GlobalWealthLoaded(
-      globalWealth: globalWealth ?? this.globalWealth,
-      isWatching: isWatching ?? this.isWatching,
-    );
-  }
-}
-
-/// State when assets are successfully loaded
-class AssetsLoaded extends FinanceState {
-  final List<Asset> assets;
-  final bool isWatching;
-
-  const AssetsLoaded({required this.assets, this.isWatching = false});
-
-  @override
-  List<Object?> get props => [assets, isWatching];
-
-  /// Create a copy with updated fields
-  AssetsLoaded copyWith({List<Asset>? assets, bool? isWatching}) {
-    return AssetsLoaded(
-      assets: assets ?? this.assets,
-      isWatching: isWatching ?? this.isWatching,
-    );
-  }
-}
-
-/// State when wealth history is successfully loaded
-class WealthHistoryLoaded extends FinanceState {
-  final List<WealthSnapshot> snapshots;
-
-  const WealthHistoryLoaded(this.snapshots);
-
-  @override
-  List<Object?> get props => [snapshots];
-}
-
-/// State when net worth is calculated
-class NetWorthCalculated extends FinanceState {
-  final double netWorth;
-
-  const NetWorthCalculated(this.netWorth);
-
-  @override
-  List<Object?> get props => [netWorth];
-}
-
-/// State when an asset is successfully deleted
-class AssetDeleted extends FinanceState {
-  final String assetId;
-
-  const AssetDeleted(this.assetId);
-
-  @override
-  List<Object?> get props => [assetId];
-}
-
-/// State when a crypto wallet is successfully added
-class CryptoWalletAdded extends FinanceState {
-  final String walletAddress;
-  final String walletName;
-
-  const CryptoWalletAdded({
-    required this.walletAddress,
-    required this.walletName,
-  });
-
-  @override
-  List<Object?> get props => [walletAddress, walletName];
-}
-
-/// State when an error occurs
+/// Error state
 class FinanceError extends FinanceState {
   final String message;
 
@@ -116,13 +31,175 @@ class FinanceError extends FinanceState {
   List<Object?> get props => [message];
 }
 
-/// State when assets are updated in real-time
-class AssetsRealTimeUpdated extends FinanceState {
-  final List<Asset> assets;
-  final DateTime updatedAt;
+// ===========================================================================
+// NETWORTH & DASHBOARD
+// ===========================================================================
 
-  const AssetsRealTimeUpdated({required this.assets, required this.updatedAt});
+/// State when networth is loaded
+class NetworthLoaded extends FinanceState {
+  final NetworthResponse networth;
+
+  const NetworthLoaded(this.networth);
 
   @override
-  List<Object?> get props => [assets, updatedAt];
+  List<Object?> get props => [networth];
+}
+
+/// State when daily change is loaded
+class DailyChangeLoaded extends FinanceState {
+  final Map<String, dynamic> dailyChange;
+
+  const DailyChangeLoaded(this.dailyChange);
+
+  @override
+  List<Object?> get props => [dailyChange];
+}
+
+// ===========================================================================
+// ASSETS
+// ===========================================================================
+
+/// State when assets are loaded
+class AssetsLoaded extends FinanceState {
+  final List<Asset> assets;
+
+  const AssetsLoaded(this.assets);
+
+  @override
+  List<Object?> get props => [assets];
+}
+
+/// State when assets are being watched (real-time)
+class AssetsWatching extends FinanceState {
+  final List<Asset> assets;
+
+  const AssetsWatching(this.assets);
+
+  @override
+  List<Object?> get props => [assets];
+}
+
+/// State when an asset is deleted
+class AssetDeleted extends FinanceState {
+  const AssetDeleted();
+}
+
+/// State when asset quantity is updated
+class AssetQuantityUpdated extends FinanceState {
+  const AssetQuantityUpdated();
+}
+
+// ===========================================================================
+// CRYPTO (MORALIS)
+// ===========================================================================
+
+/// State when crypto wallet is added
+class CryptoWalletAdded extends FinanceState {
+  const CryptoWalletAdded();
+}
+
+/// State when crypto wallet is removed
+class CryptoWalletRemoved extends FinanceState {
+  const CryptoWalletRemoved();
+}
+
+// ===========================================================================
+// STOCKS (FMP)
+// ===========================================================================
+
+/// State when stock search results are loaded
+class StockSearchResultsLoaded extends FinanceState {
+  final List<dynamic> results;
+
+  const StockSearchResultsLoaded(this.results);
+
+  @override
+  List<Object?> get props => [results];
+}
+
+/// State when stock is added
+class StockAdded extends FinanceState {
+  final Map<String, dynamic> result;
+
+  const StockAdded(this.result);
+
+  @override
+  List<Object?> get props => [result];
+}
+
+/// State when stock prices are updated
+class StockPricesUpdated extends FinanceState {
+  final Map<String, dynamic> result;
+
+  const StockPricesUpdated(this.result);
+
+  @override
+  List<Object?> get props => [result];
+}
+
+/// State when stock is removed
+class StockRemoved extends FinanceState {
+  const StockRemoved();
+}
+
+// ===========================================================================
+// BANKING (PLAID)
+// ===========================================================================
+
+/// State when Plaid link token is loaded
+class PlaidLinkTokenLoaded extends FinanceState {
+  final Map<String, dynamic> tokenData;
+
+  const PlaidLinkTokenLoaded(this.tokenData);
+
+  @override
+  List<Object?> get props => [tokenData];
+}
+
+/// State when Plaid token is exchanged
+class PlaidTokenExchanged extends FinanceState {
+  final Map<String, dynamic> result;
+
+  const PlaidTokenExchanged(this.result);
+
+  @override
+  List<Object?> get props => [result];
+}
+
+/// State when bank accounts are synced
+class BankAccountsSynced extends FinanceState {
+  final Map<String, dynamic> result;
+
+  const BankAccountsSynced(this.result);
+
+  @override
+  List<Object?> get props => [result];
+}
+
+// ===========================================================================
+// WEALTH HISTORY
+// ===========================================================================
+
+/// State when wealth history is loaded
+class WealthHistoryLoaded extends FinanceState {
+  final List<WealthSnapshot> snapshots;
+
+  const WealthHistoryLoaded(this.snapshots);
+
+  @override
+  List<Object?> get props => [snapshots];
+}
+
+// ===========================================================================
+// PORTFOLIO INSIGHTS
+// ===========================================================================
+
+/// State when portfolio insights are loaded
+class PortfolioInsightsLoaded extends FinanceState {
+  final Map<String, dynamic> insights;
+
+  const PortfolioInsightsLoaded(this.insights);
+
+  @override
+  List<Object?> get props => [insights];
 }

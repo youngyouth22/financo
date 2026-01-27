@@ -1,191 +1,303 @@
 import 'dart:async';
-import 'package:bloc/bloc.dart';
-import 'package:financo/core/usecase/usecase.dart';
-import 'package:financo/features/finance/domain/repositories/finance_repository.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:financo/core/usecases/usecase.dart';
+import 'package:financo/features/finance/domain/usecases/add_crypto_wallet_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/add_stock_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/delete_asset_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/exchange_plaid_token_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_assets_usecase.dart';
-import 'package:financo/features/finance/domain/usecases/get_global_wealth_usecase.dart';
-import 'package:financo/features/finance/domain/usecases/get_net_worth_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/get_daily_change_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/get_networth_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/get_plaid_link_token_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_wealth_history_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/search_stocks_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/update_asset_quantity_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/watch_assets_usecase.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_state.dart';
 
-/// BLoC for managing finance-related state and business logic
+/// BLoC for managing finance-related business logic
 ///
 /// Handles all finance operations including:
-/// - Loading and watching assets
-/// - Real-time updates via Supabase
-/// - Adding crypto wallets
-/// - Deleting assets
-/// - Calculating net worth
-/// - Loading wealth history
+/// - Networth and dashboard data
+/// - Assets CRUD operations
+/// - Real-time asset updates
+/// - Crypto wallet management (Moralis)
+/// - Stock management (FMP)
+/// - Bank account management (Plaid)
+/// - Wealth history tracking
 class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
-  final FinanceRepository repository;
-  final GetGlobalWealthUseCase getGlobalWealthUseCase;
+  final GetNetworthUseCase getNetworthUseCase;
+  final GetDailyChangeUseCase getDailyChangeUseCase;
   final GetAssetsUseCase getAssetsUseCase;
   final WatchAssetsUseCase watchAssetsUseCase;
   final DeleteAssetUseCase deleteAssetUseCase;
-  final GetNetWorthUseCase getNetWorthUseCase;
+  final UpdateAssetQuantityUseCase updateAssetQuantityUseCase;
+  final AddCryptoWalletUseCase addCryptoWalletUseCase;
+  final SearchStocksUseCase searchStocksUseCase;
+  final AddStockUseCase addStockUseCase;
+  final GetPlaidLinkTokenUseCase getPlaidLinkTokenUseCase;
+  final ExchangePlaidTokenUseCase exchangePlaidTokenUseCase;
   final GetWealthHistoryUseCase getWealthHistoryUseCase;
 
   StreamSubscription? _assetsSubscription;
 
   FinanceBloc({
-    required this.repository,
-    required this.getGlobalWealthUseCase,
+    required this.getNetworthUseCase,
+    required this.getDailyChangeUseCase,
     required this.getAssetsUseCase,
     required this.watchAssetsUseCase,
     required this.deleteAssetUseCase,
-    required this.getNetWorthUseCase,
+    required this.updateAssetQuantityUseCase,
+    required this.addCryptoWalletUseCase,
+    required this.searchStocksUseCase,
+    required this.addStockUseCase,
+    required this.getPlaidLinkTokenUseCase,
+    required this.exchangePlaidTokenUseCase,
     required this.getWealthHistoryUseCase,
   }) : super(const FinanceInitial()) {
-    on<LoadGlobalWealthEvent>(_onLoadGlobalWealth);
+    on<LoadNetworthEvent>(_onLoadNetworth);
+    on<LoadDailyChangeEvent>(_onLoadDailyChange);
     on<LoadAssetsEvent>(_onLoadAssets);
     on<WatchAssetsEvent>(_onWatchAssets);
     on<StopWatchingAssetsEvent>(_onStopWatchingAssets);
-    on<AssetsUpdatedEvent>(_onAssetsUpdated);
-    on<AddCryptoWalletEvent>(_onAddCryptoWallet);
     on<DeleteAssetEvent>(_onDeleteAsset);
+    on<UpdateAssetQuantityEvent>(_onUpdateAssetQuantity);
+    on<AddCryptoWalletEvent>(_onAddCryptoWallet);
+    on<SearchStocksEvent>(_onSearchStocks);
+    on<AddStockEvent>(_onAddStock);
+    on<GetPlaidLinkTokenEvent>(_onGetPlaidLinkToken);
+    on<ExchangePlaidTokenEvent>(_onExchangePlaidToken);
     on<LoadWealthHistoryEvent>(_onLoadWealthHistory);
-    on<CalculateNetWorthEvent>(_onCalculateNetWorth);
   }
 
-  /// Handle LoadGlobalWealthEvent
-  Future<void> _onLoadGlobalWealth(
-    LoadGlobalWealthEvent event,
+  // ===========================================================================
+  // NETWORTH & DASHBOARD
+  // ===========================================================================
+
+  Future<void> _onLoadNetworth(
+    LoadNetworthEvent event,
     Emitter<FinanceState> emit,
   ) async {
     emit(const FinanceLoading());
 
-    final result = await getGlobalWealthUseCase(NoParams());
+    final result = await getNetworthUseCase(forceRefresh: event.forceRefresh);
 
     result.fold(
       (failure) => emit(FinanceError(failure.message)),
-      (globalWealth) => emit(GlobalWealthLoaded(globalWealth: globalWealth)),
+      (networth) => emit(NetworthLoaded(networth)),
     );
   }
 
-  /// Handle LoadAssetsEvent
+  Future<void> _onLoadDailyChange(
+    LoadDailyChangeEvent event,
+    Emitter<FinanceState> emit,
+  ) async {
+    emit(const FinanceLoading());
+
+    final result = await getDailyChangeUseCase(const NoParams());
+
+    result.fold(
+      (failure) => emit(FinanceError(failure.message)),
+      (dailyChange) => emit(DailyChangeLoaded(dailyChange)),
+    );
+  }
+
+  // ===========================================================================
+  // ASSETS
+  // ===========================================================================
+
   Future<void> _onLoadAssets(
     LoadAssetsEvent event,
     Emitter<FinanceState> emit,
   ) async {
     emit(const FinanceLoading());
 
-    final result = await getAssetsUseCase(NoParams());
+    final result = await getAssetsUseCase(const NoParams());
 
     result.fold(
       (failure) => emit(FinanceError(failure.message)),
-      (assets) => emit(AssetsLoaded(assets: assets)),
+      (assets) => emit(AssetsLoaded(assets)),
     );
   }
 
-  /// Handle WatchAssetsEvent - Start real-time subscription
   Future<void> _onWatchAssets(
     WatchAssetsEvent event,
     Emitter<FinanceState> emit,
   ) async {
-    // Cancel existing subscription if any
     await _assetsSubscription?.cancel();
 
-    // Start watching assets
-    _assetsSubscription = watchAssetsUseCase().listen((result) {
-      result.fold(
-        (failure) => add(const LoadAssetsEvent()), // Fallback to regular load
-        (assets) => add(AssetsUpdatedEvent(assets)),
-      );
-    });
+    final stream = watchAssetsUseCase(const NoParams());
 
-    // Update state to indicate watching is active
-    if (state is AssetsLoaded) {
-      emit((state as AssetsLoaded).copyWith(isWatching: true));
-    } else if (state is GlobalWealthLoaded) {
-      emit((state as GlobalWealthLoaded).copyWith(isWatching: true));
-    }
+    _assetsSubscription = stream.listen(
+      (result) {
+        result.fold(
+          (failure) => add(const LoadAssetsEvent()), // Fallback to load
+          (assets) => emit(AssetsWatching(assets)),
+        );
+      },
+    );
   }
 
-  /// Handle StopWatchingAssetsEvent
   Future<void> _onStopWatchingAssets(
     StopWatchingAssetsEvent event,
     Emitter<FinanceState> emit,
   ) async {
     await _assetsSubscription?.cancel();
     _assetsSubscription = null;
-
-    // Update state to indicate watching is inactive
-    if (state is AssetsLoaded) {
-      emit((state as AssetsLoaded).copyWith(isWatching: false));
-    } else if (state is GlobalWealthLoaded) {
-      emit((state as GlobalWealthLoaded).copyWith(isWatching: false));
-    }
   }
 
-  /// Handle AssetsUpdatedEvent - Real-time update from stream
-  Future<void> _onAssetsUpdated(
-    AssetsUpdatedEvent event,
-    Emitter<FinanceState> emit,
-  ) async {
-    emit(
-      AssetsRealTimeUpdated(assets: event.assets, updatedAt: DateTime.now()),
-    );
-
-    // Also update the main state
-    if (state is AssetsLoaded) {
-      emit((state as AssetsLoaded).copyWith(assets: event.assets));
-    } else {
-      emit(AssetsLoaded(assets: event.assets, isWatching: true));
-    }
-  }
-
-  /// Handle AddCryptoWalletEvent
-  Future<void> _onAddCryptoWallet(
-    AddCryptoWalletEvent event,
-    Emitter<FinanceState> emit,
-  ) async {
-    emit(const FinanceLoading());
-
-    final result = await repository.addCryptoWallet(event.walletAddress);
-
-    result.fold((failure) => emit(FinanceError(failure.message)), (_) {
-      emit(
-        CryptoWalletAdded(
-          walletAddress: event.walletAddress,
-          walletName: event.name,
-        ),
-      );
-      // Reload assets after adding
-      add(const LoadAssetsEvent());
-    });
-  }
-
-  /// Handle DeleteAssetEvent
   Future<void> _onDeleteAsset(
     DeleteAssetEvent event,
     Emitter<FinanceState> emit,
   ) async {
     emit(const FinanceLoading());
 
-    final params = DeleteAssetParams(assetId: event.assetId);
-    final result = await deleteAssetUseCase(params);
+    final result = await deleteAssetUseCase(DeleteAssetParams(assetId: event.assetId));
 
-    result.fold((failure) => emit(FinanceError(failure.message)), (_) {
-      emit(AssetDeleted(event.assetId));
-      // Reload assets after deleting
-      add(const LoadAssetsEvent());
-    });
+    result.fold(
+      (failure) => emit(FinanceError(failure.message)),
+      (_) {
+        emit(const AssetDeleted());
+        add(const LoadAssetsEvent()); // Reload assets after deletion
+      },
+    );
   }
 
-  /// Handle LoadWealthHistoryEvent
+  Future<void> _onUpdateAssetQuantity(
+    UpdateAssetQuantityEvent event,
+    Emitter<FinanceState> emit,
+  ) async {
+    emit(const FinanceLoading());
+
+    final result = await updateAssetQuantityUseCase(
+      UpdateAssetQuantityParams(
+        assetId: event.assetId,
+        newQuantity: event.newQuantity,
+      ),
+    );
+
+    result.fold(
+      (failure) => emit(FinanceError(failure.message)),
+      (_) {
+        emit(const AssetQuantityUpdated());
+        add(const LoadAssetsEvent()); // Reload assets after update
+      },
+    );
+  }
+
+  // ===========================================================================
+  // CRYPTO (MORALIS)
+  // ===========================================================================
+
+  Future<void> _onAddCryptoWallet(
+    AddCryptoWalletEvent event,
+    Emitter<FinanceState> emit,
+  ) async {
+    emit(const FinanceLoading());
+
+    final result = await addCryptoWalletUseCase(
+      AddCryptoWalletParams(walletAddress: event.walletAddress),
+    );
+
+    result.fold(
+      (failure) => emit(FinanceError(failure.message)),
+      (_) {
+        emit(const CryptoWalletAdded());
+        add(const LoadNetworthEvent()); // Reload networth after adding wallet
+      },
+    );
+  }
+
+  // ===========================================================================
+  // STOCKS (FMP)
+  // ===========================================================================
+
+  Future<void> _onSearchStocks(
+    SearchStocksEvent event,
+    Emitter<FinanceState> emit,
+  ) async {
+    emit(const FinanceLoading());
+
+    final result = await searchStocksUseCase(
+      SearchStocksParams(query: event.query),
+    );
+
+    result.fold(
+      (failure) => emit(FinanceError(failure.message)),
+      (results) => emit(StockSearchResultsLoaded(results)),
+    );
+  }
+
+  Future<void> _onAddStock(
+    AddStockEvent event,
+    Emitter<FinanceState> emit,
+  ) async {
+    emit(const FinanceLoading());
+
+    final result = await addStockUseCase(
+      AddStockParams(symbol: event.symbol, quantity: event.quantity),
+    );
+
+    result.fold(
+      (failure) => emit(FinanceError(failure.message)),
+      (result) {
+        emit(StockAdded(result));
+        add(const LoadNetworthEvent()); // Reload networth after adding stock
+      },
+    );
+  }
+
+  // ===========================================================================
+  // BANKING (PLAID)
+  // ===========================================================================
+
+  Future<void> _onGetPlaidLinkToken(
+    GetPlaidLinkTokenEvent event,
+    Emitter<FinanceState> emit,
+  ) async {
+    emit(const FinanceLoading());
+
+    final result = await getPlaidLinkTokenUseCase(const NoParams());
+
+    result.fold(
+      (failure) => emit(FinanceError(failure.message)),
+      (tokenData) => emit(PlaidLinkTokenLoaded(tokenData)),
+    );
+  }
+
+  Future<void> _onExchangePlaidToken(
+    ExchangePlaidTokenEvent event,
+    Emitter<FinanceState> emit,
+  ) async {
+    emit(const FinanceLoading());
+
+    final result = await exchangePlaidTokenUseCase(
+      ExchangePlaidTokenParams(publicToken: event.publicToken),
+    );
+
+    result.fold(
+      (failure) => emit(FinanceError(failure.message)),
+      (result) {
+        emit(PlaidTokenExchanged(result));
+        add(const LoadNetworthEvent()); // Reload networth after connecting bank
+      },
+    );
+  }
+
+  // ===========================================================================
+  // WEALTH HISTORY
+  // ===========================================================================
+
   Future<void> _onLoadWealthHistory(
     LoadWealthHistoryEvent event,
     Emitter<FinanceState> emit,
   ) async {
     emit(const FinanceLoading());
 
-    final params = GetWealthHistoryParams(limit: event.limit);
-
-    final result = await getWealthHistoryUseCase(params);
+    final result = await getWealthHistoryUseCase(
+      GetWealthHistoryParams(limit: event.limit),
+    );
 
     result.fold(
       (failure) => emit(FinanceError(failure.message)),
@@ -193,24 +305,9 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     );
   }
 
-  /// Handle CalculateNetWorthEvent
-  Future<void> _onCalculateNetWorth(
-    CalculateNetWorthEvent event,
-    Emitter<FinanceState> emit,
-  ) async {
-    emit(const FinanceLoading());
-
-    final result = await getNetWorthUseCase(NoParams());
-
-    result.fold(
-      (failure) => emit(FinanceError(failure.message)),
-      (netWorth) => emit(NetWorthCalculated(netWorth)),
-    );
-  }
-
   @override
-  Future<void> close() async {
-    await _assetsSubscription?.cancel();
+  Future<void> close() {
+    _assetsSubscription?.cancel();
     return super.close();
   }
 }
