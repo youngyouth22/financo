@@ -92,6 +92,20 @@ class AssetDeleted extends FinanceState {
   List<Object?> get props => [assetId];
 }
 
+/// State when a crypto wallet is successfully added
+class CryptoWalletAdded extends FinanceState {
+  final String walletAddress;
+  final String walletName;
+
+  const CryptoWalletAdded({
+    required this.walletAddress,
+    required this.walletName,
+  });
+
+  @override
+  List<Object?> get props => [walletAddress, walletName];
+}
+
 /// State when an error occurs
 class FinanceError extends FinanceState {
   final String message;

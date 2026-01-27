@@ -1,8 +1,9 @@
 import 'dart:math' show Random;
 
 import 'package:financo/common/app_colors.dart';
+import 'package:financo/common/app_spacing.dart';
+import 'package:financo/common/app_typography.dart';
 import 'package:financo/common/common_widgets/custom_arc_180_painter.dart';
-import 'package:financo/common/common_widgets/custom_arc_painter.dart';
 import 'package:financo/common/common_widgets/segment_button.dart';
 import 'package:financo/common/common_widgets/status_button.dart';
 import 'package:financo/common/image_resources.dart';
@@ -61,14 +62,85 @@ class _DashboardPageState extends State<DashboardPage> {
   Random random = Random();
   late DateTime selectedDateNotAppBBar;
 
+  Widget _buildAppBar() {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          SvgPicture.asset(
+            ImageResources.financoLogo,
+            colorFilter: ColorFilter.mode(AppColors.white, BlendMode.srcIn),
+            height: 40,
+          ),
+          Expanded(
+            child: Center(
+              child: Text(
+                'Financo',
+                style: AppTypography.headline5Bold.copyWith(
+                  color: AppColors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTest() {
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        spacing: AppSpacing.five,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Allocation',
+                    style: AppTypography.headline1Regular.copyWith(
+                      color: AppColors.white,
+                    ),
+                  ),
+                ),
+                Text(
+                  '100%',
+                  style: AppTypography.headline1Regular.copyWith(
+                    color: AppColors.gray40,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(
+            width: double.infinity,
+            height: 8,
+            child: Row(
+              children: [
+                Expanded(flex: 6, child: Container(color: AppColors.accent)),
+                Expanded(flex: 2, child: Container(color: AppColors.primary10)),
+                Expanded(flex: 1, child: Container(color: AppColors.accentS)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    var media = MediaQuery.sizeOf(context);
     return SingleChildScrollView(
       child: Column(
         children: [
           Container(
-            height: media.width * 1.1,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             decoration: BoxDecoration(
               color: AppColors.gray70.withValues(alpha: 0.5),
               borderRadius: const BorderRadius.only(
@@ -76,136 +148,98 @@ class _DashboardPageState extends State<DashboardPage> {
                 bottomRight: Radius.circular(25),
               ),
             ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Stack(
-                  alignment: Alignment.topCenter,
-                  children: [
-                    Container(
-                      padding: EdgeInsets.only(bottom: media.width * 0.05),
-                      width: media.width * 0.72,
-                      height: media.width * 0.72,
-                      child: NetWorthGauge(
-                        segments: arcs,
-                        width: 18,
-                        bgWidth: 12,
-                        space: 8,
-                        isSequential: false,
+            child: SafeArea(
+              top: true,
+              bottom: false,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildAppBar(),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Total networth',
+                    style: AppTypography.headline2Regular.copyWith(
+                      color: AppColors.gray40,
+                      letterSpacing: 2.4,
+                      fontFamily: 'JetBrainsMono',
+                    ),
+                  ),
+                  RichText(
+                    text: TextSpan(
+                      style: AppTypography.headline7Bold.copyWith(
+                        color: AppColors.gray30,
+                        height: 1.2,
+                        fontFamily: 'JetBrainsMono',
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: Row(
-                        children: [
-                          const Spacer(),
-                          IconButton(
-                            onPressed: () {},
-                            icon: SvgPicture.asset(
-                              ImageResources.setting,
-                              width: 25,
-                              height: 25,
-                              colorFilter: ColorFilter.mode(
-                                AppColors.gray30,
-                                BlendMode.srcIn,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(height: media.width * 0.05),
-                    Image.asset(
-                      ImageResources.placeHolderPng,
-                      width: media.width * 0.1,
-                      fit: BoxFit.contain,
-                    ),
-                    SizedBox(height: media.width * 0.07),
-                    Text(
-                      "\$1,235",
-                      style: TextStyle(
-                        color: AppColors.white,
-                        fontSize: 40,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(height: media.width * 0.055),
-                    Text(
-                      "This month bills",
-                      style: TextStyle(
-                        color: AppColors.gray40,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: media.width * 0.07),
-                    InkWell(
-                      onTap: () {},
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: AppColors.border.withValues(alpha: 0.15),
-                          ),
-                          color: AppColors.gray60.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          "See your budget",
-                          style: TextStyle(
+                      children: [
+                        const TextSpan(text: '\$ '),
+                        TextSpan(
+                          text: '1,235,123',
+                          style: AppTypography.headline7Bold.copyWith(
                             color: AppColors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
+                            height: 1,
+                            fontFamily: 'JetBrainsMono',
                           ),
                         ),
-                      ),
+                        TextSpan(
+                          text: '.85',
+                          style: AppTypography.headline6Bold.copyWith(
+                            color: AppColors.gray30,
+                            height: 1,
+                            fontFamily: 'JetBrainsMono',
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
+                  ),
+
+                  // Text(
+                  //   "\$1,235",
+                  //   style: AppTypography.headline7Bold.copyWith(
+                  //     color: AppColors.white,
+                  //     height: 1,
+                  //   ),
+                  // ),
+                  const SizedBox(height: 20),
+
+                  _buildTest(),
+
+                  const SizedBox(height: 20),
+
+                  Row(
                     children: [
-                      const Spacer(),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: StatusButton(
-                              title: "Active subs",
-                              value: "12",
-                              statusColor: AppColors.accent,
-                              onPressed: () {},
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: StatusButton(
-                              title: "Highest subs",
-                              value: "\$19.99",
-                              statusColor: AppColors.primary10,
-                              onPressed: () {},
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: StatusButton(
-                              title: "Lowest subs",
-                              value: "\$5.99",
-                              statusColor: AppColors.accentS,
-                              onPressed: () {},
-                            ),
-                          ),
-                        ],
+                      Expanded(
+                        child: StatusButton(
+                          title: "Active subs",
+                          value: "12",
+                          statusColor: AppColors.accent,
+                          onPressed: () {},
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: StatusButton(
+                          title: "Highest subs",
+                          value: "\$19.99",
+                          statusColor: AppColors.primary10,
+                          onPressed: () {},
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: StatusButton(
+                          title: "Lowest subs",
+                          value: "\$5.99",
+                          statusColor: AppColors.accentS,
+                          onPressed: () {},
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
           Container(

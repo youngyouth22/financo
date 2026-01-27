@@ -99,6 +99,7 @@ Future<void> initializeDependencies() async {
   // BLoC
   sl.registerFactory(
     () => FinanceBloc(
+      repository: sl(),
       getGlobalWealthUseCase: sl(),
       getAssetsUseCase: sl(),
       watchAssetsUseCase: sl(),

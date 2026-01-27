@@ -2,7 +2,6 @@ import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/common/common_widgets/primary_button.dart';
 import 'package:financo/di/injection_container.dart';
-import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_state.dart';
@@ -43,7 +42,7 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
       create: (context) => sl<FinanceBloc>(),
       child: BlocListener<FinanceBloc, FinanceState>(
         listener: (context, state) {
-          if (state is AssetAdded) {
+          if (state is CryptoWalletAdded) {
             // Success - go back
             Navigator.of(context).pop(true);
             ScaffoldMessenger.of(context).showSnackBar(
@@ -331,10 +330,7 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
 
       // Add crypto wallet via BLoC
       context.read<FinanceBloc>().add(
-        AddCryptoWalletEvent(
-          name: name,
-          walletAddress: address,
-        ),
+        AddCryptoWalletEvent(name: name, walletAddress: address),
       );
     }
   }

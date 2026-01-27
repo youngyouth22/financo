@@ -7,12 +7,13 @@ class StatusButton extends StatelessWidget {
   final Color statusColor;
 
   final VoidCallback onPressed;
-  const StatusButton(
-      {super.key,
-      required this.title,
-      required this.value,
-      required this.statusColor,
-      required this.onPressed});
+  const StatusButton({
+    super.key,
+    required this.title,
+    required this.value,
+    required this.statusColor,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -37,25 +38,24 @@ class StatusButton extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                      color: AppColors.gray40,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600),
+                    color: AppColors.gray40,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 Text(
                   value,
                   style: TextStyle(
-                      color: AppColors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600),
+                    color: AppColors.white,
+                    fontSize: 14,
+                    fontFamily: 'JetBrainsMono',
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
           ),
-          Container(
-            width: 60,
-            height: 1,
-            color: statusColor,
-          ),
+          Container(width: 60, height: 1, color: statusColor),
         ],
       ),
     );

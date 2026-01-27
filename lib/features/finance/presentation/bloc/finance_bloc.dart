@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:financo/core/usecase/usecase.dart';
+import 'package:financo/features/finance/domain/repositories/finance_repository.dart';
 import 'package:financo/features/finance/domain/usecases/delete_asset_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_assets_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_global_wealth_usecase.dart';
@@ -15,10 +16,12 @@ import 'package:financo/features/finance/presentation/bloc/finance_state.dart';
 /// Handles all finance operations including:
 /// - Loading and watching assets
 /// - Real-time updates via Supabase
+/// - Adding crypto wallets
 /// - Deleting assets
 /// - Calculating net worth
 /// - Loading wealth history
 class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
+  final FinanceRepository repository;
   final GetGlobalWealthUseCase getGlobalWealthUseCase;
   final GetAssetsUseCase getAssetsUseCase;
   final WatchAssetsUseCase watchAssetsUseCase;
@@ -29,6 +32,7 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
   StreamSubscription? _assetsSubscription;
 
   FinanceBloc({
+    required this.repository,
     required this.getGlobalWealthUseCase,
     required this.getAssetsUseCase,
     required this.watchAssetsUseCase,
@@ -41,6 +45,7 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     on<WatchAssetsEvent>(_onWatchAssets);
     on<StopWatchingAssetsEvent>(_onStopWatchingAssets);
     on<AssetsUpdatedEvent>(_onAssetsUpdated);
+    on<AddCryptoWalletEvent>(_onAddCryptoWallet);
     on<DeleteAssetEvent>(_onDeleteAsset);
     on<LoadWealthHistoryEvent>(_onLoadWealthHistory);
     on<CalculateNetWorthEvent>(_onCalculateNetWorth);
@@ -131,6 +136,27 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     } else {
       emit(AssetsLoaded(assets: event.assets, isWatching: true));
     }
+  }
+
+  /// Handle AddCryptoWalletEvent
+  Future<void> _onAddCryptoWallet(
+    AddCryptoWalletEvent event,
+    Emitter<FinanceState> emit,
+  ) async {
+    emit(const FinanceLoading());
+
+    final result = await repository.addCryptoWallet(event.walletAddress);
+
+    result.fold((failure) => emit(FinanceError(failure.message)), (_) {
+      emit(
+        CryptoWalletAdded(
+          walletAddress: event.walletAddress,
+          walletName: event.name,
+        ),
+      );
+      // Reload assets after adding
+      add(const LoadAssetsEvent());
+    });
   }
 
   /// Handle DeleteAssetEvent

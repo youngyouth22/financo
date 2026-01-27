@@ -49,6 +49,17 @@ class DeleteAssetEvent extends FinanceEvent {
   List<Object?> get props => [assetId];
 }
 
+/// Event to add a crypto wallet
+class AddCryptoWalletEvent extends FinanceEvent {
+  final String name;
+  final String walletAddress;
+
+  const AddCryptoWalletEvent({required this.name, required this.walletAddress});
+
+  @override
+  List<Object?> get props => [name, walletAddress];
+}
+
 /// Event to load wealth history
 class LoadWealthHistoryEvent extends FinanceEvent {
   final int? limit;

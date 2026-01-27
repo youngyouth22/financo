@@ -1,3 +1,4 @@
+import 'package:financo/features/assets/presentation/pages/assets_page.dart';
 import 'package:financo/features/finance/presentation/pages/add_crypto_wallet_page.dart';
 import 'package:financo/features/home/presentation/pages/dashboard_page.dart';
 import 'package:financo/features/home/presentation/widgets/custom_floating_button.dart';
@@ -16,7 +17,7 @@ class _AppShellPageState extends State<AppShellPage> {
   late PageController _controller;
   List<Widget> get _pages => [
     const DashboardPage(),
-    const Center(child: Text('Asset Page')),
+    const AssetsPage(),
     const Center(child: Text('Insight Page')),
     const Center(child: Text('Setting Page')),
   ];

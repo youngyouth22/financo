@@ -7,8 +7,11 @@ class SubScriptionHomeRow extends StatelessWidget {
   final Map sObj;
   final VoidCallback onPressed;
 
-  const SubScriptionHomeRow(
-      {super.key, required this.sObj, required this.onPressed});
+  const SubScriptionHomeRow({
+    super.key,
+    required this.sObj,
+    required this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,9 +24,7 @@ class SubScriptionHomeRow extends StatelessWidget {
           height: 64,
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            border: Border.all(
-              color: AppColors.border.withValues(alpha: 0.15),
-            ),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.15)),
             borderRadius: BorderRadius.circular(16),
           ),
           alignment: Alignment.center,
@@ -35,9 +36,7 @@ class SubScriptionHomeRow extends StatelessWidget {
                   SizedBox(
                     width: 40,
                     height: 40,
-                    child: Image.asset(
-                      ImageResources.placeHolderPng,
-                    ),
+                    child: Image.asset(ImageResources.placeHolderPng),
                   ),
                   Positioned(
                     bottom: 0,
@@ -46,19 +45,16 @@ class SubScriptionHomeRow extends StatelessWidget {
                       width: 16,
                       height: 16,
                       decoration: BoxDecoration(
-                          color: AppColors.success,
-                          border: Border.all(color: AppColors.gray, width: 2),
-                          borderRadius: BorderRadius.circular(50)),
-                      child: SvgPicture.asset(
-                        ImageResources.incomeIcon,
+                        color: AppColors.success,
+                        border: Border.all(color: AppColors.gray, width: 2),
+                        borderRadius: BorderRadius.circular(50),
                       ),
+                      child: SvgPicture.asset(ImageResources.incomeIcon),
                     ),
-                  )
+                  ),
                 ],
               ),
-              const SizedBox(
-                width: 8,
-              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,30 +62,32 @@ class SubScriptionHomeRow extends StatelessWidget {
                     Text(
                       sObj["name"],
                       style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600),
+                        color: AppColors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     Text(
                       '2 January 2022, 9:00',
                       style: TextStyle(
-                          color: AppColors.gray50,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400),
+                        color: AppColors.gray50,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(
-                width: 8,
-              ),
+              const SizedBox(width: 8),
               Text(
                 "+ \$${sObj["price"]}",
                 style: TextStyle(
-                    color: AppColors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600),
-              )
+                  color: AppColors.white,
+                  fontSize: 14,
+                  fontFamily: 'JetBrainsMono',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
         ),

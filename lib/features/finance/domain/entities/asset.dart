@@ -1,78 +1,94 @@
+// features/finance/domain/entities/asset.dart
 import 'package:equatable/equatable.dart';
 
-/// Represents a financial asset (crypto wallet or bank account)
-///
-/// This entity is part of the domain layer and contains only business logic,
-/// with no dependencies on external frameworks or data sources.
+enum AssetType {
+  crypto,
+  stock,
+  cash,
+  investment,
+  realEstate,
+  commodity,
+  liability,
+  other,
+}
+
+enum AssetProvider {
+  moralis,
+  fmp,
+  plaid,
+  manual,
+}
+
+enum AssetStatus {
+  active,
+  inactive,
+  pending,
+}
+
 class Asset extends Equatable {
-  /// Unique identifier for the asset
   final String id;
-
-  /// ID of the user who owns this asset
   final String userId;
-
-  /// Display name of the asset (e.g., 'Ethereum Wallet', 'Chase Checking')
   final String name;
-
-  /// Type of asset: 'crypto' or 'bank'
   final AssetType type;
-
-  /// Asset group for categorization: 'crypto', 'stocks', or 'cash'
-  final AssetGroup assetGroup;
-
-  /// Provider of the asset data: 'moralis' or 'plaid'
   final AssetProvider provider;
-
-  /// Current balance in USD
   final double balanceUsd;
-
-  /// Wallet address (for crypto) or account ID (for bank)
   final String assetAddressOrId;
-
-  /// Timestamp of last synchronization with provider
   final DateTime lastSync;
-
-  /// Timestamp when asset was created
+  final double realizedPnlUsd;
+  final double realizedPnlPercent;
+  final String symbol;
+  final double quantity;
+  final double currentPrice;
+  final double change24h;
+  final double priceUsd;
+  final String iconUrl;
+  final String country;
+  final String sector;
+  final String industry;
   final DateTime createdAt;
-
-  /// Timestamp when asset was last updated
   final DateTime updatedAt;
+  final AssetStatus status;
+  final String currency;
+  final double? manualValue;
+  final Map<String, dynamic>? metadata;
 
   const Asset({
     required this.id,
     required this.userId,
     required this.name,
     required this.type,
-    required this.assetGroup,
     required this.provider,
     required this.balanceUsd,
     required this.assetAddressOrId,
     required this.lastSync,
+    required this.realizedPnlUsd,
+    required this.realizedPnlPercent,
+    required this.symbol,
+    required this.quantity,
+    required this.currentPrice,
+    required this.change24h,
+    required this.priceUsd,
+    required this.iconUrl,
+    required this.country,
+    required this.sector,
+    required this.industry,
     required this.createdAt,
     required this.updatedAt,
+    required this.status,
+    required this.currency,
+    this.manualValue,
+    this.metadata,
   });
 
-  /// Check if this asset is a crypto wallet
+  // Helper getters
   bool get isCrypto => type == AssetType.crypto;
+  bool get isStock => type == AssetType.stock;
+  bool get isCash => type == AssetType.cash;
+  bool get isActive => status == AssetStatus.active;
 
-  /// Check if this asset is a bank account
-  bool get isBank => type == AssetType.bank;
-
-  /// Check if this asset uses Moralis as provider
-  bool get usesMoralis => provider == AssetProvider.moralis;
-
-  /// Check if this asset uses Plaid as provider
-  bool get usesPlaid => provider == AssetProvider.plaid;
-
-  /// Get formatted balance with currency symbol
-  String get formattedBalance => '\$${balanceUsd.toStringAsFixed(2)}';
-
-  /// Check if asset data is stale (not synced in last 24 hours)
-  bool get isStale {
-    final now = DateTime.now();
-    final difference = now.difference(lastSync);
-    return difference.inHours > 24;
-  }
+  double get dailyChangeAmount => balanceUsd * (change24h / 100);
+  bool get isPositiveChange => change24h > 0;
+  bool get isNegativeChange => change24h < 0;
 
   @override
   List<Object?> get props => [
@@ -80,47 +96,87 @@ class Asset extends Equatable {
         userId,
         name,
         type,
-        assetGroup,
         provider,
         balanceUsd,
         assetAddressOrId,
         lastSync,
+        realizedPnlUsd,
+        realizedPnlPercent,
+        symbol,
+        quantity,
+        currentPrice,
+        change24h,
+        priceUsd,
+        iconUrl,
+        country,
+        sector,
+        industry,
         createdAt,
         updatedAt,
+        status,
+        currency,
+        manualValue,
+        metadata,
       ];
+
+  Asset copyWith({
+    String? id,
+    String? userId,
+    String? name,
+    AssetType? type,
+    AssetProvider? provider,
+    double? balanceUsd,
+    String? assetAddressOrId,
+    DateTime? lastSync,
+    double? realizedPnlUsd,
+    double? realizedPnlPercent,
+    String? symbol,
+    double? quantity,
+    double? currentPrice,
+    double? change24h,
+    double? priceUsd,
+    String? iconUrl,
+    String? country,
+    String? sector,
+    String? industry,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    AssetStatus? status,
+    String? currency,
+    double? manualValue,
+    Map<String, dynamic>? metadata,
+  }) {
+    return Asset(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      provider: provider ?? this.provider,
+      balanceUsd: balanceUsd ?? this.balanceUsd,
+      assetAddressOrId: assetAddressOrId ?? this.assetAddressOrId,
+      lastSync: lastSync ?? this.lastSync,
+      realizedPnlUsd: realizedPnlUsd ?? this.realizedPnlUsd,
+      realizedPnlPercent: realizedPnlPercent ?? this.realizedPnlPercent,
+      symbol: symbol ?? this.symbol,
+      quantity: quantity ?? this.quantity,
+      currentPrice: currentPrice ?? this.currentPrice,
+      change24h: change24h ?? this.change24h,
+      priceUsd: priceUsd ?? this.priceUsd,
+      iconUrl: iconUrl ?? this.iconUrl,
+      country: country ?? this.country,
+      sector: sector ?? this.sector,
+      industry: industry ?? this.industry,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      status: status ?? this.status,
+      currency: currency ?? this.currency,
+      manualValue: manualValue ?? this.manualValue,
+      metadata: metadata ?? this.metadata,
+    );
+  }
 
   @override
   String toString() {
-    return 'Asset(id: $id, name: $name, type: $type, provider: $provider, balance: $formattedBalance)';
+    return 'Asset{id: $id, name: $name, type: $type, provider: $provider, balance: \$$balanceUsd, symbol: $symbol}';
   }
-}
-
-/// Enum representing the type of asset
-enum AssetType {
-  /// Cryptocurrency wallet
-  crypto,
-
-  /// Bank account
-  bank,
-}
-
-/// Enum representing the data provider for the asset
-enum AssetProvider {
-  /// Moralis provider for crypto assets
-  moralis,
-
-  /// Plaid provider for bank accounts
-  plaid,
-}
-
-/// Enum representing the asset group for dashboard categorization
-enum AssetGroup {
-  /// Cryptocurrency assets
-  crypto,
-
-  /// Stocks and ETFs
-  stocks,
-
-  /// Cash and bank accounts
-  cash,
 }
