@@ -1,4 +1,6 @@
 
+import 'package:financo/features/finance/domain/entities/networth_response.dart' as entity;
+
 class NetworthResponseModel {
   final TotalValue total;
   final Breakdown breakdown;
@@ -32,6 +34,58 @@ class NetworthResponseModel {
         'assets': List<dynamic>.from(assets.map((x) => x.toJson())),
         'insights': insights.toJson(),
       };
+
+  /// Convert model to domain entity
+  entity.NetworthResponse toEntity() {
+    return entity.NetworthResponse(
+      total: entity.TotalValue(
+        value: total.value,
+        currency: total.currency,
+        updatedAt: total.updatedAt,
+      ),
+      breakdown: entity.Breakdown(
+        byType: breakdown.byType,
+        byProvider: breakdown.byProvider,
+        byCountry: breakdown.byCountry,
+        bySector: breakdown.bySector,
+      ),
+      performance: entity.Performance(
+        dailyChange: entity.DailyChange(
+          amount: performance.dailyChange.amount,
+          percentage: performance.dailyChange.percentage,
+          direction: performance.dailyChange.direction,
+        ),
+        totalPnl: entity.TotalPnl(
+          realizedUsd: performance.totalPnl.realizedUsd,
+          realizedPercent: performance.totalPnl.realizedPercent,
+          estimated24h: performance.totalPnl.estimated24h,
+        ),
+      ),
+      assets: assets.map((asset) => entity.AssetDetail(
+        id: asset.id,
+        name: asset.name,
+        symbol: asset.symbol,
+        type: asset.type,
+        provider: asset.provider,
+        value: asset.value,
+        quantity: asset.quantity,
+        price: asset.price,
+        change24h: asset.change24h,
+        pnlUsd: asset.pnlUsd,
+        pnlPercent: asset.pnlPercent,
+        iconUrl: asset.iconUrl,
+        country: asset.country,
+        sector: asset.sector,
+        lastUpdated: asset.lastUpdated,
+      )).toList(),
+      insights: entity.Insights(
+        diversificationScore: insights.diversificationScore,
+        riskLevel: insights.riskLevel,
+        concentrationWarnings: insights.concentrationWarnings,
+        updateStatus: insights.updateStatus,
+      ),
+    );
+  }
 }
 
 class TotalValue {

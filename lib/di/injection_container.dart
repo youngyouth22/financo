@@ -8,11 +8,17 @@ import 'package:financo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:financo/features/finance/data/datasources/finance_remote_datasource.dart';
 import 'package:financo/features/finance/data/repositories/finance_repository_impl.dart';
 import 'package:financo/features/finance/domain/repositories/finance_repository.dart';
+import 'package:financo/features/finance/domain/usecases/add_crypto_wallet_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/add_stock_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/delete_asset_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/exchange_plaid_token_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_assets_usecase.dart';
-import 'package:financo/features/finance/domain/usecases/get_global_wealth_usecase.dart';
-import 'package:financo/features/finance/domain/usecases/get_net_worth_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/get_daily_change_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/get_networth_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/get_plaid_link_token_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_wealth_history_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/search_stocks_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/update_asset_quantity_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/watch_assets_usecase.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -89,22 +95,33 @@ Future<void> initializeDependencies() async {
   );
 
   // Use Cases
-  sl.registerLazySingleton(() => GetGlobalWealthUseCase(sl()));
+  sl.registerLazySingleton(() => GetNetworthUseCase(sl()));
+  sl.registerLazySingleton(() => GetDailyChangeUseCase(sl()));
   sl.registerLazySingleton(() => GetAssetsUseCase(sl()));
   sl.registerLazySingleton(() => WatchAssetsUseCase(sl()));
   sl.registerLazySingleton(() => DeleteAssetUseCase(sl()));
-  sl.registerLazySingleton(() => GetNetWorthUseCase(sl()));
+  sl.registerLazySingleton(() => UpdateAssetQuantityUseCase(sl()));
+  sl.registerLazySingleton(() => AddCryptoWalletUseCase(sl()));
+  sl.registerLazySingleton(() => SearchStocksUseCase(sl()));
+  sl.registerLazySingleton(() => AddStockUseCase(sl()));
+  sl.registerLazySingleton(() => GetPlaidLinkTokenUseCase(sl()));
+  sl.registerLazySingleton(() => ExchangePlaidTokenUseCase(sl()));
   sl.registerLazySingleton(() => GetWealthHistoryUseCase(sl()));
 
   // BLoC
   sl.registerFactory(
     () => FinanceBloc(
-      repository: sl(),
-      getGlobalWealthUseCase: sl(),
+      getNetworthUseCase: sl(),
+      getDailyChangeUseCase: sl(),
       getAssetsUseCase: sl(),
       watchAssetsUseCase: sl(),
       deleteAssetUseCase: sl(),
-      getNetWorthUseCase: sl(),
+      updateAssetQuantityUseCase: sl(),
+      addCryptoWalletUseCase: sl(),
+      searchStocksUseCase: sl(),
+      addStockUseCase: sl(),
+      getPlaidLinkTokenUseCase: sl(),
+      exchangePlaidTokenUseCase: sl(),
       getWealthHistoryUseCase: sl(),
     ),
   );
