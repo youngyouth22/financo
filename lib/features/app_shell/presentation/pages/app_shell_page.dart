@@ -1,5 +1,6 @@
 import 'package:financo/features/assets/presentation/pages/assets_page.dart';
 import 'package:financo/features/finance/presentation/pages/add_asset_choice_page.dart';
+import 'package:financo/features/insights/presentation/pages/portfolio_insights_page.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
 import 'package:financo/features/home/presentation/pages/dashboard_page.dart';
 import 'package:financo/features/home/presentation/widgets/custom_floating_button.dart';
@@ -21,7 +22,7 @@ class _AppShellPageState extends State<AppShellPage> {
   List<Widget> get _pages => [
     const DashboardPage(),
     const AssetsPage(),
-    const Center(child: Text('Insight Page')),
+    const PortfolioInsightsPage(),
     const Center(child: Text('Setting Page')),
   ];
 
