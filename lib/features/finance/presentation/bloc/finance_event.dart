@@ -183,3 +183,53 @@ class LoadWealthHistoryEvent extends FinanceEvent {
 class LoadPortfolioInsightsEvent extends FinanceEvent {
   const LoadPortfolioInsightsEvent();
 }
+
+// ===========================================================================
+// MANUAL ASSETS
+// ===========================================================================
+
+/// Event to add a manual asset
+class AddManualAssetEvent extends FinanceEvent {
+  final String name;
+  final String type; // AssetType as string
+  final double amount;
+  final String? currency;
+  final String? sector;
+  final String? country;
+
+  const AddManualAssetEvent({
+    required this.name,
+    required this.type,
+    required this.amount,
+    this.currency,
+    this.sector,
+    this.country,
+  });
+
+  @override
+  List<Object?> get props => [name, type, amount, currency, sector, country];
+}
+
+// ===========================================================================
+// ASSET REMINDERS
+// ===========================================================================
+
+/// Event to add a reminder to an asset
+class AddAssetReminderEvent extends FinanceEvent {
+  final String assetId;
+  final String title;
+  final String rruleExpression;
+  final DateTime nextEventDate;
+  final double? amountExpected;
+
+  const AddAssetReminderEvent({
+    required this.assetId,
+    required this.title,
+    required this.rruleExpression,
+    required this.nextEventDate,
+    this.amountExpected,
+  });
+
+  @override
+  List<Object?> get props => [assetId, title, rruleExpression, nextEventDate, amountExpected];
+}

@@ -326,4 +326,62 @@ class FinanceRepositoryImpl implements FinanceRepository {
       return Left(ServerFailure('Unexpected error: ${e.toString()}'));
     }
   }
+
+  // ===========================================================================
+  // MANUAL ASSETS
+  // ===========================================================================
+
+  @override
+  Future<Either<Failure, void>> addManualAsset({
+    required String name,
+    required AssetType type,
+    required double amount,
+    String? currency,
+    String? sector,
+    String? country,
+  }) async {
+    try {
+      await remoteDataSource.addManualAsset(
+        name: name,
+        type: type,
+        amount: amount,
+        currency: currency,
+        sector: sector,
+        country: country,
+      );
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Unexpected error: ${e.toString()}'));
+    }
+  }
+
+  // ===========================================================================
+  // ASSET REMINDERS
+  // ===========================================================================
+
+  @override
+  Future<Either<Failure, void>> addAssetReminder({
+    required String assetId,
+    required String title,
+    required String rruleExpression,
+    required DateTime nextEventDate,
+    double? amountExpected,
+  }) async {
+    try {
+      await remoteDataSource.addAssetReminder(
+        assetId: assetId,
+        title: title,
+        rruleExpression: rruleExpression,
+        nextEventDate: nextEventDate,
+        amountExpected: amountExpected,
+      );
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Unexpected error: ${e.toString()}'));
+    }
+  }
 }

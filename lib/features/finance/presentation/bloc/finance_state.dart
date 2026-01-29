@@ -203,3 +203,21 @@ class PortfolioInsightsLoaded extends FinanceState {
   @override
   List<Object?> get props => [insights];
 }
+
+// ===========================================================================
+// MANUAL ASSETS
+// ===========================================================================
+
+/// State when manual asset is added
+class ManualAssetAdded extends FinanceState {
+  const ManualAssetAdded();
+}
+
+// ===========================================================================
+// ASSET REMINDERS
+// ===========================================================================
+
+/// State when asset reminder is added
+class AssetReminderAdded extends FinanceState {
+  const AssetReminderAdded();
+}

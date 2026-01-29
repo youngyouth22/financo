@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:financo/core/usecase/usecase.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:financo/features/finance/domain/entities/asset.dart';
+import 'package:financo/features/finance/domain/usecases/add_asset_reminder_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/add_crypto_wallet_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/add_manual_asset_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/add_stock_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/delete_asset_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/exchange_plaid_token_usecase.dart';
@@ -39,6 +42,8 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
   final GetPlaidLinkTokenUseCase getPlaidLinkTokenUseCase;
   final ExchangePlaidTokenUseCase exchangePlaidTokenUseCase;
   final GetWealthHistoryUseCase getWealthHistoryUseCase;
+  final AddManualAssetUseCase addManualAssetUseCase;
+  final AddAssetReminderUseCase addAssetReminderUseCase;
 
   StreamSubscription? _assetsSubscription;
 
@@ -55,6 +60,8 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     required this.getPlaidLinkTokenUseCase,
     required this.exchangePlaidTokenUseCase,
     required this.getWealthHistoryUseCase,
+    required this.addManualAssetUseCase,
+    required this.addAssetReminderUseCase,
   }) : super(const FinanceInitial()) {
     on<LoadNetworthEvent>(_onLoadNetworth);
     on<LoadDailyChangeEvent>(_onLoadDailyChange);
@@ -69,6 +76,8 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     on<GetPlaidLinkTokenEvent>(_onGetPlaidLinkToken);
     on<ExchangePlaidTokenEvent>(_onExchangePlaidToken);
     on<LoadWealthHistoryEvent>(_onLoadWealthHistory);
+    on<AddManualAssetEvent>(_onAddManualAsset);
+    on<AddAssetReminderEvent>(_onAddAssetReminder);
   }
 
   // ===========================================================================
@@ -302,6 +311,91 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
     result.fold(
       (failure) => emit(FinanceError(failure.message)),
       (snapshots) => emit(WealthHistoryLoaded(snapshots)),
+    );
+  }
+
+  // ===========================================================================
+  // MANUAL ASSETS
+  // ===========================================================================
+
+  Future<void> _onAddManualAsset(
+    AddManualAssetEvent event,
+    Emitter<FinanceState> emit,
+  ) async {
+    emit(const FinanceLoading());
+
+    // Convert string type to AssetType enum
+    AssetType assetType;
+    switch (event.type.toLowerCase()) {
+      case 'crypto':
+        assetType = AssetType.crypto;
+        break;
+      case 'stock':
+        assetType = AssetType.stock;
+        break;
+      case 'cash':
+        assetType = AssetType.cash;
+        break;
+      case 'investment':
+        assetType = AssetType.investment;
+        break;
+      case 'real_estate':
+      case 'realestate':
+        assetType = AssetType.realEstate;
+        break;
+      case 'commodity':
+        assetType = AssetType.commodity;
+        break;
+      case 'liability':
+        assetType = AssetType.liability;
+        break;
+      default:
+        assetType = AssetType.other;
+    }
+
+    final result = await addManualAssetUseCase(
+      AddManualAssetParams(
+        name: event.name,
+        type: assetType,
+        amount: event.amount,
+        currency: event.currency,
+        sector: event.sector,
+        country: event.country,
+      ),
+    );
+
+    result.fold(
+      (failure) => emit(FinanceError(failure.message)),
+      (_) {
+        emit(const ManualAssetAdded());
+        add(const LoadNetworthEvent()); // Reload networth after adding manual asset
+      },
+    );
+  }
+
+  // ===========================================================================
+  // ASSET REMINDERS
+  // ===========================================================================
+
+  Future<void> _onAddAssetReminder(
+    AddAssetReminderEvent event,
+    Emitter<FinanceState> emit,
+  ) async {
+    emit(const FinanceLoading());
+
+    final result = await addAssetReminderUseCase(
+      AddAssetReminderParams(
+        assetId: event.assetId,
+        title: event.title,
+        rruleExpression: event.rruleExpression,
+        nextEventDate: event.nextEventDate,
+        amountExpected: event.amountExpected,
+      ),
+    );
+
+    result.fold(
+      (failure) => emit(FinanceError(failure.message)),
+      (_) => emit(const AssetReminderAdded()),
     );
   }
 

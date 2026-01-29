@@ -91,4 +91,27 @@ abstract class FinanceRepository {
   
   /// Get portfolio insights (diversification, risk, recommendations)
   Future<Either<Failure, Map<String, dynamic>>> getPortfolioInsights();
+
+  // --- MANUAL ASSETS ---
+  
+  /// Add a manual asset (real estate, commodity, liability, etc.)
+  Future<Either<Failure, void>> addManualAsset({
+    required String name,
+    required AssetType type,
+    required double amount,
+    String? currency,
+    String? sector,
+    String? country,
+  });
+
+  // --- REMINDERS (Amortization/Fixed Income) ---
+  
+  /// Add a reminder for an asset (e.g., mortgage payment, bond coupon)
+  Future<Either<Failure, void>> addAssetReminder({
+    required String assetId,
+    required String title,
+    required String rruleExpression,
+    required DateTime nextEventDate,
+    double? amountExpected,
+  });
 }

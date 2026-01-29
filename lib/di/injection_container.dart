@@ -8,7 +8,9 @@ import 'package:financo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:financo/features/finance/data/datasources/finance_remote_datasource.dart';
 import 'package:financo/features/finance/data/repositories/finance_repository_impl.dart';
 import 'package:financo/features/finance/domain/repositories/finance_repository.dart';
+import 'package:financo/features/finance/domain/usecases/add_asset_reminder_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/add_crypto_wallet_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/add_manual_asset_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/add_stock_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/delete_asset_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/exchange_plaid_token_usecase.dart';
@@ -107,6 +109,8 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => GetPlaidLinkTokenUseCase(sl()));
   sl.registerLazySingleton(() => ExchangePlaidTokenUseCase(sl()));
   sl.registerLazySingleton(() => GetWealthHistoryUseCase(sl()));
+  sl.registerLazySingleton(() => AddManualAssetUseCase(sl()));
+  sl.registerLazySingleton(() => AddAssetReminderUseCase(sl()));
 
   // BLoC
   sl.registerFactory(
@@ -123,6 +127,8 @@ Future<void> initializeDependencies() async {
       getPlaidLinkTokenUseCase: sl(),
       exchangePlaidTokenUseCase: sl(),
       getWealthHistoryUseCase: sl(),
+      addManualAssetUseCase: sl(),
+      addAssetReminderUseCase: sl(),
     ),
   );
 }
