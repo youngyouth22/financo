@@ -77,7 +77,16 @@ class _AddManualAssetPageState extends State<AddManualAssetPage> {
     },
   ];
 
-  final List<String> _currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CNY', 'CAD', 'AUD', 'CHF'];
+  final List<String> _currencies = [
+    'USD',
+    'EUR',
+    'GBP',
+    'JPY',
+    'CNY',
+    'CAD',
+    'AUD',
+    'CHF',
+  ];
 
   @override
   void dispose() {
@@ -119,11 +128,13 @@ class _AddManualAssetPageState extends State<AddManualAssetPage> {
     );
   }
 
-  void _handleSubmit() {
+  void _handleSubmit(BuildContext ctx) {
     if (_formKey.currentState!.validate()) {
-      final amount = double.tryParse(_amountController.text.replaceAll(',', ''));
+      final amount = double.tryParse(
+        _amountController.text.replaceAll(',', ''),
+      );
       if (amount == null || amount <= 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(ctx).showSnackBar(
           SnackBar(
             content: const Text('Please enter a valid amount'),
             backgroundColor: AppColors.error,
@@ -132,16 +143,18 @@ class _AddManualAssetPageState extends State<AddManualAssetPage> {
         return;
       }
 
-      context.read<FinanceBloc>().add(
-            AddManualAssetEvent(
-              name: _nameController.text.trim(),
-              type: _selectedType,
-              amount: amount,
-              currency: _selectedCurrency,
-              sector: _sectorController.text.trim().isEmpty ? null : _sectorController.text.trim(),
-              country: _selectedCountry,
-            ),
-          );
+      ctx.read<FinanceBloc>().add(
+        AddManualAssetEvent(
+          name: _nameController.text.trim(),
+          type: _selectedType,
+          amount: amount,
+          currency: _selectedCurrency,
+          sector: _sectorController.text.trim().isEmpty
+              ? null
+              : _sectorController.text.trim(),
+          country: _selectedCountry,
+        ),
+      );
     }
   }
 
@@ -220,33 +233,44 @@ class _AddManualAssetPageState extends State<AddManualAssetPage> {
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 2.5,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 2.5,
+                        ),
                     itemCount: _assetTypes.length,
                     itemBuilder: (context, index) {
                       final type = _assetTypes[index];
                       final isSelected = _selectedType == type['value'];
                       return GestureDetector(
-                        onTap: () => setState(() => _selectedType = type['value']),
+                        onTap: () =>
+                            setState(() => _selectedType = type['value']),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primary.withOpacity(0.2) : AppColors.gray80,
+                            color: isSelected
+                                ? AppColors.primary.withOpacity(0.2)
+                                : AppColors.gray80,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected ? AppColors.primary : Colors.transparent,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.transparent,
                               width: 2,
                             ),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                           child: Row(
                             children: [
                               Icon(
                                 type['icon'],
-                                color: isSelected ? AppColors.primary : AppColors.gray40,
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.gray40,
                                 size: 24,
                               ),
                               const SizedBox(width: 8),
@@ -254,9 +278,13 @@ class _AddManualAssetPageState extends State<AddManualAssetPage> {
                                 child: Text(
                                   type['label'],
                                   style: TextStyle(
-                                    color: isSelected ? AppColors.white : AppColors.gray30,
+                                    color: isSelected
+                                        ? AppColors.white
+                                        : AppColors.gray30,
                                     fontSize: 14,
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -291,7 +319,10 @@ class _AddManualAssetPageState extends State<AddManualAssetPage> {
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -322,10 +353,19 @@ class _AddManualAssetPageState extends State<AddManualAssetPage> {
                             const SizedBox(height: 8),
                             TextFormField(
                               controller: _amountController,
-                              style: TextStyle(color: AppColors.white, fontSize: 18, fontWeight: FontWeight.w600),
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              style: TextStyle(
+                                color: AppColors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                               inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[0-9.]'),
+                                ),
                               ],
                               decoration: InputDecoration(
                                 hintText: '0.00',
@@ -336,13 +376,18 @@ class _AddManualAssetPageState extends State<AddManualAssetPage> {
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide.none,
                                 ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 16,
+                                ),
                               ),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) {
                                   return 'Required';
                                 }
-                                final amount = double.tryParse(value.replaceAll(',', ''));
+                                final amount = double.tryParse(
+                                  value.replaceAll(',', ''),
+                                );
                                 if (amount == null || amount <= 0) {
                                   return 'Invalid amount';
                                 }
@@ -372,14 +417,23 @@ class _AddManualAssetPageState extends State<AddManualAssetPage> {
                                 color: AppColors.gray80,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               child: DropdownButton<String>(
                                 value: _selectedCurrency,
                                 isExpanded: true,
                                 underline: const SizedBox(),
                                 dropdownColor: AppColors.gray80,
-                                style: TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.w600),
-                                icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.gray40),
+                                style: TextStyle(
+                                  color: AppColors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                icon: Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  color: AppColors.gray40,
+                                ),
                                 items: _currencies.map((currency) {
                                   return DropdownMenuItem(
                                     value: currency,
@@ -415,12 +469,17 @@ class _AddManualAssetPageState extends State<AddManualAssetPage> {
                         color: AppColors.gray80,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                       child: Row(
                         children: [
                           if (_selectedCountryCode != null) ...[
                             Text(
-                              CountryParser.parseCountryCode(_selectedCountryCode!).flagEmoji,
+                              CountryParser.parseCountryCode(
+                                _selectedCountryCode!,
+                              ).flagEmoji,
                               style: const TextStyle(fontSize: 24),
                             ),
                             const SizedBox(width: 12),
@@ -429,12 +488,17 @@ class _AddManualAssetPageState extends State<AddManualAssetPage> {
                             child: Text(
                               _selectedCountry ?? 'Select country',
                               style: TextStyle(
-                                color: _selectedCountry != null ? AppColors.white : AppColors.gray50,
+                                color: _selectedCountry != null
+                                    ? AppColors.white
+                                    : AppColors.gray50,
                                 fontSize: 16,
                               ),
                             ),
                           ),
-                          Icon(Icons.arrow_drop_down_rounded, color: AppColors.gray40),
+                          Icon(
+                            Icons.arrow_drop_down_rounded,
+                            color: AppColors.gray40,
+                          ),
                         ],
                       ),
                     ),
@@ -463,7 +527,10 @@ class _AddManualAssetPageState extends State<AddManualAssetPage> {
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -472,33 +539,39 @@ class _AddManualAssetPageState extends State<AddManualAssetPage> {
                   SizedBox(
                     width: double.infinity,
                     height: 56,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _handleSubmit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        disabledBackgroundColor: AppColors.gray70,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                    child: Builder(
+                      builder: (innerCtx) => ElevatedButton(
+                        onPressed: _isLoading
+                            ? null
+                            : () => _handleSubmit(innerCtx),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          disabledBackgroundColor: AppColors.gray70,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
                         ),
-                        elevation: 0,
+                        child: _isLoading
+                            ? SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.white,
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                'Add Asset',
+                                style: TextStyle(
+                                  color: AppColors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ),
-                      child: _isLoading
-                          ? SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
-                              ),
-                            )
-                          : Text(
-                              'Add Asset',
-                              style: TextStyle(
-                                color: AppColors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
                     ),
                   ),
                 ],
