@@ -2,6 +2,7 @@ import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/features/finance/presentation/pages/add_bank_account_page.dart';
 import 'package:financo/features/finance/presentation/pages/add_crypto_wallet_page.dart';
+import 'package:financo/features/finance/presentation/pages/add_manual_asset_page.dart';
 import 'package:financo/features/finance/presentation/pages/add_stock_page.dart';
 import 'package:flutter/material.dart';
 
@@ -83,15 +84,12 @@ class AddAssetChoicePage extends StatelessWidget {
                 context,
                 icon: Icons.edit,
                 title: 'Manual Asset',
-                description: 'Add custom assets manually',
-                onTap: () {
-                  // TODO: Implement manual asset addition
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Manual asset addition coming soon'),
-                    ),
-                  );
-                },
+                description: 'Add real estate, commodities, liabilities, etc.',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const AddManualAssetPage(),
+                  ),
+                ),
               ),
             ],
           ),
