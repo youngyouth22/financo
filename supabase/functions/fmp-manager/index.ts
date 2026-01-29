@@ -1,81 +1,60 @@
 // Supabase Edge Function: fmp-manager
-// Purpose: Search stocks, fetch real-time prices, and save enriched assets to database
+// Purpose: Unified handler for Financial Modeling Prep (FMP) API
+// Features: Stable API (2025+) support, Robust Error Handling for Premium Plan limits,
+//           Support for Stocks, ETFs, and Commodities, and Wealth History snapshots.
 // Author: Finance Realtime Engine
 
-// fmp-manager.ts - REFACTORED FOR UNIFIED PORTFOLIO MANAGEMENT
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
-const FMP_API_KEY = Deno.env.get('FMP_API_KEY');
+// ============================================================================
+// CONFIGURATION & SECRETS
+// ============================================================================
+
+const FMP_API_KEY = Deno.env.get("FMP_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-const BASE_URL = "https://financialmodelingprep.com/api/v3";
+
+// Base URL for the Stable API (Mandatory for accounts created after Aug 2025)
+const BASE_URL_STABLE = "https://financialmodelingprep.com/stable";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
 };
 
 // ============================================================================
-// TYPES
+// TYPES & INTERFACES
 // ============================================================================
 
 interface FMPProfile {
   symbol: string;
   companyName: string;
   price: number;
-  changes: number;
   changePercentage: number;
   sector: string;
   industry: string;
   country: string;
   image: string;
-  exchange: string;
-  mktCap: number;
-  beta: number;
-  volAvg: number;
-  lastDiv: number;
-  range: string;
-  currency: string;
-  isEtf: boolean;
-  isActivelyTrading: boolean;
+  isEtf?: boolean;
 }
 
 interface FMPQuote {
   symbol: string;
   name: string;
   price: number;
-  changesPercentage: number;
-  change: number;
-  dayLow: number;
-  dayHigh: number;
-  yearHigh: number;
-  yearLow: number;
-  marketCap: number;
-  priceAvg50: number;
-  priceAvg200: number;
-  exchange: string;
-  volume: number;
-  avgVolume: number;
-  open: number;
-  previousClose: number;
-  eps: number;
-  pe: number;
-  earningsAnnouncement: string;
-  sharesOutstanding: number;
-  timestamp: number;
-}
-
-interface FMPSearchResult {
-  symbol: string;
-  name: string;
-  currency: string;
-  stockExchange: string;
-  exchangeShortName: string;
+  changePercentage: number;
 }
 
 interface RequestPayload {
-  action: 'search' | 'get_quotes' | 'get_profile' | 'add_asset' | 'update_prices' | 'remove_asset';
+  action:
+    | "search"
+    | "get_quotes"
+    | "get_profile"
+    | "add_asset"
+    | "update_prices"
+    | "remove_asset";
   query?: string;
   symbols?: string;
   symbol?: string;
@@ -85,220 +64,80 @@ interface RequestPayload {
 }
 
 // ============================================================================
-// FMP API HELPERS
+// FMP API HELPERS (ROBUST VERSION)
 // ============================================================================
 
+function checkApiKey() {
+  if (!FMP_API_KEY)
+    throw new Error("FMP_API_KEY is not configured in Supabase secrets");
+}
+
 /**
- * Fetch stock profile from FMP API
+ * Enhanced fetcher that reads response as text first to handle
+ * FMP "Premium Plan" plain text errors without crashing JSON parsing.
+ */
+async function fmpStableFetch(
+  endpoint: string,
+  params: string,
+): Promise<any[]> {
+  checkApiKey();
+  const url = `${BASE_URL_STABLE}/${endpoint}?${params}&apikey=${FMP_API_KEY}`;
+  const response = await fetch(url);
+
+  const rawText = await response.text();
+  let data;
+
+  try {
+    data = JSON.parse(rawText);
+  } catch (e) {
+    // Detect if FMP sent a plain text "Premium" error instead of JSON
+    if (rawText.toLowerCase().includes("premium")) {
+      throw new Error(
+        "This asset or action requires a Premium FMP Plan (Plan limit reached).",
+      );
+    }
+    throw new Error(
+      `FMP API returned invalid format: ${rawText.substring(0, 50)}...`,
+    );
+  }
+
+  if (!Array.isArray(data)) {
+    const errorMsg =
+      data && data["Error Message"]
+        ? data["Error Message"]
+        : `FMP error at ${endpoint}`;
+    throw new Error(errorMsg);
+  }
+  return data;
+}
+
+/**
+ * Fetch stock profile using Stable API. Returns null if not found (typical for Commodities).
  */
 async function fetchStockProfile(symbol: string): Promise<FMPProfile | null> {
   try {
-    const response = await fetch(`${BASE_URL}/profile/${symbol.toUpperCase()}?apikey=${FMP_API_KEY}`);
-    
-    if (!response.ok) {
-      throw new Error(`FMP API error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (!data || data.length === 0) {
-      throw new Error(`No profile found for symbol: ${symbol}`);
-    }
-    
-    return data[0];
-  } catch (error) {
-    console.error(`Failed to fetch profile for ${symbol}:`, error);
-    throw error;
+    const data = await fmpStableFetch(
+      "profile",
+      `symbol=${symbol.toUpperCase()}`,
+    );
+    return data.length > 0 ? data[0] : null;
+  } catch (e) {
+    console.warn(`Profile fetch failed for ${symbol}: ${e.message}`);
+    return null; // Return null so add_asset can try falling back to quote
   }
 }
 
 /**
- * Fetch real-time quotes for multiple symbols
+ * Fetch real-time quotes using Stable API.
  */
 async function fetchQuotes(symbols: string): Promise<FMPQuote[]> {
-  try {
-    const response = await fetch(`${BASE_URL}/quote/${symbols.toUpperCase()}?apikey=${FMP_API_KEY}`);
-    
-    if (!response.ok) {
-      throw new Error(`FMP API error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (!Array.isArray(data)) {
-      throw new Error('Invalid response format from FMP API');
-    }
-    
-    return data;
-  } catch (error) {
-    console.error(`Failed to fetch quotes for ${symbols}:`, error);
-    throw error;
-  }
-}
-
-/**
- * Search for stocks by query
- */
-async function searchStocks(query: string): Promise<FMPSearchResult[]> {
-  try {
-    const response = await fetch(`${BASE_URL}/search?query=${encodeURIComponent(query)}&limit=15&apikey=${FMP_API_KEY}`);
-    
-    if (!response.ok) {
-      throw new Error(`FMP API error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    if (!Array.isArray(data)) {
-      throw new Error('Invalid response format from FMP API');
-    }
-    
-    // Filter out invalid or empty results
-    return data.filter(item => 
-      item.symbol && 
-      item.name && 
-      !item.symbol.includes('.') && // Filter out foreign exchanges for simplicity
-      item.currency === 'USD'
-    );
-  } catch (error) {
-    console.error(`Failed to search for ${query}:`, error);
-    throw error;
-  }
-}
-
-/**
- * Process stock data for database insertion
- */
-function processStockForUpsert(
-  profile: FMPProfile,
-  quantity: number,
-  userId: string
-): any {
-  const price = profile.price || 0;
-  const balanceUsd = price * quantity;
-  const change24h = profile.changesPercentage || 0;
-  
-  return {
-    user_id: userId,
-    asset_address_or_id: `fmp:${profile.symbol.toUpperCase()}`,
-    provider: 'fmp',
-    type: 'stock',
-    symbol: profile.symbol.toUpperCase(),
-    name: profile.companyName,
-    icon_url: profile.image || null,
-    quantity: quantity,
-    current_price: price,
-    price_usd: price,
-    balance_usd: balanceUsd,
-    change_24h: change24h,
-    sector: profile.sector || null,
-    industry: profile.industry || null,
-    country: profile.country || 'US',
-    last_sync: new Date().toISOString(),
-  };
-}
-
-/**
- * Update prices for existing FMP assets
- */
-async function updateStockPrices(
-  supabase: any,
-  userId: string
-): Promise<{ updated: number; failed: number }> {
-  try {
-    // Fetch all FMP assets for the user
-    const { data: assets, error: fetchError } = await supabase
-      .from('assets')
-      .select('symbol, id')
-      .eq('user_id', userId)
-      .eq('provider', 'fmp')
-      .eq('type', 'stock');
-    
-    if (fetchError) {
-      throw new Error(`Failed to fetch assets: ${fetchError.message}`);
-    }
-    
-    if (!assets || assets.length === 0) {
-      return { updated: 0, failed: 0 };
-    }
-    
-    // Extract symbols and batch them (FMP allows up to 10 symbols per request for free tier)
-    const symbols = assets.map(asset => asset.symbol);
-    const symbolBatches = [];
-    
-    for (let i = 0; i < symbols.length; i += 10) {
-      symbolBatches.push(symbols.slice(i, i + 10));
-    }
-    
-    let updatedCount = 0;
-    let failedCount = 0;
-    
-    // Process each batch
-    for (const batch of symbolBatches) {
-      const symbolsString = batch.join(',');
-      
-      try {
-        const quotes = await fetchQuotes(symbolsString);
-        
-        // Update each asset with new price
-        for (const quote of quotes) {
-          const asset = assets.find(a => a.symbol === quote.symbol);
-          
-          if (asset) {
-            const { error: updateError } = await supabase
-              .from('assets')
-              .update({
-                current_price: quote.price,
-                price_usd: quote.price,
-                balance_usd: quote.price * (await getAssetQuantity(supabase, asset.id)),
-                change_24h: quote.changesPercentage,
-                last_sync: new Date().toISOString(),
-              })
-              .eq('id', asset.id);
-            
-            if (updateError) {
-              console.error(`Failed to update ${quote.symbol}:`, updateError);
-              failedCount++;
-            } else {
-              updatedCount++;
-            }
-          }
-        }
-      } catch (error) {
-        console.error(`Failed to process batch ${symbolsString}:`, error);
-        failedCount += batch.length;
-      }
-    }
-    
-    // Record snapshot after price update
-    try {
-      await supabase.rpc('record_wealth_snapshot', { p_user_id: userId });
-    } catch (snapshotError) {
-      console.warn('Failed to record snapshot after price update:', snapshotError);
-    }
-    
-    return { updated: updatedCount, failed: failedCount };
-  } catch (error) {
-    console.error('Error updating stock prices:', error);
-    throw error;
-  }
-}
-
-/**
- * Get current quantity of an asset
- */
-async function getAssetQuantity(supabase: any, assetId: string): Promise<number> {
-  const { data, error } = await supabase
-    .from('assets')
-    .select('quantity')
-    .eq('id', assetId)
-    .single();
-  
-  if (error || !data) {
-    return 0;
-  }
-  
-  return parseFloat(data.quantity) || 0;
+  const isBatch = symbols.includes(",");
+  const endpoint = isBatch ? "batch-quote" : "quote";
+  const paramName = isBatch ? "symbols" : "symbol";
+  return await fmpStableFetch(
+    endpoint,
+    `${paramName}=${symbols.toUpperCase()}`,
+  );
 }
 
 // ============================================================================
@@ -306,213 +145,161 @@ async function getAssetQuantity(supabase: any, assetId: string): Promise<number>
 // ============================================================================
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS")
+    return new Response("ok", { headers: corsHeaders });
+
+  let actionName = "unknown";
 
   try {
     const payload: RequestPayload = await req.json();
-    const { action, query, symbols, symbol, userId, quantity, assetId } = payload;
-    
-    // Initialize Supabase Client
+    actionName = payload.action || "unknown";
+
+    const { query, symbols, symbol, userId, quantity, assetId } = payload;
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
-    switch (action) {
-      case 'search': {
-        if (!query) throw new Error('Query parameter is required');
-        
-        console.log(`Searching stocks for query: ${query}`);
-        const results = await searchStocks(query);
-        
-        return new Response(JSON.stringify(results), { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        });
-      }
-
-      case 'get_quotes': {
-        if (!symbols) throw new Error('Symbols parameter is required');
-        
-        console.log(`Fetching quotes for symbols: ${symbols}`);
-        const quotes = await fetchQuotes(symbols);
-        
-        return new Response(JSON.stringify(quotes), { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        });
-      }
-
-      case 'get_profile': {
-        if (!symbol) throw new Error('Symbol parameter is required');
-        
-        console.log(`Fetching profile for symbol: ${symbol}`);
-        const profile = await fetchStockProfile(symbol);
-        
-        return new Response(JSON.stringify(profile), { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        });
-      }
-
-      case 'add_asset': {
-        if (!userId || !symbol || !quantity) {
-          throw new Error('userId, symbol, and quantity are required');
-        }
-        
-        console.log(`Adding stock ${symbol} for user ${userId}, quantity: ${quantity}`);
-        
-        // 1. Fetch stock profile from FMP
-        const profile = await fetchStockProfile(symbol);
-        
-        if (!profile) {
-          throw new Error(`Stock profile not found for symbol: ${symbol}`);
-        }
-        
-        // 2. Check if asset already exists for this user
-        const assetAddress = `fmp:${profile.symbol.toUpperCase()}`;
-        const { data: existingAssets } = await supabase
-          .from('assets')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('asset_address_or_id', assetAddress)
-          .maybeSingle();
-        
-        let finalQuantity = quantity;
-        
-        // 3. If exists, add to existing quantity
-        if (existingAssets) {
-          finalQuantity = parseFloat(existingAssets.quantity) + quantity;
-          console.log(`Asset exists, updating quantity from ${existingAssets.quantity} to ${finalQuantity}`);
-        }
-        
-        // 4. Prepare data for upsert
-        const assetData = processStockForUpsert(profile, finalQuantity, userId);
-        
-        // 5. Upsert to database
-        const { error: dbError } = await supabase
-          .from('assets')
-          .upsert(assetData, { 
-            onConflict: 'asset_address_or_id, user_id',
-            ignoreDuplicates: false
-          });
-        
-        if (dbError) {
-          console.error('Database upsert error:', dbError);
-          throw new Error(`Failed to save asset: ${dbError.message}`);
-        }
-        
-        console.log(`Successfully added/updated stock: ${profile.symbol}`);
-        
-        // 6. Record wealth snapshot
-        try {
-          await supabase.rpc('record_wealth_snapshot', { p_user_id: userId });
-          console.log(`Recorded snapshot for user ${userId}`);
-        } catch (snapshotError) {
-          console.warn('Failed to record snapshot:', snapshotError);
-        }
-        
-        return new Response(
-          JSON.stringify({ 
-            success: true, 
-            message: 'Asset added successfully',
-            asset: {
-              symbol: profile.symbol,
-              name: profile.companyName,
-              quantity: finalQuantity,
-              price: profile.price,
-              value: profile.price * finalQuantity,
-              sector: profile.sector,
-              country: profile.country
-            }
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          }
+    switch (actionName) {
+      case "search": {
+        if (!query) throw new Error("Search query is required");
+        const results = await fmpStableFetch(
+          "search-symbol",
+          `query=${encodeURIComponent(query)}`,
         );
+        return new Response(JSON.stringify(results), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
-      case 'update_prices': {
-        if (!userId) throw new Error('userId is required');
-        
-        console.log(`Updating stock prices for user ${userId}`);
-        
-        const { updated, failed } = await updateStockPrices(supabase, userId);
-        
-        return new Response(
-          JSON.stringify({
-            success: true,
-            updated: updated,
-            failed: failed,
-            message: `Updated ${updated} stocks, ${failed} failed`
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          }
+      case "add_asset": {
+        if (!userId || !symbol || !quantity)
+          throw new Error("Missing required fields");
+        const ticker = symbol.toUpperCase();
+
+        // 1. Fetch Market Data in Parallel with AllSettled to prevent partial failure crash
+        const [profile, quoteRes] = await Promise.all([
+          fetchStockProfile(ticker),
+          fetchQuotes(ticker).catch((e) => {
+            throw e;
+          }), // Quote is mandatory
+        ]);
+
+        if (!quoteRes || quoteRes.length === 0) {
+          throw new Error(`Live price data not found for ${ticker}`);
+        }
+        const quote: FMPQuote = quoteRes[0];
+
+        // 2. Fallback logic for Commodities (GOLD, OIL) or Premium-restricted profiles
+        const name = profile?.companyName || quote.name || ticker;
+        const assetType = profile
+          ? profile.isEtf
+            ? "etf"
+            : "stock"
+          : ticker.includes("USD")
+            ? "commodity"
+            : "stock";
+        const sector =
+          profile?.sector ||
+          (assetType === "commodity" ? "Commodities" : "Other");
+        const country =
+          profile?.country || (assetType === "commodity" ? "Global" : "US");
+
+        // 3. Upsert to Assets Table
+        const { error: dbError } = await supabase.from("assets").upsert(
+          {
+            user_id: userId,
+            asset_address_or_id: `fmp:${ticker}`,
+            provider: "fmp",
+            type: assetType,
+            name: name,
+            symbol: ticker,
+            icon_url: profile?.image || null,
+            quantity: quantity,
+            current_price: quote.price,
+            price_usd: quote.price,
+            balance_usd: quote.price * quantity,
+            change_24h: quote.changePercentage || 0,
+            sector: sector,
+            country: country,
+            last_sync: new Date().toISOString(),
+            status: "active",
+          },
+          { onConflict: "asset_address_or_id, user_id" },
         );
+
+        if (dbError) throw dbError;
+
+        // 4. Trigger Snapshots
+        await supabase.rpc("record_wealth_snapshot", { p_user_id: userId });
+
+        return new Response(JSON.stringify({ success: true, name }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
-      case 'remove_asset': {
-        if (!userId || !assetId) {
-          throw new Error('userId and assetId are required');
-        }
-        
-        console.log(`Removing asset ${assetId} for user ${userId}`);
-        
-        // Verify the asset belongs to the user
-        const { data: asset, error: fetchError } = await supabase
-          .from('assets')
-          .select('*')
-          .eq('id', assetId)
-          .eq('user_id', userId)
-          .single();
-        
-        if (fetchError || !asset) {
-          throw new Error('Asset not found or does not belong to user');
-        }
-        
-        // Delete the asset
-        const { error: deleteError } = await supabase
-          .from('assets')
+      case "update_prices": {
+        if (!userId) throw new Error("userId is required");
+
+        const { data: assets } = await supabase
+          .from("assets")
+          .select("symbol, quantity")
+          .eq("user_id", userId)
+          .eq("provider", "fmp");
+
+        if (!assets || assets.length === 0)
+          return new Response(JSON.stringify({ success: true }));
+
+        const symbolsList = assets.map((a) => a.symbol).join(",");
+        const quotes = await fetchQuotes(symbolsList);
+
+        const updates = quotes
+          .map((q) => {
+            const asset = assets.find((a) => a.symbol === q.symbol);
+            if (!asset) return null;
+            return supabase
+              .from("assets")
+              .update({
+                current_price: q.price,
+                price_usd: q.price,
+                balance_usd: q.price * (asset.quantity || 0),
+                change_24h: q.changePercentage || 0,
+                last_sync: new Date().toISOString(),
+              })
+              .eq("user_id", userId)
+              .eq("symbol", q.symbol);
+          })
+          .filter((u) => u !== null);
+
+        await Promise.all(updates);
+        await supabase.rpc("record_wealth_snapshot", { p_user_id: userId });
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      case "remove_asset": {
+        if (!assetId) throw new Error("assetId is required");
+        await supabase
+          .from("assets")
           .delete()
-          .eq('id', assetId)
-          .eq('user_id', userId);
-        
-        if (deleteError) {
-          throw new Error(`Failed to delete asset: ${deleteError.message}`);
-        }
-        
-        // Record snapshot after removal
-        try {
-          await supabase.rpc('record_wealth_snapshot', { p_user_id: userId });
-        } catch (snapshotError) {
-          console.warn('Failed to record snapshot after removal:', snapshotError);
-        }
-        
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: 'Asset removed successfully',
-            removed_asset: asset.symbol
-          }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          }
-        );
+          .eq("id", assetId)
+          .eq("user_id", userId);
+        await supabase.rpc("record_wealth_snapshot", { p_user_id: userId });
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       default:
-        throw new Error(`Invalid action: ${action}`);
+        throw new Error(`Action ${actionName} not implemented`);
     }
-
   } catch (error) {
-    console.error('FMP Manager Error:', error);
-    
+    console.error(`FMP Manager Error [${actionName}]:`, error.message);
     return new Response(
-      JSON.stringify({ 
-        error: 'Internal Error', 
-        message: error.message,
-        action: (await req.json()).action 
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      JSON.stringify({ error: error.message, action: actionName }),
+      {
         status: 400,
-      }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });

@@ -8,7 +8,11 @@ import 'package:financo/common/common_widgets/segment_button.dart';
 import 'package:financo/common/common_widgets/status_button.dart';
 import 'package:financo/common/image_resources.dart';
 import 'package:financo/features/home/presentation/widgets/subscription_home_row.dart';
+import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
+import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
+import 'package:financo/features/finance/presentation/bloc/finance_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -26,41 +30,15 @@ class _DashboardPageState extends State<DashboardPage> {
     // ArcValueModel(color: AppColors.primary10, value: 0.2),
   ];
 
-  List subArr = [
-    {"name": "Spotify", "icon": "assets/img/spotify_logo.png", "price": "5.99"},
-    {
-      "name": "YouTube Premium",
-      "icon": "assets/img/youtube_logo.png",
-      "price": "18.99",
-    },
-    {
-      "name": "Microsoft OneDrive",
-      "icon": "assets/img/onedrive_logo.png",
-      "price": "29.99",
-    },
-    {
-      "name": "NetFlix",
-      "icon": "assets/img/netflix_logo.png",
-      "price": "15.00",
-    },
-  ];
-
-  List bilArr = [
-    {"name": "Spotify", "date": DateTime(2023, 07, 25), "price": "5.99"},
-    {
-      "name": "YouTube Premium",
-      "date": DateTime(2023, 07, 25),
-      "price": "18.99",
-    },
-    {
-      "name": "Microsoft OneDrive",
-      "date": DateTime(2023, 07, 25),
-      "price": "29.99",
-    },
-    {"name": "NetFlix", "date": DateTime(2023, 07, 25), "price": "15.00"},
-  ];
   Random random = Random();
   late DateTime selectedDateNotAppBBar;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load networth (which includes assets)
+    context.read<FinanceBloc>().add(const LoadNetworthEvent());
+  }
 
   Widget _buildAppBar() {
     return SizedBox(
@@ -136,173 +114,246 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-              color: AppColors.gray70.withValues(alpha: 0.5),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(25),
-                bottomRight: Radius.circular(25),
+    return BlocListener<FinanceBloc, FinanceState>(
+      listener: (context, state) {
+        if (state is FinanceError) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(state.message)));
+        }
+      },
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: AppColors.gray70.withValues(alpha: 0.5),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(25),
+                  bottomRight: Radius.circular(25),
+                ),
               ),
-            ),
-            child: SafeArea(
-              top: true,
-              bottom: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildAppBar(),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Total networth',
-                    style: AppTypography.headline2Regular.copyWith(
-                      color: AppColors.gray40,
-                      letterSpacing: 2.4,
-                      fontFamily: 'JetBrainsMono',
-                    ),
-                  ),
-                  RichText(
-                    text: TextSpan(
-                      style: AppTypography.headline7Bold.copyWith(
-                        color: AppColors.gray30,
-                        height: 1.2,
+              child: SafeArea(
+                top: true,
+                bottom: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildAppBar(),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Total networth',
+                      style: AppTypography.headline2Regular.copyWith(
+                        color: AppColors.gray40,
+                        letterSpacing: 2.4,
                         fontFamily: 'JetBrainsMono',
                       ),
-                      children: [
-                        const TextSpan(text: '\$ '),
-                        TextSpan(
-                          text: '1,235,123',
-                          style: AppTypography.headline7Bold.copyWith(
-                            color: AppColors.white,
-                            height: 1,
-                            fontFamily: 'JetBrainsMono',
+                    ),
+                    BlocBuilder<FinanceBloc, FinanceState>(
+                      builder: (context, state) {
+                        String displayValue = '0.00';
+                        if (state is NetworthLoaded) {
+                          print(
+                            'Networth total value: ${state.networth.assets.length}',
+                          );
+                          displayValue = state.networth.total.value
+                              .toStringAsFixed(2)
+                              .replaceAllMapped(
+                                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                (Match m) => '${m[1]},',
+                              );
+                        }
+
+                        final parts = displayValue.split('.');
+                        final wholePart = parts[0];
+                        final decimalPart = parts.length > 1 ? parts[1] : '00';
+
+                        return RichText(
+                          text: TextSpan(
+                            style: AppTypography.headline7Bold.copyWith(
+                              color: AppColors.gray30,
+                              height: 1.2,
+                              fontFamily: 'JetBrainsMono',
+                            ),
+                            children: [
+                              const TextSpan(text: '\$ '),
+                              TextSpan(
+                                text: wholePart,
+                                style: AppTypography.headline7Bold.copyWith(
+                                  color: AppColors.white,
+                                  height: 1,
+                                  fontFamily: 'JetBrainsMono',
+                                ),
+                              ),
+                              TextSpan(
+                                text: '.$decimalPart',
+                                style: AppTypography.headline6Bold.copyWith(
+                                  color: AppColors.gray30,
+                                  height: 1,
+                                  fontFamily: 'JetBrainsMono',
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        TextSpan(
-                          text: '.85',
-                          style: AppTypography.headline6Bold.copyWith(
-                            color: AppColors.gray30,
-                            height: 1,
-                            fontFamily: 'JetBrainsMono',
-                          ),
-                        ),
-                      ],
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    _buildTest(),
+
+                    const SizedBox(height: 20),
+
+                    BlocBuilder<FinanceBloc, FinanceState>(
+                      builder: (context, state) {
+                        int activeSubs = 0;
+                        double highestPrice = 0.0;
+                        double lowestPrice = double.maxFinite;
+
+                        if (state is NetworthLoaded) {
+                          final assets = state.networth.assets;
+                          activeSubs = assets.length;
+
+                          for (var asset in assets) {
+                            if (asset.price > highestPrice) {
+                              highestPrice = asset.price;
+                            }
+                            if (asset.price < lowestPrice) {
+                              lowestPrice = asset.price;
+                            }
+                          }
+
+                          if (lowestPrice == double.maxFinite) {
+                            lowestPrice = 0.0;
+                          }
+                        }
+
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: StatusButton(
+                                title: "Active subs",
+                                value: activeSubs.toString(),
+                                statusColor: AppColors.accent,
+                                onPressed: () {},
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: StatusButton(
+                                title: "Highest subs",
+                                value: highestPrice > 0
+                                    ? "\$${highestPrice.toStringAsFixed(2)}"
+                                    : "\$0.00",
+                                statusColor: AppColors.primary10,
+                                onPressed: () {},
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: StatusButton(
+                                title: "Lowest subs",
+                                value:
+                                    lowestPrice < double.maxFinite &&
+                                        lowestPrice > 0
+                                    ? "\$${lowestPrice.toStringAsFixed(2)}"
+                                    : "\$0.00",
+                                statusColor: AppColors.accentS,
+                                onPressed: () {},
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SegmentButton(
+                      title: "Your subscription",
+                      isActive: isSubscription,
+                      onPressed: () {
+                        setState(() {
+                          isSubscription = !isSubscription;
+                        });
+                      },
                     ),
                   ),
-
-                  // Text(
-                  //   "\$1,235",
-                  //   style: AppTypography.headline7Bold.copyWith(
-                  //     color: AppColors.white,
-                  //     height: 1,
-                  //   ),
-                  // ),
-                  const SizedBox(height: 20),
-
-                  _buildTest(),
-
-                  const SizedBox(height: 20),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: StatusButton(
-                          title: "Active subs",
-                          value: "12",
-                          statusColor: AppColors.accent,
-                          onPressed: () {},
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: StatusButton(
-                          title: "Highest subs",
-                          value: "\$19.99",
-                          statusColor: AppColors.primary10,
-                          onPressed: () {},
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: StatusButton(
-                          title: "Lowest subs",
-                          value: "\$5.99",
-                          statusColor: AppColors.accentS,
-                          onPressed: () {},
-                        ),
-                      ),
-                    ],
+                  Expanded(
+                    child: SegmentButton(
+                      title: "Upcoming bills",
+                      isActive: !isSubscription,
+                      onPressed: () {
+                        setState(() {
+                          isSubscription = !isSubscription;
+                        });
+                      },
+                    ),
                   ),
-
-                  const SizedBox(height: 20),
                 ],
               ),
             ),
-          ),
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            height: 50,
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SegmentButton(
-                    title: "Your subscription",
-                    isActive: isSubscription,
-                    onPressed: () {
-                      setState(() {
-                        isSubscription = !isSubscription;
-                      });
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: SegmentButton(
-                    title: "Upcoming bills",
-                    isActive: !isSubscription,
-                    onPressed: () {
-                      setState(() {
-                        isSubscription = !isSubscription;
-                      });
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (isSubscription)
-            ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: subArr.length,
-              itemBuilder: (context, index) {
-                var sObj = subArr[index] as Map? ?? {};
+            BlocBuilder<FinanceBloc, FinanceState>(
+              builder: (context, state) {
+                if (state is FinanceLoading) {
+                  return const SizedBox(
+                    height: 200,
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
 
-                return SubScriptionHomeRow(sObj: sObj, onPressed: () {});
+                if (state is NetworthLoaded) {
+                  final assets = state.networth.assets;
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 0,
+                    ),
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    itemCount: assets.length,
+                    itemBuilder: (context, index) {
+                      final asset = assets[index];
+                      final assetMap = {
+                        "name": asset.name,
+                        "icon": asset.iconUrl,
+                        "price": asset.value.toStringAsFixed(2),
+                      };
+
+                      return SubScriptionHomeRow(
+                        sObj: assetMap,
+                        onPressed: () {},
+                      );
+                    },
+                  );
+                }
+
+                return const SizedBox(
+                  height: 100,
+                  child: Center(child: Text('No assets found')),
+                );
               },
             ),
-          if (!isSubscription)
-            ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
-              physics: const NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: subArr.length,
-              itemBuilder: (context, index) {
-                var sObj = subArr[index] as Map? ?? {};
-
-                return SubScriptionHomeRow(sObj: sObj, onPressed: () {});
-              },
-            ),
-          const SizedBox(height: 110),
-        ],
+            const SizedBox(height: 110),
+          ],
+        ),
       ),
     );
   }

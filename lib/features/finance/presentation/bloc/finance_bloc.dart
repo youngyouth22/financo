@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'package:financo/core/usecase/usecase.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:financo/core/usecases/usecase.dart';
 import 'package:financo/features/finance/domain/usecases/add_crypto_wallet_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/add_stock_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/delete_asset_usecase.dart';
@@ -113,7 +113,7 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
   ) async {
     emit(const FinanceLoading());
 
-    final result = await getAssetsUseCase(const NoParams());
+    final result = await getAssetsUseCase.call(const NoParams());
 
     result.fold(
       (failure) => emit(FinanceError(failure.message)),
@@ -127,7 +127,7 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
   ) async {
     await _assetsSubscription?.cancel();
 
-    final stream = watchAssetsUseCase(const NoParams());
+    final stream = watchAssetsUseCase.call();
 
     _assetsSubscription = stream.listen(
       (result) {

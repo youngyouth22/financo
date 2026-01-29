@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:financo/core/error/exceptions.dart';
 import 'package:financo/features/finance/data/models/asset_model.dart';
@@ -42,6 +43,26 @@ abstract class FinanceRemoteDataSource {
 
   // --- PORTFOLIO INSIGHTS ---
   Future<Map<String, dynamic>> getPortfolioInsights();
+
+  // --- MANUAL ASSETS ---
+  Future<void> addManualAsset({
+    required String name,
+    required AssetType type,
+    required double amount,
+    String? currency,
+    String? sector,
+    String? country,
+  });
+
+  // --- REMINDERS (Amortization/Fixed Income) ---
+  Future<void> addAssetReminder({
+    required String assetId,
+    required String title,
+    required String rruleExpression,
+    required DateTime nextEventDate,
+    double? amountExpected,
+  });
+
 }
 
 class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
@@ -510,6 +531,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
   @override
   Future<Map<String, dynamic>> getPortfolioInsights() async {
     try {
+      await supabaseClient.rpc('generate_portfolio_insights', params: {'p_user_id': _currentUserId});
       final response = await supabaseClient
           .from('portfolio_insights')
           .select()
@@ -530,6 +552,97 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
         'recommendations': [],
         'analysis_date': DateTime.now().toIso8601String(),
       };
+    }
+  }
+
+   // ===========================================================================
+  // MANUAL ASSETS MANAGEMENT
+  // ===========================================================================
+
+  @override
+  Future<void> addManualAsset({
+    required String name,
+    required AssetType type,
+    required double amount,
+    String? currency,
+    String? sector,
+    String? country,
+  }) async {
+    try {
+      // 1. Create a unique identifier for the manual asset
+      final String manualId = 'manual_${DateTime.now().millisecondsSinceEpoch}';
+
+      // 2. Insert the asset into the 'assets' table
+      // We fill balance_usd directly since it's a manual entry
+      await supabaseClient.from('assets').insert({
+        'user_id': _currentUserId,
+        'asset_address_or_id': manualId,
+        'provider': 'manual',
+        'type': _assetTypeToString(type),
+        'name': name,
+        'symbol': currency ?? 'USD',
+        'quantity': 1,
+        'current_price': amount,
+        'price_usd': amount,
+        'balance_usd': amount,
+        'sector': sector ?? 'Other',
+        'country': country ?? 'Global',
+        'last_sync': DateTime.now().toIso8601String(),
+        'status': 'active',
+      });
+
+      // 3. RE-CALCULATE ANALYTICS IMMEDIATELY (Production Requirement)
+      // This ensures the diversification chart updates right away
+      await recordWealthSnapshot();
+      await supabaseClient.rpc('generate_portfolio_insights', params: {'p_user_id': _currentUserId});
+      
+    } catch (e) {
+      throw ServerException('Failed to add manual asset: ${e.toString()}');
+    }
+  }
+
+  // ===========================================================================
+  // ASSET REMINDERS (Amortization Logic)
+  // ===========================================================================
+
+  @override
+  Future<void> addAssetReminder({
+    required String assetId,
+    required String title,
+    required String rruleExpression,
+    required DateTime nextEventDate,
+    double? amountExpected,
+  }) async {
+    try {
+      await supabaseClient.from('asset_reminders').insert({
+        'user_id': _currentUserId,
+        'asset_id': assetId,
+        'title': title,
+        'rrule_expression': rruleExpression,
+        'next_event_date': nextEventDate.toIso8601String(),
+        'amount_expected': amountExpected,
+        'is_completed': false,
+      });
+    } catch (e) {
+      throw ServerException('Failed to create reminder: ${e.toString()}');
+    }
+  }
+
+  // ===========================================================================
+  // PRIVATE HELPER METHODS
+  // ===========================================================================
+
+  /// Convert internal AssetType enum to Database String
+  String _assetTypeToString(AssetType type) {
+    switch (type) {
+      case AssetType.crypto: return 'crypto';
+      case AssetType.stock: return 'stock';
+      case AssetType.cash: return 'cash';
+      case AssetType.investment: return 'investment';
+      case AssetType.realEstate: return 'real_estate';
+      case AssetType.commodity: return 'commodity';
+      case AssetType.liability: return 'liability';
+      case AssetType.other: return 'other';
     }
   }
 }

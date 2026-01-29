@@ -1,9 +1,12 @@
 import 'package:financo/features/assets/presentation/pages/assets_page.dart';
-import 'package:financo/features/finance/presentation/pages/add_crypto_wallet_page.dart';
+import 'package:financo/features/finance/presentation/pages/add_asset_choice_page.dart';
+import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
 import 'package:financo/features/home/presentation/pages/dashboard_page.dart';
 import 'package:financo/features/home/presentation/widgets/custom_floating_button.dart';
 import 'package:financo/features/home/presentation/widgets/custom_nav_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:financo/di/injection_container.dart';
 
 class AppShellPage extends StatefulWidget {
   const AppShellPage({super.key});
@@ -44,39 +47,42 @@ class _AppShellPageState extends State<AppShellPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      floatingActionButton: CustomFloatingButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const AddCryptoWalletPage(),
-            ),
-          );
-        },
-        isMenuOpen: false,
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        clipBehavior: Clip.antiAlias,
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 7,
-        padding: EdgeInsets.zero,
-        color: Colors.transparent,
-        child: CustomNavBar(
-          currentIndex: _currentIndex,
-          onItemSelected: (index) {
-            setState(() {
-              _currentIndex = index;
-              animateToPage(index);
-            });
+    return BlocProvider(
+      create: (context) => sl<FinanceBloc>(),
+      child: Scaffold(
+        extendBody: true,
+        floatingActionButton: CustomFloatingButton(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const AddAssetChoicePage(),
+              ),
+            );
           },
+          isMenuOpen: false,
         ),
-      ),
-      body: PageView(
-        controller: _controller,
-        physics: const NeverScrollableScrollPhysics(),
-        children: _pages,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: BottomAppBar(
+          clipBehavior: Clip.antiAlias,
+          shape: const CircularNotchedRectangle(),
+          notchMargin: 7,
+          padding: EdgeInsets.zero,
+          color: Colors.transparent,
+          child: CustomNavBar(
+            currentIndex: _currentIndex,
+            onItemSelected: (index) {
+              setState(() {
+                _currentIndex = index;
+                animateToPage(index);
+              });
+            },
+          ),
+        ),
+        body: PageView(
+          controller: _controller,
+          physics: const NeverScrollableScrollPhysics(),
+          children: _pages,
+        ),
       ),
     );
   }

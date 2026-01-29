@@ -231,57 +231,61 @@ class _AssetsPage extends State<AssetsPage>
     );
   }
 
-  // Widget pour afficher un asset dans la liste
-  Widget _buildAssetCard(Asset asset) {
+  // Widget pour afficher un asset dans la grille
+  Widget _buildAssetGridCard(Asset asset) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: AppColors.gray80,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.gray70, width: 0.5),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Icône à gauche
+          // Icône en haut à gauche
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: AppColors.accent.withAlpha(25),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(asset.icon, color: AppColors.accent, size: 24),
+            child: Icon(asset.icon, color: AppColors.accent, size: 20),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(height: 8),
 
-          // Nom et symbole au centre
+          // Nom et symbole
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   asset.name,
                   style: AppTypography.headline4Medium.copyWith(
                     color: AppColors.white,
                   ),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   asset.symbol,
                   style: AppTypography.headline1Regular.copyWith(
                     color: AppColors.gray20,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 16),
 
-          // Valeur et changement à droite
+          // Valeur et changement en bas
           Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 '\$${asset.value.toStringAsFixed(2)}',
@@ -289,15 +293,17 @@ class _AssetsPage extends State<AssetsPage>
                   color: AppColors.white,
                   fontWeight: FontWeight.bold,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: asset.isPositive
                       ? Colors.green.withAlpha(25)
                       : Colors.red.withAlpha(25),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -307,9 +313,9 @@ class _AssetsPage extends State<AssetsPage>
                           ? Icons.arrow_upward_rounded
                           : Icons.arrow_downward_rounded,
                       color: asset.isPositive ? Colors.green : Colors.red,
-                      size: 14,
+                      size: 12,
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 2),
                     Text(
                       '${asset.change.abs().toStringAsFixed(2)}%',
                       style: AppTypography.headline1Regular.copyWith(
@@ -327,47 +333,8 @@ class _AssetsPage extends State<AssetsPage>
     );
   }
 
-  // Widget pour l'en-tête de groupe
-  Widget _buildGroupHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Text(
-        title,
-        style: AppTypography.headline3Medium.copyWith(color: AppColors.white),
-      ),
-    );
-  }
-
-  // Vue groupée pour l'onglet "All"
-  Widget _buildGroupedListView() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (stocksAssets.isNotEmpty) ...[
-            _buildGroupHeader('📈 Stocks'),
-            ...stocksAssets.map((asset) => _buildAssetCard(asset)),
-          ],
-          if (cryptoAssets.isNotEmpty) ...[
-            _buildGroupHeader('₿ Cryptocurrency'),
-            ...cryptoAssets.map((asset) => _buildAssetCard(asset)),
-          ],
-          if (fixedAssets.isNotEmpty) ...[
-            _buildGroupHeader('📋 Fixed Income'),
-            ...fixedAssets.map((asset) => _buildAssetCard(asset)),
-          ],
-          if (vaultAssets.isNotEmpty) ...[
-            _buildGroupHeader('🔒 Vault'),
-            ...vaultAssets.map((asset) => _buildAssetCard(asset)),
-          ],
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  // Vue simple pour un onglet spécifique
-  Widget _buildCategoryView(List<Asset> assets) {
+  // Widget pour créer une grille d'assets
+  Widget _buildAssetGrid(List<Asset> assets) {
     if (assets.isEmpty) {
       return Center(
         child: Column(
@@ -386,11 +353,77 @@ class _AssetsPage extends State<AssetsPage>
       );
     }
 
-    return SingleChildScrollView(
-      child: Column(
-        children: assets.map((asset) => _buildAssetCard(asset)).toList(),
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.85,
+      ),
+      itemCount: assets.length,
+      itemBuilder: (context, index) {
+        return _buildAssetGridCard(assets[index]);
+      },
+    );
+  }
+
+  // Widget pour l'en-tête de groupe
+  Widget _buildGroupHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Text(
+        title,
+        style: AppTypography.headline3Medium.copyWith(color: AppColors.white),
       ),
     );
+  }
+
+  // Vue groupée pour l'onglet "All" avec grilles
+  Widget _buildGroupedGridView() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (stocksAssets.isNotEmpty) ...[
+            _buildGroupHeader('📈 Stocks'),
+            SizedBox(
+              height:
+                  ((stocksAssets.length / 2).ceil() * 180) +
+                  16, // Calculer la hauteur basée sur le nombre d'items
+              child: _buildAssetGrid(stocksAssets),
+            ),
+          ],
+          if (cryptoAssets.isNotEmpty) ...[
+            _buildGroupHeader('₿ Cryptocurrency'),
+            SizedBox(
+              height: ((cryptoAssets.length / 2).ceil() * 180) + 16,
+              child: _buildAssetGrid(cryptoAssets),
+            ),
+          ],
+          if (fixedAssets.isNotEmpty) ...[
+            _buildGroupHeader('📋 Fixed Income'),
+            SizedBox(
+              height: ((fixedAssets.length / 2).ceil() * 180) + 16,
+              child: _buildAssetGrid(fixedAssets),
+            ),
+          ],
+          if (vaultAssets.isNotEmpty) ...[
+            _buildGroupHeader('🔒 Vault'),
+            SizedBox(
+              height: ((vaultAssets.length / 2).ceil() * 180) + 16,
+              child: _buildAssetGrid(vaultAssets),
+            ),
+          ],
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  // Vue grille pour un onglet spécifique
+  Widget _buildCategoryGridView(List<Asset> assets) {
+    return _buildAssetGrid(assets);
   }
 
   @override
@@ -429,11 +462,11 @@ class _AssetsPage extends State<AssetsPage>
           controller: _tabController,
           physics: const NeverScrollableScrollPhysics(),
           children: [
-            _buildGroupedListView(), // All - Grouped view
-            _buildCategoryView(stocksAssets), // Stocks
-            _buildCategoryView(cryptoAssets), // Crypto
-            _buildCategoryView(fixedAssets), // Fixed
-            _buildCategoryView(vaultAssets), // Vault
+            _buildGroupedGridView(), // All - Grouped grid view
+            _buildCategoryGridView(stocksAssets), // Stocks
+            _buildCategoryGridView(cryptoAssets), // Crypto
+            _buildCategoryGridView(fixedAssets), // Fixed
+            _buildCategoryGridView(vaultAssets), // Vault
           ],
         ),
       ),

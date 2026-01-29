@@ -26,21 +26,22 @@ class CustomFloatingButton extends StatelessWidget {
         height: 60,
         width: 60,
         decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: LinearGradient(
-              colors: [
-                AppColors.accent,
-                const Color.fromARGB(255, 249, 132, 116),
-                AppColors.accent,
-              ],
-              transform: const GradientRotation(2),
-              begin: Alignment.bottomCenter,
-            ),
-            border: Border(
-              top: BorderSide(color: AppColors.accentP0.withAlpha(100)),
-              left: BorderSide(color: AppColors.accentP0.withAlpha(100)),
-              right: BorderSide(color: AppColors.accentP0.withAlpha(100)),
-            )),
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            colors: [
+              AppColors.accent,
+              const Color.fromARGB(255, 249, 132, 116),
+              AppColors.accent,
+            ],
+            transform: const GradientRotation(2),
+            begin: Alignment.bottomCenter,
+          ),
+          border: Border(
+            top: BorderSide(color: AppColors.accentP0.withAlpha(100)),
+            left: BorderSide(color: AppColors.accentP0.withAlpha(100)),
+            right: BorderSide(color: AppColors.accentP0.withAlpha(100)),
+          ),
+        ),
         child: Center(
           child: AnimatedRotation(
             turns: isMenuOpen ? 0.125 : 0.0, // 45 degrés

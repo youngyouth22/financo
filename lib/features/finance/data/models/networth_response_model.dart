@@ -125,12 +125,21 @@ class Breakdown {
     required this.bySector,
   });
 
-  factory Breakdown.fromJson(Map<String, dynamic> json) => Breakdown(
-        byType: Map<String, double>.from(json['by_type']),
-        byProvider: Map<String, double>.from(json['by_provider']),
-        byCountry: Map<String, double>.from(json['by_country']),
-        bySector: Map<String, double>.from(json['by_sector']),
+  factory Breakdown.fromJson(Map<String, dynamic> json) {
+    Map<String, double> parseMap(dynamic mapData) {
+      if (mapData == null) return {};
+      return (mapData as Map<String, dynamic>).map(
+        (key, value) => MapEntry(key, (value as num).toDouble()),
       );
+    }
+
+    return Breakdown(
+      byType: parseMap(json['by_type']),
+      byProvider: parseMap(json['by_provider']),
+      byCountry: parseMap(json['by_country']),
+      bySector: parseMap(json['by_sector']),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'by_type': byType,

@@ -330,7 +330,7 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
 
       // Add crypto wallet via BLoC
       context.read<FinanceBloc>().add(
-        AddCryptoWalletEvent(name: name, walletAddress: address),
+        AddCryptoWalletEvent(address),
       );
     }
   }

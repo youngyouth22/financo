@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:financo/common/app_themes.dart';
 import 'package:financo/core/router/app_router.dart';
 import 'package:financo/di/injection_container.dart';
@@ -6,17 +8,33 @@ import 'package:financo/features/auth/presentation/bloc/auth_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Load environment variables from .env file
   await dotenv.load(fileName: ".env");
-  
+
   // Initialize dependencies (Supabase, Google Sign-In, etc.)
   await initializeDependencies();
-  
+  await initializeRevenueCat();
+
   runApp(const MainApp());
+}
+
+Future<void> initializeRevenueCat() async {
+  // Platform-specific API keys
+  String apiKey;
+  if (Platform.isIOS) {
+    apiKey = dotenv.env['REVENUE_CAT']!;
+  } else if (Platform.isAndroid) {
+    apiKey = dotenv.env['REVENUE_CAT']!;
+  } else {
+    throw UnsupportedError('Platform not supported');
+  }
+
+  await Purchases.configure(PurchasesConfiguration(apiKey));
 }
 
 class MainApp extends StatelessWidget {

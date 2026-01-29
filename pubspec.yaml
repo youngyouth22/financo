@@ -12,8 +12,8 @@ dependencies:
   flutter:
     sdk: flutter
   google_sign_in: ^7.2.0
-  purchases_flutter: ^9.10.6
-  purchases_ui_flutter: ^9.10.6
+  purchases_flutter: ^9.10.7
+  purchases_ui_flutter: ^9.10.7
   supabase_flutter: ^2.12.0
   dartz: ^0.10.1
   get_it: ^8.0.3

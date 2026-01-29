@@ -61,9 +61,11 @@ class SubScriptionHomeRow extends StatelessWidget {
                   children: [
                     Text(
                       sObj["name"],
+                      maxLines: 1,
                       style: TextStyle(
                         color: AppColors.white,
                         fontSize: 14,
+                        overflow: TextOverflow.ellipsis,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
