@@ -23,9 +23,12 @@ import 'package:financo/features/finance/domain/usecases/search_stocks_usecase.d
 import 'package:financo/features/finance/domain/usecases/update_asset_quantity_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/watch_assets_usecase.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
+import 'package:financo/core/services/security_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:local_auth/local_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Instance globale du service locator Get_it.
@@ -48,6 +51,21 @@ Future<void> initializeDependencies() async {
 
   // Enregistrement du client Supabase
   sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);
+
+  // Enregistrement de SharedPreferences
+  final sharedPreferences = await SharedPreferences.getInstance();
+  sl.registerLazySingleton<SharedPreferences>(() => sharedPreferences);
+
+  // Enregistrement de LocalAuthentication
+  sl.registerLazySingleton<LocalAuthentication>(() => LocalAuthentication());
+
+  // Enregistrement du SecurityService
+  sl.registerLazySingleton<SecurityService>(
+    () => SecurityService(
+      prefs: sl<SharedPreferences>(),
+      localAuth: sl<LocalAuthentication>(),
+    ),
+  );
 
   final GoogleSignIn googleSignIn = GoogleSignIn.instance;
 

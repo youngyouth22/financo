@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:financo/core/widgets/security_gate.dart';
 import 'package:financo/di/injection_container.dart';
 import 'package:financo/features/app_shell/presentation/pages/app_shell_page.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_bloc.dart';
@@ -64,7 +65,9 @@ class AppRouter {
           name: 'home',
           pageBuilder: (context, state) => MaterialPage(
             key: state.pageKey,
-            child: const AppShellPage(),
+            child: const SecurityGate(
+              child: AppShellPage(),
+            ),
           ),
         ),
       ],

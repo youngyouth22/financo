@@ -2,6 +2,8 @@ import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/common/common_widgets/primary_button.dart';
 import 'package:financo/common/image_resources.dart';
+import 'package:financo/core/services/security_service.dart';
+import 'package:financo/di/injection_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
@@ -29,8 +31,14 @@ void showAddSecurityInSheet(BuildContext context) {
   );
 }
 
-class AddSecurityInSheet extends StatelessWidget {
+class AddSecurityInSheet extends StatefulWidget {
   const AddSecurityInSheet({super.key});
+
+  @override
+  State<AddSecurityInSheet> createState() => _AddSecurityInSheetState();
+}
+
+class _AddSecurityInSheetState extends State<AddSecurityInSheet> {
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +150,32 @@ class AddSecurityInSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  PrimaryButton(text: 'Set Security Pin', onClick: () {}),
+                  PrimaryButton(
+                    text: 'Set Security Pin',
+                    onClick: () async {
+                      final securityService = sl<SecurityService>();
+                      final result = await securityService.setupSecurity();
+
+                      if (!mounted) return;
+
+                      if (result.success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(result.message),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                        context.pop();
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(result.message),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
+                  ),
                   TextButton(
                     onPressed: () {
                       context.pop();
