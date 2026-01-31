@@ -50,5 +50,7 @@
     <string>https</string>
 </array>
 <key>com.apple.security.network.client</key>
+<key>NSFaceIDUsageDescription</key>
+<string>Why is my app authenticating using face id?</string>
 </dict>
 </plist>
