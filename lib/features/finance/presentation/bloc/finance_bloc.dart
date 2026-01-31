@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:dartz/dartz.dart';
+import 'package:financo/core/error/failures.dart';
 import 'package:financo/core/usecase/usecase.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
@@ -131,23 +133,24 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
   }
 
   Future<void> _onWatchAssets(
-    WatchAssetsEvent event,
-    Emitter<FinanceState> emit,
-  ) async {
-    await _assetsSubscription?.cancel();
+  WatchAssetsEvent event,
+  Emitter<FinanceState> emit,
+) async {
+  await _assetsSubscription?.cancel();
 
-    final stream = watchAssetsUseCase.call();
-
-    _assetsSubscription = stream.listen(
-      (result) {
-        result.fold(
-          (failure) => add(const LoadAssetsEvent()), // Fallback to load
-          (assets) => emit(AssetsWatching(assets)),
-        );
-      },
-    );
-  }
-
+  await emit.forEach<Either<Failure, List<Asset>>>(
+    watchAssetsUseCase.call(), 
+    onData: (result) {
+      return result.fold(
+        (failure) => FinanceError(failure.message),
+        (assets) => AssetsWatching(assets),
+      );
+    },
+    onError: (error, stackTrace) {
+      return FinanceError('Stream error: $error');
+    },
+  );
+}
   Future<void> _onStopWatchingAssets(
     StopWatchingAssetsEvent event,
     Emitter<FinanceState> emit,

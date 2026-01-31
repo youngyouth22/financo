@@ -13,6 +13,7 @@ class ImageResources {
   static const barIcon = "assets/icons/proicons--bar-chart.svg";
   static const expenseIcon = "assets/icons/expense_arrow.svg";
   static const incomeIcon = "assets/icons/income_arrow.svg";
+  static const securedPin = "assets/lottie/Forgot_Password_Animation.json";
 
   // Illustrations
   static const placeHolderPng = "assets/images/place_holder.png";

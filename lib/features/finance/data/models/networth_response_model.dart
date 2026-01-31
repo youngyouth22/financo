@@ -1,5 +1,5 @@
-
-import 'package:financo/features/finance/domain/entities/networth_response.dart' as entity;
+import 'package:financo/features/finance/domain/entities/networth_response.dart'
+    as entity;
 
 class NetworthResponseModel {
   final TotalValue total;
@@ -22,18 +22,19 @@ class NetworthResponseModel {
       breakdown: Breakdown.fromJson(json['breakdown']),
       performance: Performance.fromJson(json['performance']),
       assets: List<AssetDetail>.from(
-          json['assets'].map((x) => AssetDetail.fromJson(x))),
+        json['assets'].map((x) => AssetDetail.fromJson(x)),
+      ),
       insights: Insights.fromJson(json['insights']),
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'total': total.toJson(),
-        'breakdown': breakdown.toJson(),
-        'performance': performance.toJson(),
-        'assets': List<dynamic>.from(assets.map((x) => x.toJson())),
-        'insights': insights.toJson(),
-      };
+    'total': total.toJson(),
+    'breakdown': breakdown.toJson(),
+    'performance': performance.toJson(),
+    'assets': List<dynamic>.from(assets.map((x) => x.toJson())),
+    'insights': insights.toJson(),
+  };
 
   /// Convert model to domain entity
   entity.NetworthResponse toEntity() {
@@ -61,23 +62,27 @@ class NetworthResponseModel {
           estimated24h: performance.totalPnl.estimated24h,
         ),
       ),
-      assets: assets.map((asset) => entity.AssetDetail(
-        id: asset.id,
-        name: asset.name,
-        symbol: asset.symbol,
-        type: asset.type,
-        provider: asset.provider,
-        value: asset.value,
-        quantity: asset.quantity,
-        price: asset.price,
-        change24h: asset.change24h,
-        pnlUsd: asset.pnlUsd,
-        pnlPercent: asset.pnlPercent,
-        iconUrl: asset.iconUrl,
-        country: asset.country,
-        sector: asset.sector,
-        lastUpdated: asset.lastUpdated,
-      )).toList(),
+      assets: assets
+          .map(
+            (asset) => AssetDetail(
+              id: asset.id,
+              name: asset.name,
+              symbol: asset.symbol,
+              type: asset.type,
+              provider: asset.provider,
+              value: asset.value,
+              quantity: asset.quantity,
+              price: asset.price,
+              change24h: asset.change24h,
+              pnlUsd: asset.pnlUsd,
+              pnlPercent: asset.pnlPercent,
+              iconUrl: asset.iconUrl,
+              country: asset.country,
+              sector: asset.sector,
+              lastUpdated: asset.lastUpdated,
+            ),
+          )
+          .toList(),
       insights: entity.Insights(
         diversificationScore: insights.diversificationScore,
         riskLevel: insights.riskLevel,
@@ -100,16 +105,16 @@ class TotalValue {
   });
 
   factory TotalValue.fromJson(Map<String, dynamic> json) => TotalValue(
-        value: (json['value'] as num).toDouble(),
-        currency: json['currency'],
-        updatedAt: DateTime.parse(json['updated_at']),
-      );
+    value: (json['value'] as num).toDouble(),
+    currency: json['currency'],
+    updatedAt: DateTime.parse(json['updated_at']),
+  );
 
   Map<String, dynamic> toJson() => {
-        'value': value,
-        'currency': currency,
-        'updated_at': updatedAt.toIso8601String(),
-      };
+    'value': value,
+    'currency': currency,
+    'updated_at': updatedAt.toIso8601String(),
+  };
 }
 
 class Breakdown {
@@ -142,31 +147,28 @@ class Breakdown {
   }
 
   Map<String, dynamic> toJson() => {
-        'by_type': byType,
-        'by_provider': byProvider,
-        'by_country': byCountry,
-        'by_sector': bySector,
-      };
+    'by_type': byType,
+    'by_provider': byProvider,
+    'by_country': byCountry,
+    'by_sector': bySector,
+  };
 }
 
 class Performance {
   final DailyChange dailyChange;
   final TotalPnl totalPnl;
 
-  Performance({
-    required this.dailyChange,
-    required this.totalPnl,
-  });
+  Performance({required this.dailyChange, required this.totalPnl});
 
   factory Performance.fromJson(Map<String, dynamic> json) => Performance(
-        dailyChange: DailyChange.fromJson(json['daily_change']),
-        totalPnl: TotalPnl.fromJson(json['total_pnl']),
-      );
+    dailyChange: DailyChange.fromJson(json['daily_change']),
+    totalPnl: TotalPnl.fromJson(json['total_pnl']),
+  );
 
   Map<String, dynamic> toJson() => {
-        'daily_change': dailyChange.toJson(),
-        'total_pnl': totalPnl.toJson(),
-      };
+    'daily_change': dailyChange.toJson(),
+    'total_pnl': totalPnl.toJson(),
+  };
 }
 
 class DailyChange {
@@ -181,16 +183,16 @@ class DailyChange {
   });
 
   factory DailyChange.fromJson(Map<String, dynamic> json) => DailyChange(
-        amount: (json['amount'] as num).toDouble(),
-        percentage: (json['percentage'] as num).toDouble(),
-        direction: json['direction'],
-      );
+    amount: (json['amount'] as num).toDouble(),
+    percentage: (json['percentage'] as num).toDouble(),
+    direction: json['direction'],
+  );
 
   Map<String, dynamic> toJson() => {
-        'amount': amount,
-        'percentage': percentage,
-        'direction': direction,
-      };
+    'amount': amount,
+    'percentage': percentage,
+    'direction': direction,
+  };
 }
 
 class TotalPnl {
@@ -205,16 +207,16 @@ class TotalPnl {
   });
 
   factory TotalPnl.fromJson(Map<String, dynamic> json) => TotalPnl(
-        realizedUsd: (json['realized_usd'] as num).toDouble(),
-        realizedPercent: (json['realized_percent'] as num).toDouble(),
-        estimated24h: (json['estimated_24h'] as num).toDouble(),
-      );
+    realizedUsd: (json['realized_usd'] as num).toDouble(),
+    realizedPercent: (json['realized_percent'] as num).toDouble(),
+    estimated24h: (json['estimated_24h'] as num).toDouble(),
+  );
 
   Map<String, dynamic> toJson() => {
-        'realized_usd': realizedUsd,
-        'realized_percent': realizedPercent,
-        'estimated_24h': estimated24h,
-      };
+    'realized_usd': realizedUsd,
+    'realized_percent': realizedPercent,
+    'estimated_24h': estimated24h,
+  };
 }
 
 class AssetDetail {
@@ -253,40 +255,40 @@ class AssetDetail {
   });
 
   factory AssetDetail.fromJson(Map<String, dynamic> json) => AssetDetail(
-        id: json['id'],
-        name: json['name'],
-        symbol: json['symbol'],
-        type: json['type'],
-        provider: json['provider'],
-        value: (json['value'] as num).toDouble(),
-        quantity: (json['quantity'] as num).toDouble(),
-        price: (json['price'] as num).toDouble(),
-        change24h: (json['change_24h'] as num).toDouble(),
-        pnlUsd: (json['pnl_usd'] as num).toDouble(),
-        pnlPercent: (json['pnl_percent'] as num).toDouble(),
-        iconUrl: json['icon_url'] ?? '',
-        country: json['country'] ?? '',
-        sector: json['sector'] ?? '',
-        lastUpdated: DateTime.parse(json['last_updated']),
-      );
+    id: json['id'],
+    name: json['name'],
+    symbol: json['symbol'],
+    type: json['type'],
+    provider: json['provider'],
+    value: (json['value'] as num).toDouble(),
+    quantity: (json['quantity'] as num).toDouble(),
+    price: (json['price'] as num).toDouble(),
+    change24h: (json['change_24h'] as num).toDouble(),
+    pnlUsd: (json['pnl_usd'] as num).toDouble(),
+    pnlPercent: (json['pnl_percent'] as num).toDouble(),
+    iconUrl: json['icon_url'] ?? '',
+    country: json['country'] ?? '',
+    sector: json['sector'] ?? '',
+    lastUpdated: DateTime.parse(json['last_updated']),
+  );
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'name': name,
-        'symbol': symbol,
-        'type': type,
-        'provider': provider,
-        'value': value,
-        'quantity': quantity,
-        'price': price,
-        'change_24h': change24h,
-        'pnl_usd': pnlUsd,
-        'pnl_percent': pnlPercent,
-        'icon_url': iconUrl,
-        'country': country,
-        'sector': sector,
-        'last_updated': lastUpdated.toIso8601String(),
-      };
+    'id': id,
+    'name': name,
+    'symbol': symbol,
+    'type': type,
+    'provider': provider,
+    'value': value,
+    'quantity': quantity,
+    'price': price,
+    'change_24h': change24h,
+    'pnl_usd': pnlUsd,
+    'pnl_percent': pnlPercent,
+    'icon_url': iconUrl,
+    'country': country,
+    'sector': sector,
+    'last_updated': lastUpdated.toIso8601String(),
+  };
 }
 
 class Insights {
@@ -303,16 +305,16 @@ class Insights {
   });
 
   factory Insights.fromJson(Map<String, dynamic> json) => Insights(
-        diversificationScore: (json['diversification_score'] as num).toDouble(),
-        riskLevel: json['risk_level'],
-        concentrationWarnings: List<String>.from(json['concentration_warnings']),
-        updateStatus: json['update_status'],
-      );
+    diversificationScore: (json['diversification_score'] as num).toDouble(),
+    riskLevel: json['risk_level'],
+    concentrationWarnings: List<String>.from(json['concentration_warnings']),
+    updateStatus: json['update_status'],
+  );
 
   Map<String, dynamic> toJson() => {
-        'diversification_score': diversificationScore,
-        'risk_level': riskLevel,
-        'concentration_warnings': concentrationWarnings,
-        'update_status': updateStatus,
-      };
+    'diversification_score': diversificationScore,
+    'risk_level': riskLevel,
+    'concentration_warnings': concentrationWarnings,
+    'update_status': updateStatus,
+  };
 }

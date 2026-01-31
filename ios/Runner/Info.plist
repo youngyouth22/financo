@@ -49,5 +49,6 @@
 <array>
     <string>https</string>
 </array>
+<key>com.apple.security.network.client</key>
 </dict>
 </plist>

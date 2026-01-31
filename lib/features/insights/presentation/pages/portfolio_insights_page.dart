@@ -1,22 +1,14 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
+import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
+import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
+import 'package:financo/features/finance/presentation/bloc/finance_state.dart';
 import 'package:financo/features/insights/presentation/widgets/asset_allocation_tab.dart';
 import 'package:financo/features/insights/presentation/widgets/diversification_tab.dart';
 import 'package:financo/features/insights/presentation/widgets/risk_strategy_tab.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// Premium Portfolio Insights Page with 3 tabs
-///
-/// Tab 1: Asset Allocation (The Big Picture)
-/// Tab 2: Diversification & Exposure
-/// Tab 3: Risk & Strategy (The Premium Brain)
-///
-/// Features:
-/// - Interactive charts (Pie, Bar)
-/// - Geographic exposure map
-/// - Risk indicators and gauges
-/// - AI Strategic Insights
-/// - Professional fintech design
 class PortfolioInsightsPage extends StatefulWidget {
   const PortfolioInsightsPage({super.key});
 
@@ -32,8 +24,15 @@ class _PortfolioInsightsPageState extends State<PortfolioInsightsPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+
+    // CRITICAL FIX: Trigger the data load when entering the page
+    // This ensures the Bloc starts fetching the networth and insights.
+    context.read<FinanceBloc>().add(const LoadNetworthEvent());
+
     _tabController.addListener(() {
-      setState(() {}); // Refresh tab indicator
+      if (_tabController.indexIsChanging) {
+        setState(() {});
+      }
     });
   }
 
@@ -43,45 +42,34 @@ class _PortfolioInsightsPageState extends State<PortfolioInsightsPage>
     super.dispose();
   }
 
-  Widget customTabBar({
-    required String text,
-    IconData? iconData,
-    String? icon,
-    required bool selected,
-  }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (iconData != null)
+  // --- UI COMPONENTS ---
+
+  List<Tab> get tabs => [
+    _buildTab(0, 'Allocation', Icons.pie_chart_rounded),
+    _buildTab(1, 'Exposure', Icons.public_rounded),
+    _buildTab(2, 'Strategy', Icons.psychology_rounded),
+  ];
+
+  Tab _buildTab(int index, String label, IconData iconData) {
+    bool selected = _tabController.index == index;
+    return Tab(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
           Icon(
             iconData,
             color: selected ? AppColors.accent : AppColors.gray20,
             size: 18,
           ),
-        if (iconData != null) const SizedBox(width: 6),
-        Text(
-          text,
-          style: AppTypography.headline2Regular.copyWith(
-            color: selected ? AppColors.accent : AppColors.gray20,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: AppTypography.headline2Regular.copyWith(
+              color: selected ? AppColors.accent : AppColors.gray20,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            ),
           ),
-        ),
-      ],
-    );
-  }
-
-  List<Tab> get tabs => [
-        _buildTab(0, 'Allocation', Icons.pie_chart_rounded),
-        _buildTab(1, 'Exposure', Icons.public_rounded),
-        _buildTab(2, 'Strategy', Icons.psychology_rounded),
-      ];
-
-  Tab _buildTab(int index, String label, IconData iconData) {
-    return Tab(
-      child: customTabBar(
-        text: label,
-        iconData: iconData,
-        selected: _tabController.index == index,
+        ],
       ),
     );
   }
@@ -89,60 +77,70 @@ class _PortfolioInsightsPageState extends State<PortfolioInsightsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
         elevation: 0,
-        automaticallyImplyLeading: false,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Portfolio Insights',
-              style: AppTypography.headline3Bold.copyWith(
-                color: AppColors.white,
-                fontSize: 24,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '360° Vision of Your Wealth',
-              style: AppTypography.headline2Regular.copyWith(
-                color: AppColors.gray40,
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
+        centerTitle: true,
+        title: const Text('Portfolio Insights'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(50),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              children: [
-                TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.start,
-                  labelPadding: const EdgeInsets.symmetric(horizontal: 16),
-                  indicatorColor: AppColors.accent,
-                  indicatorWeight: 3,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  dividerColor: Colors.transparent,
-                  tabs: tabs,
-                ),
-              ],
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              indicatorColor: AppColors.accent,
+              indicatorWeight: 3,
+              indicatorSize: TabBarIndicatorSize.label,
+              dividerColor: Colors.transparent,
+              tabs: tabs,
             ),
           ),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          AssetAllocationTab(),
-          DiversificationTab(),
-          RiskStrategyTab(),
-        ],
+      body: BlocBuilder<FinanceBloc, FinanceState>(
+        builder: (context, state) {
+          // If data is loaded, show the tabs
+          if (state is NetworthLoaded) {
+            return TabBarView(
+              controller: _tabController,
+              children: [
+                AssetAllocationTab(networth: state.networth),
+                DiversificationTab(networth: state.networth),
+                // FIX: Pass the networth to the Strategy tab as well
+                const RiskStrategyTab(),
+              ],
+            );
+          }
+
+          // If an error occurs, show the error message
+          if (state is FinanceError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    state.message,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  TextButton(
+                    onPressed: () => context.read<FinanceBloc>().add(
+                      const LoadNetworthEvent(),
+                    ),
+                    child: const Text("Retry"),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Show the loading spinner while waiting for data
+          return Center(
+            child: CircularProgressIndicator(color: AppColors.accent),
+          );
+        },
       ),
     );
   }

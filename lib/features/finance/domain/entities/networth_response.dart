@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:financo/features/finance/data/models/networth_response_model.dart';
 
 /// Entity representing unified networth response with detailed breakdown
 class NetworthResponse extends Equatable {
@@ -95,60 +96,60 @@ class TotalPnl extends Equatable {
   List<Object?> get props => [realizedUsd, realizedPercent, estimated24h];
 }
 
-class AssetDetail extends Equatable {
-  final String id;
-  final String name;
-  final String symbol;
-  final String type;
-  final String provider;
-  final double value;
-  final double quantity;
-  final double price;
-  final double change24h;
-  final double pnlUsd;
-  final double pnlPercent;
-  final String iconUrl;
-  final String country;
-  final String sector;
-  final DateTime lastUpdated;
+// class AssetDetail extends Equatable {
+//   final String id;
+//   final String name;
+//   final String symbol;
+//   final String type;
+//   final String provider;
+//   final double value;
+//   final double quantity;
+//   final double price;
+//   final double change24h;
+//   final double pnlUsd;
+//   final double pnlPercent;
+//   final String iconUrl;
+//   final String country;
+//   final String sector;
+//   final DateTime lastUpdated;
 
-  const AssetDetail({
-    required this.id,
-    required this.name,
-    required this.symbol,
-    required this.type,
-    required this.provider,
-    required this.value,
-    required this.quantity,
-    required this.price,
-    required this.change24h,
-    required this.pnlUsd,
-    required this.pnlPercent,
-    required this.iconUrl,
-    required this.country,
-    required this.sector,
-    required this.lastUpdated,
-  });
+//   const AssetDetail({
+//     required this.id,
+//     required this.name,
+//     required this.symbol,
+//     required this.type,
+//     required this.provider,
+//     required this.value,
+//     required this.quantity,
+//     required this.price,
+//     required this.change24h,
+//     required this.pnlUsd,
+//     required this.pnlPercent,
+//     required this.iconUrl,
+//     required this.country,
+//     required this.sector,
+//     required this.lastUpdated,
+//   });
 
-  @override
-  List<Object?> get props => [
-        id,
-        name,
-        symbol,
-        type,
-        provider,
-        value,
-        quantity,
-        price,
-        change24h,
-        pnlUsd,
-        pnlPercent,
-        iconUrl,
-        country,
-        sector,
-        lastUpdated,
-      ];
-}
+//   @override
+//   List<Object?> get props => [
+//         id,
+//         name,
+//         symbol,
+//         type,
+//         provider,
+//         value,
+//         quantity,
+//         price,
+//         change24h,
+//         pnlUsd,
+//         pnlPercent,
+//         iconUrl,
+//         country,
+//         sector,
+//         lastUpdated,
+//       ];
+// }
 
 class Insights extends Equatable {
   final double diversificationScore;

@@ -1,181 +1,30 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
-import 'package:financo/common/image_resources.dart';
+import 'package:financo/features/finance/data/models/asset_model.dart';
+import 'package:financo/features/finance/domain/entities/asset.dart';
+import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
+import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
+import 'package:financo/features/finance/presentation/bloc/finance_state.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
-
-// Modèle pour un asset
-class Asset {
-  final String symbol;
-  final String name;
-  final double value;
-  final double change;
-  final bool isPositive;
-  final IconData icon;
-  final String category;
-
-  Asset({
-    required this.symbol,
-    required this.name,
-    required this.value,
-    required this.change,
-    required this.isPositive,
-    required this.icon,
-    required this.category,
-  });
-}
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AssetsPage extends StatefulWidget {
   const AssetsPage({super.key});
 
   @override
-  createState() => _AssetsPage();
+  State<AssetsPage> createState() => _AssetsPageState();
 }
 
-class _AssetsPage extends State<AssetsPage>
+class _AssetsPageState extends State<AssetsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
-  // Données factices
-  late final List<Asset> allAssets;
-  late final List<Asset> stocksAssets;
-  late final List<Asset> cryptoAssets;
-  late final List<Asset> fixedAssets;
-  late final List<Asset> vaultAssets;
 
   @override
   void initState() {
     super.initState();
-
-    // Initialiser les données factices
-    _initializeAssets();
-
     _tabController = TabController(length: 5, vsync: this);
-    _tabController.addListener(() {
-      setState(
-        () {},
-      ); // Pour rafraîchir la couleur à chaque changement d'onglet
-    });
-  }
-
-  void _initializeAssets() {
-    stocksAssets = [
-      Asset(
-        symbol: 'AAPL',
-        name: 'Apple Inc.',
-        value: 15250.50,
-        change: 2.45,
-        isPositive: true,
-        icon: Icons.trending_up_rounded,
-        category: 'Technology',
-      ),
-      Asset(
-        symbol: 'MSFT',
-        name: 'Microsoft Corp.',
-        value: 12000.00,
-        change: 1.82,
-        isPositive: true,
-        icon: Icons.trending_up_rounded,
-        category: 'Technology',
-      ),
-      Asset(
-        symbol: 'GOOGL',
-        name: 'Alphabet Inc.',
-        value: 8500.75,
-        change: -0.95,
-        isPositive: false,
-        icon: Icons.trending_down_rounded,
-        category: 'Technology',
-      ),
-      Asset(
-        symbol: 'TSLA',
-        name: 'Tesla Inc.',
-        value: 6200.30,
-        change: 3.50,
-        isPositive: true,
-        icon: Icons.trending_up_rounded,
-        category: 'Automotive',
-      ),
-    ];
-
-    cryptoAssets = [
-      Asset(
-        symbol: 'BTC',
-        name: 'Bitcoin',
-        value: 25000.00,
-        change: 5.23,
-        isPositive: true,
-        icon: Icons.currency_bitcoin_rounded,
-        category: 'Cryptocurrency',
-      ),
-      Asset(
-        symbol: 'ETH',
-        name: 'Ethereum',
-        value: 8750.50,
-        change: 3.12,
-        isPositive: true,
-        icon: Icons.currency_bitcoin_rounded,
-        category: 'Cryptocurrency',
-      ),
-      Asset(
-        symbol: 'XRP',
-        name: 'Ripple',
-        value: 3200.00,
-        change: -2.15,
-        isPositive: false,
-        icon: Icons.trending_down_rounded,
-        category: 'Cryptocurrency',
-      ),
-    ];
-
-    fixedAssets = [
-      Asset(
-        symbol: 'BOND-01',
-        name: 'Government Bonds 5Y',
-        value: 20000.00,
-        change: 0.45,
-        isPositive: true,
-        icon: Icons.event_repeat_rounded,
-        category: 'Fixed Income',
-      ),
-      Asset(
-        symbol: 'CD-02',
-        name: 'Certificate of Deposit',
-        value: 10000.00,
-        change: 0.25,
-        isPositive: true,
-        icon: Icons.event_repeat_rounded,
-        category: 'Fixed Income',
-      ),
-    ];
-
-    vaultAssets = [
-      Asset(
-        symbol: 'GOLD',
-        name: 'Gold Reserve',
-        value: 15500.00,
-        change: 1.75,
-        isPositive: true,
-        icon: Icons.shelves,
-        category: 'Precious Metals',
-      ),
-      Asset(
-        symbol: 'SILVER',
-        name: 'Silver Vault',
-        value: 5200.50,
-        change: -0.65,
-        isPositive: false,
-        icon: Icons.trending_down_rounded,
-        category: 'Precious Metals',
-      ),
-    ];
-
-    allAssets = [
-      ...stocksAssets,
-      ...cryptoAssets,
-      ...fixedAssets,
-      ...vaultAssets,
-    ];
+    // On lance l'écoute des assets en temps réel au démarrage
+    context.read<FinanceBloc>().add(const WatchAssetsEvent());
   }
 
   @override
@@ -184,291 +33,304 @@ class _AssetsPage extends State<AssetsPage>
     super.dispose();
   }
 
-  Widget customTabBar({
-    required String text,
-    String? icon,
-    IconData? iconData,
-    required bool selected,
-  }) {
-    return Row(
-      spacing: 8,
-      children: [
-        if (iconData != null)
-          Icon(
-            iconData,
-            size: 18,
-            color: selected ? AppColors.accent : AppColors.gray20,
-          ),
-        if (icon != null)
-          SvgPicture.asset(
-            icon,
-            height: 15,
-            colorFilter: ColorFilter.mode(
-              selected ? AppColors.accent : AppColors.gray20,
-              BlendMode.srcIn,
-            ),
-          ),
-        Text(text),
-      ],
-    );
-  }
+  // --- LOGIQUE DE FILTRAGE ET GROUPAGE ---
 
-  List<Tab> get tabs => [
-    _buildTab(0, 'All', Icons.grid_view_rounded),
-    _buildTab(1, 'Stocks', Icons.trending_up_rounded),
-    _buildTab(2, 'Crypto', Icons.currency_bitcoin_rounded),
-    _buildTab(3, 'Fixed', Icons.event_repeat_rounded),
-    _buildTab(4, 'Vault', Icons.shelves),
-  ];
-
-  Tab _buildTab(int index, String label, IconData iconData) {
-    return Tab(
-      child: customTabBar(
-        text: label,
-        iconData: iconData,
-        selected: _tabController.index == index,
-      ),
-    );
-  }
-
-  // Widget pour afficher un asset dans la grille
-  Widget _buildAssetGridCard(Asset asset) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.gray80,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.gray70, width: 0.5),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Icône en haut à gauche
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.accent.withAlpha(25),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(asset.icon, color: AppColors.accent, size: 20),
-          ),
-          const SizedBox(height: 8),
-
-          // Nom et symbole
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  asset.name,
-                  style: AppTypography.headline4Medium.copyWith(
-                    color: AppColors.white,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  asset.symbol,
-                  style: AppTypography.headline1Regular.copyWith(
-                    color: AppColors.gray20,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-
-          // Valeur et changement en bas
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '\$${asset.value.toStringAsFixed(2)}',
-                style: AppTypography.headline4Medium.copyWith(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: asset.isPositive
-                      ? Colors.green.withAlpha(25)
-                      : Colors.red.withAlpha(25),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      asset.isPositive
-                          ? Icons.arrow_upward_rounded
-                          : Icons.arrow_downward_rounded,
-                      color: asset.isPositive ? Colors.green : Colors.red,
-                      size: 12,
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      '${asset.change.abs().toStringAsFixed(2)}%',
-                      style: AppTypography.headline1Regular.copyWith(
-                        color: asset.isPositive ? Colors.green : Colors.red,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Widget pour créer une grille d'assets
-  Widget _buildAssetGrid(List<Asset> assets) {
-    if (assets.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inbox_rounded, size: 48, color: AppColors.gray20),
-            const SizedBox(height: 16),
-            Text(
-              'No assets in this category',
-              style: AppTypography.headline4Medium.copyWith(
-                color: AppColors.gray20,
-              ),
-            ),
-          ],
-        ),
-      );
+  Map<String, List<Asset>> _groupCryptoByAddress(List<Asset> assets) {
+    final Map<String, List<Asset>> grouped = {};
+    for (var asset in assets.where((a) => a.type == AssetType.crypto)) {
+      // On extrait l'adresse (on enlève le suffixe :symbol si présent)
+      final address = asset.assetAddressOrId.split(':').first;
+      if (!grouped.containsKey(address)) grouped[address] = [];
+      grouped[address]!.add(asset);
     }
-
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.85,
-      ),
-      itemCount: assets.length,
-      itemBuilder: (context, index) {
-        return _buildAssetGridCard(assets[index]);
-      },
-    );
-  }
-
-  // Widget pour l'en-tête de groupe
-  Widget _buildGroupHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Text(
-        title,
-        style: AppTypography.headline3Medium.copyWith(color: AppColors.white),
-      ),
-    );
-  }
-
-  // Vue groupée pour l'onglet "All" avec grilles
-  Widget _buildGroupedGridView() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (stocksAssets.isNotEmpty) ...[
-            _buildGroupHeader('📈 Stocks'),
-            SizedBox(
-              height:
-                  ((stocksAssets.length / 2).ceil() * 180) +
-                  16, // Calculer la hauteur basée sur le nombre d'items
-              child: _buildAssetGrid(stocksAssets),
-            ),
-          ],
-          if (cryptoAssets.isNotEmpty) ...[
-            _buildGroupHeader('₿ Cryptocurrency'),
-            SizedBox(
-              height: ((cryptoAssets.length / 2).ceil() * 180) + 16,
-              child: _buildAssetGrid(cryptoAssets),
-            ),
-          ],
-          if (fixedAssets.isNotEmpty) ...[
-            _buildGroupHeader('📋 Fixed Income'),
-            SizedBox(
-              height: ((fixedAssets.length / 2).ceil() * 180) + 16,
-              child: _buildAssetGrid(fixedAssets),
-            ),
-          ],
-          if (vaultAssets.isNotEmpty) ...[
-            _buildGroupHeader('🔒 Vault'),
-            SizedBox(
-              height: ((vaultAssets.length / 2).ceil() * 180) + 16,
-              child: _buildAssetGrid(vaultAssets),
-            ),
-          ],
-          const SizedBox(height: 20),
-        ],
-      ),
-    );
-  }
-
-  // Vue grille pour un onglet spécifique
-  Widget _buildCategoryGridView(List<Asset> assets) {
-    return _buildAssetGrid(assets);
+    return grouped;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         centerTitle: true,
-        leading: Padding(
-          padding: const EdgeInsets.all(10),
-          child: SvgPicture.asset(
-            ImageResources.financoLogo,
-            colorFilter: ColorFilter.mode(AppColors.white, BlendMode.srcIn),
-            height: 40,
-          ),
-        ),
         title: Text(
-          'Your Assets',
+          'Your Portfolio',
           style: AppTypography.headline5Bold.copyWith(color: AppColors.white),
         ),
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          tabs: tabs,
-          dividerColor: AppColors.gray70,
           indicatorColor: AppColors.accent,
-          labelStyle: AppTypography.headline3Medium.copyWith(
-            color: AppColors.accent,
-          ),
-          unselectedLabelStyle: AppTypography.headline3Medium.copyWith(
-            color: AppColors.gray20,
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child: TabBarView(
-          controller: _tabController,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            _buildGroupedGridView(), // All - Grouped grid view
-            _buildCategoryGridView(stocksAssets), // Stocks
-            _buildCategoryGridView(cryptoAssets), // Crypto
-            _buildCategoryGridView(fixedAssets), // Fixed
-            _buildCategoryGridView(vaultAssets), // Vault
+          tabs: const [
+            Tab(text: "All"),
+            Tab(text: "Stocks"),
+            Tab(text: "Crypto"),
+            Tab(text: "Fixed"),
+            Tab(text: "Vault"),
           ],
         ),
+      ),
+      body: BlocBuilder<FinanceBloc, FinanceState>(
+        builder: (context, state) {
+          List<Asset> allAssets = [];
+
+          if (state is AssetsWatching) {
+            allAssets = state.assets;
+          } else if (state is FinanceLoading) {
+            return Center(
+              child: CircularProgressIndicator(color: AppColors.accent),
+            );
+          }
+
+          if (allAssets.isEmpty) return _buildEmptyState();
+
+          // Filtrage par catégorie
+          final stocks = allAssets
+              .where((a) => a.type == AssetType.stock)
+              .toList();
+          final cryptoGrouped = _groupCryptoByAddress(allAssets);
+          final fixed = allAssets
+              .where(
+                (a) =>
+                    a.type == AssetType.investment ||
+                    a.type == AssetType.liability,
+              )
+              .toList();
+          final vault = allAssets
+              .where(
+                (a) =>
+                    a.type == AssetType.commodity ||
+                    a.type == AssetType.realEstate,
+              )
+              .toList();
+
+          return TabBarView(
+            controller: _tabController,
+            children: [
+              _buildAllTab(stocks, cryptoGrouped, fixed, vault),
+              _buildGenericGrid(stocks),
+              _buildCryptoTab(cryptoGrouped),
+              _buildGenericGrid(fixed),
+              _buildGenericGrid(vault),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  // --- BUILDERS DE COMPOSANTS ---
+
+  Widget _buildAllTab(
+    List<Asset> stocks,
+    Map<String, List<Asset>> cryptoGrouped,
+    List<Asset> fixed,
+    List<Asset> vault,
+  ) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 100),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (stocks.isNotEmpty) ...[
+            _buildHeader('📈 Stocks'),
+            _buildAssetGrid(stocks),
+          ],
+          if (cryptoGrouped.isNotEmpty) ...[
+            _buildHeader('₿ Cryptocurrency'),
+            ...cryptoGrouped.entries.map(
+              (e) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSubHeader(e.key), // Affiche l'adresse du wallet
+                  _buildAssetGrid(e.value),
+                ],
+              ),
+            ),
+          ],
+          if (fixed.isNotEmpty) ...[
+            _buildHeader('📋 Fixed Income'),
+            _buildAssetGrid(fixed),
+          ],
+          if (vault.isNotEmpty) ...[
+            _buildHeader('🔒 Vault'),
+            _buildAssetGrid(vault),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCryptoTab(Map<String, List<Asset>> cryptoGrouped) {
+    return SingleChildScrollView(
+      child: Column(
+        children: cryptoGrouped.entries
+            .map(
+              (e) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [_buildSubHeader(e.key), _buildAssetGrid(e.value)],
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _buildGenericGrid(List<Asset> assets) {
+    return assets.isEmpty ? _buildEmptyState() : _buildAssetGrid(assets);
+  }
+
+  Widget _buildAssetGrid(List<Asset> assets) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 0.9,
+      ),
+      itemCount: assets.length,
+      itemBuilder: (context, index) => _buildAssetCard(assets[index]),
+    );
+  }
+
+  Widget _buildAssetCard(Asset asset) {
+    final bool isPos = asset.change24h >= 0;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.gray80,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.gray70),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildAssetIcon(asset),
+              IconButton(
+                icon: Icon(Icons.more_vert, color: AppColors.gray40, size: 18),
+                onPressed: () => _showAssetActions(asset),
+              ),
+            ],
+          ),
+          const Spacer(),
+          Text(
+            asset.name,
+            style: AppTypography.headline3SemiBold.copyWith(
+              color: AppColors.white,
+              fontSize: 14,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            asset.symbol,
+            style: AppTypography.headline1Regular.copyWith(
+              color: AppColors.gray40,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '\$${asset.balanceUsd.toStringAsFixed(2)}',
+            style: AppTypography.headline3Bold.copyWith(color: AppColors.white),
+          ),
+          const SizedBox(height: 4),
+          _buildChangeBadge(asset.change24h, isPos),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAssetIcon(Asset asset) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: AppColors.accent.withOpacity(0.1),
+        shape: BoxShape.circle,
+      ),
+      child: ClipOval(
+        child: asset.iconUrl.isNotEmpty
+            ? Image.network(
+                asset.iconUrl,
+                errorBuilder: (_, __, ___) =>
+                    Icon(Icons.account_balance_wallet, color: AppColors.accent),
+              )
+            : Icon(Icons.account_balance_wallet, color: AppColors.accent),
+      ),
+    );
+  }
+
+  Widget _buildChangeBadge(double change, bool isPos) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: (isPos ? Colors.green : Colors.red).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        '${isPos ? '+' : ''}${change.toStringAsFixed(2)}%',
+        style: TextStyle(
+          color: isPos ? Colors.green : Colors.red,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      child: Text(
+        title,
+        style: AppTypography.headline3Bold.copyWith(color: AppColors.white),
+      ),
+    );
+  }
+
+  Widget _buildSubHeader(String address) {
+    final shortAddr =
+        "${address.substring(0, 6)}...${address.substring(address.length - 4)}";
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Text(
+        "Wallet $shortAddr",
+        style: AppTypography.headline1Bold.copyWith(color: AppColors.accent),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Text("No assets found", style: TextStyle(color: AppColors.gray40)),
+    );
+  }
+
+  void _showAssetActions(Asset asset) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.card,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.delete_outline, color: Colors.red),
+            title: const Text(
+              'Remove Asset',
+              style: TextStyle(color: Colors.white),
+            ),
+            onTap: () {
+              context.read<FinanceBloc>().add(DeleteAssetEvent(asset.id));
+              Navigator.pop(context);
+            },
+          ),
+        ],
       ),
     );
   }
