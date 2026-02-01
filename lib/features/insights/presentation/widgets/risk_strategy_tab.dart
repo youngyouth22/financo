@@ -123,11 +123,11 @@ class _RiskStrategyTabState extends State<RiskStrategyTab> {
           // Trigger AI once data is ready
           if (!_aiTriggered) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              _runSilentAiAnalysis(state.insights);
+              _runSilentAiAnalysis(state.networth);
             });
           }
 
-          final insights = state.insights;
+          final insights = state.networth.insights;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),

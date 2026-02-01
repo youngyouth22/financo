@@ -103,13 +103,13 @@ class _PortfolioInsightsPageState extends State<PortfolioInsightsPage>
           builder: (context, state) {
             // If data is loaded, show the tabs
             if (state is InsightsLoaded) {
-              // Use insights data (which contains networth-like structure)
-              final insights = state.insights;
+              // Use networth data which includes insights
+              final networth = state.networth;
               return TabBarView(
                 controller: _tabController,
                 children: [
-                  AssetAllocationTab(networth: insights),
-                  DiversificationTab(networth: insights),
+                  AssetAllocationTab(networth: networth),
+                  DiversificationTab(networth: networth),
                   const RiskStrategyTab(),
                 ],
               );

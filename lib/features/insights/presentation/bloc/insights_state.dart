@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:financo/features/finance/domain/entities/networth_response.dart';
 
 /// States for InsightsBloc
 abstract class InsightsState extends Equatable {
@@ -20,12 +21,12 @@ class InsightsLoading extends InsightsState {
 
 /// Insights loaded successfully
 class InsightsLoaded extends InsightsState {
-  final Map<String, dynamic> insights;
+  final NetworthResponse networth;
 
-  const InsightsLoaded(this.insights);
+  const InsightsLoaded(this.networth);
 
   @override
-  List<Object?> get props => [insights];
+  List<Object?> get props => [networth];
 }
 
 /// Strategy generated successfully
