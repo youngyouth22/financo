@@ -221,7 +221,7 @@ class _DashboardPageState extends State<DashboardPage> {
           width: double.infinity,
           height: 8,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(2),
             child: Row(
               children: [
                 if (flexCrypto > 0)
@@ -252,7 +252,7 @@ class _DashboardPageState extends State<DashboardPage> {
   // ===========================================================================
 
   Widget _buildListSection(List<AssetDetail> assets) {
-    if (assets.isEmpty)
+    if (assets.isEmpty) {
       return const SizedBox(
         height: 100,
         child: Center(
@@ -262,6 +262,7 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ),
       );
+    }
 
     // Tri selon le filtre sélectionné
     List<AssetDetail> sorted = List.from(assets);
@@ -302,6 +303,8 @@ class _DashboardPageState extends State<DashboardPage> {
               style: TextStyle(color: AppColors.accent),
             ),
           ),
+
+        const SizedBox(height: 40),
       ],
     );
   }

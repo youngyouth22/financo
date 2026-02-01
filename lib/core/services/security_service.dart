@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,6 +22,9 @@ class SecurityService {
     required LocalAuthentication localAuth,
   })  : _prefs = prefs,
         _localAuth = localAuth;
+
+  bool _isCurrentlyAuthenticating = false;
+   bool isInternalAuthAction = false; 
 
   /// Check if this is the first time the app is launched
   Future<bool> isFirstLaunch() async {
@@ -57,7 +61,7 @@ class SecurityService {
       final isDeviceSupported = await _localAuth.isDeviceSupported();
 
       if (!canCheckBiometrics || !isDeviceSupported) {
-        return BiometricType.none;
+        return BiometricType.weak;
       }
 
       final availableBiometrics = await _localAuth.getAvailableBiometrics();
@@ -73,9 +77,9 @@ class SecurityService {
         return BiometricType.strong;
       }
 
-      return BiometricType.none;
+      return BiometricType.weak;
     } catch (e) {
-      return BiometricType.none;
+      return BiometricType.weak;
     }
   }
 
@@ -92,8 +96,6 @@ class SecurityService {
       case BiometricType.strong:
       case BiometricType.weak:
         return 'Biometric';
-      case BiometricType.none:
-        return 'PIN';
     }
   }
 
@@ -104,28 +106,33 @@ class SecurityService {
     required String reason,
     bool useErrorDialogs = true,
   }) async {
+      isInternalAuthAction = true;
+    // Si une demande est déjà en cours, on ignore la nouvelle immédiatement
+    if (_isCurrentlyAuthenticating) {
+      debugPrint('Auth déjà en cours, rejet de la nouvelle demande.');
+      return false; 
+    }
+
     try {
-      final canCheckBiometrics = await _localAuth.canCheckBiometrics;
-      final isDeviceSupported = await _localAuth.isDeviceSupported();
+      _isCurrentlyAuthenticating = true; // On verrouille
 
-      if (!canCheckBiometrics && !isDeviceSupported) {
-        // Fallback to device credentials (PIN/Pattern/Password)
-        return await _authenticateWithDeviceCredentials(reason);
-      }
+      final bool canAuthenticateWithBiometrics = await _localAuth.canCheckBiometrics;
+      final bool canAuthenticate = canAuthenticateWithBiometrics || await _localAuth.isDeviceSupported();
 
-      final authenticated = await _localAuth.authenticate(
+      if (!canAuthenticate) return true;
+
+      final result = await _localAuth.authenticate(
         localizedReason: reason,
-        options: AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false,
-          useErrorDialogs: useErrorDialogs,
-        ),
+        biometricOnly: false
       );
-
-      return authenticated;
+      return result;
     } catch (e) {
-      print('Authentication error: $e');
+      debugPrint('Authentication error: $e');
       return false;
+    } finally {
+      await Future.delayed(const Duration(milliseconds: 500));
+      isInternalAuthAction = false; 
+      _isCurrentlyAuthenticating = false; 
     }
   }
 
@@ -134,16 +141,12 @@ class SecurityService {
     try {
       final authenticated = await _localAuth.authenticate(
         localizedReason: reason,
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false,
-          useErrorDialogs: true,
-        ),
+        biometricOnly: false,
       );
 
       return authenticated;
     } catch (e) {
-      print('Device credentials authentication error: $e');
+      debugPrint('Device credentials authentication error: $e');
       return false;
     }
   }
@@ -172,7 +175,7 @@ class SecurityService {
       }
 
       await enableSecurity(
-        biometricType: biometricType != BiometricType.none
+        biometricType: biometricType != BiometricType.weak
             ? biometricName
             : null,
       );

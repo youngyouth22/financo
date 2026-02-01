@@ -38,7 +38,9 @@ class _RiskStrategyTabState extends State<RiskStrategyTab> {
   void _initializeGenUI() {
     // 1. Processor with your widget catalog
     final a2uiMessageProcessor = A2uiMessageProcessor(
-      catalogs: [financeAiCatalog],
+      catalogs: [
+        CoreCatalogItems.asCatalog().copyWith([insightcatalog]),
+      ],
     );
 
     // 2. Setup the AI generator (Gemini via Firebase)
@@ -64,7 +66,11 @@ class _RiskStrategyTabState extends State<RiskStrategyTab> {
       },
       // When the AI updates an existing UI area
       onSurfaceUpdated: (SurfaceUpdated update) {
-        if (mounted) setState(() {});
+        if (mounted) {
+          setState(() {
+            _surfaceIds.add(update.surfaceId);
+          });
+        }
       },
       // When the AI removes a UI area
       onSurfaceDeleted: (SurfaceRemoved update) {

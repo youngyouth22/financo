@@ -1,6 +1,6 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
-import 'package:financo/features/finance/data/models/asset_model.dart';
+import 'package:financo/core/utils/extract_two_first_letter.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
@@ -23,7 +23,6 @@ class _AssetsPageState extends State<AssetsPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
-    // On lance l'écoute des assets en temps réel au démarrage
     context.read<FinanceBloc>().add(const WatchAssetsEvent());
   }
 
@@ -49,17 +48,14 @@ class _AssetsPageState extends State<AssetsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         centerTitle: true,
-        title: Text(
-          'Your Portfolio',
-          style: AppTypography.headline5Bold.copyWith(color: AppColors.white),
-        ),
+        title: const Text('Your Portfolio'),
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
           indicatorColor: AppColors.accent,
+
           tabs: const [
             Tab(text: "All"),
             Tab(text: "Stocks"),
@@ -103,15 +99,18 @@ class _AssetsPageState extends State<AssetsPage>
               )
               .toList();
 
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              _buildAllTab(stocks, cryptoGrouped, fixed, vault),
-              _buildGenericGrid(stocks),
-              _buildCryptoTab(cryptoGrouped),
-              _buildGenericGrid(fixed),
-              _buildGenericGrid(vault),
-            ],
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 50),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildAllTab(stocks, cryptoGrouped, fixed, vault),
+                _buildGenericGrid(stocks),
+                _buildCryptoTab(cryptoGrouped),
+                _buildGenericGrid(fixed),
+                _buildGenericGrid(vault),
+              ],
+            ),
           );
         },
       ),
@@ -140,10 +139,7 @@ class _AssetsPageState extends State<AssetsPage>
             ...cryptoGrouped.entries.map(
               (e) => Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSubHeader(e.key), // Affiche l'adresse du wallet
-                  _buildAssetGrid(e.value),
-                ],
+                children: [_buildSubHeader(e.key), _buildAssetGrid(e.value)],
               ),
             ),
           ],
@@ -188,7 +184,7 @@ class _AssetsPageState extends State<AssetsPage>
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 0.9,
+        childAspectRatio: 1 / 1,
       ),
       itemCount: assets.length,
       itemBuilder: (context, index) => _buildAssetCard(assets[index]),
@@ -199,7 +195,7 @@ class _AssetsPageState extends State<AssetsPage>
     final bool isPos = asset.change24h >= 0;
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: AppColors.gray80,
         borderRadius: BorderRadius.circular(16),
@@ -228,19 +224,26 @@ class _AssetsPageState extends State<AssetsPage>
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          Text(
-            asset.symbol,
-            style: AppTypography.headline1Regular.copyWith(
-              color: AppColors.gray40,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  asset.symbol,
+                  style: AppTypography.headline1Regular.copyWith(
+                    color: AppColors.gray40,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              if (asset.change24h > 0)
+                _buildChangeBadge(asset.change24h, isPos),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
             '\$${asset.balanceUsd.toStringAsFixed(2)}',
             style: AppTypography.headline3Bold.copyWith(color: AppColors.white),
           ),
-          const SizedBox(height: 4),
-          _buildChangeBadge(asset.change24h, isPos),
         ],
       ),
     );
@@ -250,18 +253,30 @@ class _AssetsPageState extends State<AssetsPage>
     return Container(
       width: 36,
       height: 36,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: AppColors.accent.withOpacity(0.1),
+        color: AppColors.gray30.withValues(alpha: 0.1),
+        border: Border(
+          top: BorderSide(color: AppColors.gray40.withValues(alpha: 0.2)),
+          left: BorderSide(color: AppColors.gray40.withValues(alpha: 0.2)),
+        ),
         shape: BoxShape.circle,
       ),
       child: ClipOval(
         child: asset.iconUrl.isNotEmpty
             ? Image.network(
                 asset.iconUrl,
-                errorBuilder: (_, __, ___) =>
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) =>
                     Icon(Icons.account_balance_wallet, color: AppColors.accent),
               )
-            : Icon(Icons.account_balance_wallet, color: AppColors.accent),
+            : Text(
+                extractTwoFirstLetter(asset.symbol),
+                textAlign: TextAlign.center,
+                style: AppTypography.headline2Bold.copyWith(
+                  color: AppColors.gray60,
+                ),
+              ),
       ),
     );
   }
@@ -270,7 +285,7 @@ class _AssetsPageState extends State<AssetsPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: (isPos ? Colors.green : Colors.red).withOpacity(0.1),
+        color: (isPos ? Colors.green : Colors.red).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(

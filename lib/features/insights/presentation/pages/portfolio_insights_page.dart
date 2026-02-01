@@ -98,49 +98,55 @@ class _PortfolioInsightsPageState extends State<PortfolioInsightsPage>
           ),
         ),
       ),
-      body: BlocBuilder<FinanceBloc, FinanceState>(
-        builder: (context, state) {
-          // If data is loaded, show the tabs
-          if (state is NetworthLoaded) {
-            return TabBarView(
-              controller: _tabController,
-              children: [
-                AssetAllocationTab(networth: state.networth),
-                DiversificationTab(networth: state.networth),
-                // FIX: Pass the networth to the Strategy tab as well
-                const RiskStrategyTab(),
-              ],
-            );
-          }
-
-          // If an error occurs, show the error message
-          if (state is FinanceError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: SafeArea(
+        child: BlocBuilder<FinanceBloc, FinanceState>(
+          builder: (context, state) {
+            // If data is loaded, show the tabs
+            if (state is NetworthLoaded) {
+              return TabBarView(
+                controller: _tabController,
                 children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                  const SizedBox(height: 16),
-                  Text(
-                    state.message,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  TextButton(
-                    onPressed: () => context.read<FinanceBloc>().add(
-                      const LoadNetworthEvent(),
-                    ),
-                    child: const Text("Retry"),
-                  ),
+                  AssetAllocationTab(networth: state.networth),
+                  DiversificationTab(networth: state.networth),
+                  // FIX: Pass the networth to the Strategy tab as well
+                  const RiskStrategyTab(),
                 ],
-              ),
+              );
+            }
+      
+            // If an error occurs, show the error message
+            if (state is FinanceError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      state.message,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    TextButton(
+                      onPressed: () => context.read<FinanceBloc>().add(
+                        const LoadNetworthEvent(),
+                      ),
+                      child: const Text("Retry"),
+                    ),
+                  ],
+                ),
+              );
+            }
+      
+            // Show the loading spinner while waiting for data
+            return Center(
+              child: CircularProgressIndicator(color: AppColors.accent),
             );
-          }
-
-          // Show the loading spinner while waiting for data
-          return Center(
-            child: CircularProgressIndicator(color: AppColors.accent),
-          );
-        },
+          },
+        ),
       ),
     );
   }

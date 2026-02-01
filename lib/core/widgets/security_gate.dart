@@ -4,23 +4,10 @@ import 'package:financo/core/services/security_service.dart';
 import 'package:financo/di/injection_container.dart';
 import 'package:flutter/material.dart';
 
-/// Production-ready security gate
-///
-/// This widget blocks access to the app until the user authenticates
-/// with PIN/Biometric if security is enabled.
-///
-/// Features:
-/// - Automatic authentication on app resume
-/// - Biometric/PIN authentication
-/// - Error handling with retry
-/// - Beautiful lock screen UI
 class SecurityGate extends StatefulWidget {
   final Widget child;
 
-  const SecurityGate({
-    super.key,
-    required this.child,
-  });
+  const SecurityGate({super.key, required this.child});
 
   @override
   State<SecurityGate> createState() => _SecurityGateState();
@@ -37,7 +24,9 @@ class _SecurityGateState extends State<SecurityGate> with WidgetsBindingObserver
     super.initState();
     _securityService = sl<SecurityService>();
     WidgetsBinding.instance.addObserver(this);
-    _checkAuthentication();
+
+    // Initial check on app startup
+    _checkInitialAuth();
   }
 
   @override
@@ -46,32 +35,31 @@ class _SecurityGateState extends State<SecurityGate> with WidgetsBindingObserver
     super.dispose();
   }
 
-  @override
+ @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // When app comes to foreground, check authentication again
+    if (!_securityService.isSecurityEnabled()) return;
+    if (_securityService.isInternalAuthAction) return; 
+
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      if (_isAuthenticated) {
+        setState(() => _isAuthenticated = false);
+      }
+    }
+
     if (state == AppLifecycleState.resumed) {
-      if (_securityService.isSecurityEnabled() && _isAuthenticated) {
-        setState(() {
-          _isAuthenticated = false;
-        });
+      if (!_isAuthenticated && !_isAuthenticating) {
         _authenticate();
       }
     }
   }
 
-  Future<void> _checkAuthentication() async {
-    final isSecurityEnabled = _securityService.isSecurityEnabled();
-
-    if (!isSecurityEnabled) {
-      // Security is disabled, allow access
-      setState(() {
-        _isAuthenticated = true;
-      });
-      return;
+  Future<void> _checkInitialAuth() async {
+    if (!_securityService.isSecurityEnabled()) {
+      setState(() => _isAuthenticated = true);
+    } else {
+      // Force authentication on startup
+      _authenticate();
     }
-
-    // Security is enabled, require authentication
-    await _authenticate();
   }
 
   Future<void> _authenticate() async {
@@ -83,7 +71,6 @@ class _SecurityGateState extends State<SecurityGate> with WidgetsBindingObserver
     });
 
     try {
-      final biometricType = await _securityService.getBiometricTypeName();
       final authenticated = await _securityService.authenticate(
         reason: 'Authenticate to access Financo',
         useErrorDialogs: true,
@@ -103,17 +90,19 @@ class _SecurityGateState extends State<SecurityGate> with WidgetsBindingObserver
     } catch (e) {
       setState(() {
         _isAuthenticating = false;
-        _errorMessage = 'Error: ${e.toString()}';
+        _errorMessage = 'An error occurred. Please try again.';
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // If the user is authenticated, we show the app content
     if (_isAuthenticated) {
       return widget.child;
     }
 
+    // Otherwise, we show the beautiful lock screen
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -123,126 +112,95 @@ class _SecurityGateState extends State<SecurityGate> with WidgetsBindingObserver
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Lock Icon
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.lock_rounded,
-                    size: 60,
-                    color: AppColors.accent,
-                  ),
-                ),
+                _buildLockIcon(),
                 const SizedBox(height: 32),
-
-                // Title
                 Text(
                   'Financo is Locked',
-                  style: AppTypography.headline4SemiBold.copyWith(
+                  style: AppTypography.headline4Bold.copyWith(
                     color: AppColors.white,
                     fontSize: 24,
                   ),
                 ),
                 const SizedBox(height: 12),
-
-                // Description
-                FutureBuilder<String>(
-                  future: _securityService.getBiometricTypeName(),
-                  builder: (context, snapshot) {
-                    final biometricType = snapshot.data ?? 'PIN';
-                    return Text(
-                      'Use $biometricType to unlock',
-                      style: AppTypography.headline2Regular.copyWith(
-                        color: AppColors.gray30,
-                        fontSize: 16,
-                      ),
-                      textAlign: TextAlign.center,
-                    );
-                  },
-                ),
+                _buildBiometricTypeDescription(),
                 const SizedBox(height: 48),
-
-                // Error Message
-                if (_errorMessage != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Colors.red.withOpacity(0.3),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.error_outline_rounded,
-                          color: Colors.red,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _errorMessage!,
-                            style: AppTypography.headline2Regular.copyWith(
-                              color: Colors.red,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-
-                // Unlock Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isAuthenticating ? null : _authenticate,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: AppColors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: _isAuthenticating
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.fingerprint_rounded, size: 24),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Unlock',
-                                style: AppTypography.headline3SemiBold.copyWith(
-                                  color: AppColors.white,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                  ),
-                ),
+                if (_errorMessage != null) _buildErrorBadge(),
+                const SizedBox(height: 24),
+                _buildUnlockButton(),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // UI HELPERS (Preserving your original design)
+  // ===========================================================================
+
+  Widget _buildLockIcon() {
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: BoxDecoration(
+        color: AppColors.accent.withOpacity(0.1),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(Icons.lock_rounded, size: 60, color: AppColors.accent),
+    );
+  }
+
+  Widget _buildBiometricTypeDescription() {
+    return FutureBuilder<String>(
+      future: _securityService.getBiometricTypeName(),
+      builder: (context, snapshot) => Text(
+        'Use ${snapshot.data ?? "PIN"} to unlock',
+        style: AppTypography.headline2Regular.copyWith(
+          color: AppColors.gray30,
+          fontSize: 16,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorBadge() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.red.withOpacity(0.3)),
+      ),
+      child: Text(
+        _errorMessage!,
+        style: const TextStyle(color: Colors.red, fontSize: 14),
+      ),
+    );
+  }
+
+  Widget _buildUnlockButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _isAuthenticating ? null : _authenticate,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.accent,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: _isAuthenticating
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
+                ),
+              )
+            : const Text('Unlock Now', style: TextStyle(color: Colors.white)),
       ),
     );
   }

@@ -65,20 +65,14 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
           }
         },
         child: Scaffold(
-          backgroundColor: AppColors.background,
           appBar: AppBar(
-            backgroundColor: AppColors.background,
             elevation: 0,
             leading: IconButton(
               onPressed: () => Navigator.of(context).pop(),
               icon: Icon(Icons.arrow_back, color: AppColors.white),
             ),
-            title: Text(
-              'Add Crypto Wallet',
-              style: AppTypography.headline4Bold.copyWith(
-                color: AppColors.white,
-              ),
-            ),
+            centerTitle: true,
+            title: const Text('Add Crypto Wallet'),
           ),
           body: SafeArea(
             child: Builder(
@@ -94,18 +88,6 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
                         _buildInfoCard(),
 
                         const SizedBox(height: 32),
-
-                        // Wallet name field
-                        Text(
-                          'Wallet Name',
-                          style: AppTypography.headline3SemiBold.copyWith(
-                            color: AppColors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        _buildNameField(),
-
-                        const SizedBox(height: 24),
 
                         // Wallet address field
                         Text(
@@ -152,9 +134,12 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
+        color: AppColors.primary.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3), width: 1),
+        border: Border.all(
+          color: AppColors.primary.withValues(alpha: 0.3),
+          width: 1,
+        ),
       ),
       child: Row(
         children: [
@@ -170,45 +155,6 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
           ),
         ],
       ),
-    );
-  }
-
-  /// Build name field
-  Widget _buildNameField() {
-    return TextFormField(
-      controller: _nameController,
-      style: AppTypography.headline3Regular.copyWith(color: AppColors.white),
-      decoration: InputDecoration(
-        hintText: 'e.g., My Ethereum Wallet',
-        hintStyle: AppTypography.headline3Regular.copyWith(
-          color: AppColors.gray50,
-        ),
-        filled: true,
-        fillColor: AppColors.card,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.gray70),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.gray70),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.primary, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.error),
-        ),
-        prefixIcon: Icon(Icons.label_outline, color: AppColors.gray50),
-      ),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return 'Please enter a wallet name';
-        }
-        return null;
-      },
     );
   }
 
@@ -325,13 +271,10 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
   /// Handle add wallet
   void _handleAddWallet(BuildContext context) {
     if (_formKey.currentState!.validate()) {
-      final name = _nameController.text.trim();
       final address = _addressController.text.trim().toLowerCase();
 
       // Add crypto wallet via BLoC
-      context.read<FinanceBloc>().add(
-        AddCryptoWalletEvent(address),
-      );
+      context.read<FinanceBloc>().add(AddCryptoWalletEvent(address));
     }
   }
 }

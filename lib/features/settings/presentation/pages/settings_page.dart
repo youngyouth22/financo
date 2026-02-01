@@ -2,7 +2,6 @@ import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/core/services/security_service.dart';
 import 'package:financo/di/injection_container.dart';
-import 'package:financo/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_event.dart';
 import 'package:flutter/material.dart';
@@ -44,66 +43,48 @@ class _SettingsPageState extends State<SettingsPage> {
     });
   }
 
-  Future<void> _toggleSecurity(bool value) async {
-    if (value) {
-      // Enable security
-      final result = await _securityService.setupSecurity();
+ bool _isProcessing = false; 
 
-      if (!mounted) return;
+Future<void> _toggleSecurity(bool value) async {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
 
-      if (result.success) {
-        setState(() {
-          _isSecurityEnabled = true;
-          _biometricType = result.biometricType ?? 'PIN';
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.message),
-            backgroundColor: Colors.green,
-          ),
-        );
+    try {
+      if (value) {
+        final result = await _securityService.setupSecurity();
+        if (result.success) {
+          setState(() {
+            _isSecurityEnabled = true;
+            _biometricType = result.biometricType ?? 'PIN';
+          });
+          _showSnackBar(result.message, Colors.green);
+        } else {
+          setState(() => _isSecurityEnabled = false);
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.message),
-            backgroundColor: Colors.red,
-          ),
+        final authenticated = await _securityService.authenticate(
+          reason: 'Authenticate to disable app lock',
         );
+
+        if (authenticated) {
+          await _securityService.disableSecurity();
+          setState(() {
+            _isSecurityEnabled = false;
+          });
+          _showSnackBar('Security disabled', Colors.orange);
+        } else {
+          setState(() => _isSecurityEnabled = true);
+        }
       }
-    } else {
-      // Disable security - requires authentication first
-      final authenticated = await _securityService.authenticate(
-        reason: 'Authenticate to disable security',
-        useErrorDialogs: true,
-      );
-
-      if (!mounted) return;
-
-      if (authenticated) {
-        await _securityService.disableSecurity();
-
-        setState(() {
-          _isSecurityEnabled = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Security disabled successfully'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Authentication failed. Security remains enabled.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
-
+void _showSnackBar(String message, Color color) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(message), backgroundColor: color),
+  );
+}
   Future<void> _handleLogout() async {
     // Show confirmation dialog
     final confirmed = await showDialog<bool>(
@@ -147,7 +128,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     if (confirmed == true && mounted) {
       // Dispatch logout event to AuthBloc
-      context.read<AuthBloc>().add(const LogoutRequested());
+      context.read<AuthBloc>().add(const AuthSignOutRequested());
     }
   }
 
@@ -187,7 +168,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: AppColors.accent.withOpacity(0.2),
+                      color: AppColors.accent.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -250,7 +231,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     height: 40,
                     decoration: BoxDecoration(
                       color: _isSecurityEnabled
-                          ? Colors.green.withOpacity(0.2)
+                          ? Colors.green.withValues(alpha: 0.2)
                           : AppColors.gray80,
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -289,8 +270,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   Switch(
                     value: _isSecurityEnabled,
                     onChanged: _toggleSecurity,
-                    activeColor: Colors.green,
-                    activeTrackColor: Colors.green.withOpacity(0.5),
+                    activeThumbColor: Colors.green,
+                    activeTrackColor: Colors.green.withValues(alpha: 0.5),
                   ),
                 ],
               ),
@@ -316,7 +297,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 decoration: BoxDecoration(
                   color: AppColors.card,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
@@ -324,7 +305,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.2),
+                        color: Colors.red.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
@@ -358,7 +339,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 16,
-                      color: Colors.red.withOpacity(0.5),
+                      color: Colors.red.withValues(alpha: 0.5),
                     ),
                   ],
                 ),

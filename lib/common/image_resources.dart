@@ -14,6 +14,7 @@ class ImageResources {
   static const expenseIcon = "assets/icons/expense_arrow.svg";
   static const incomeIcon = "assets/icons/income_arrow.svg";
   static const securedPin = "assets/lottie/Forgot_Password_Animation.json";
+  static const arrowRight = "assets/icons/Chevron_Right.svg";
 
   // Illustrations
   static const placeHolderPng = "assets/images/place_holder.png";
