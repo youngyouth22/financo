@@ -23,6 +23,10 @@ import 'package:financo/features/finance/domain/usecases/search_stocks_usecase.d
 import 'package:financo/features/finance/domain/usecases/update_asset_quantity_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/watch_assets_usecase.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
+import 'package:financo/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:financo/features/assets/presentation/bloc/assets_bloc.dart';
+import 'package:financo/features/insights/presentation/bloc/insights_bloc.dart';
+import 'package:financo/core/services/connectivity_service.dart';
 import 'package:financo/core/services/security_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get_it/get_it.dart';
@@ -65,6 +69,11 @@ Future<void> initializeDependencies() async {
       prefs: sl<SharedPreferences>(),
       localAuth: sl<LocalAuthentication>(),
     ),
+  );
+
+  // Enregistrement du ConnectivityService
+  sl.registerLazySingleton<ConnectivityService>(
+    () => ConnectivityService(),
   );
 
   final GoogleSignIn googleSignIn = GoogleSignIn.instance;
@@ -111,7 +120,10 @@ Future<void> initializeDependencies() async {
 
   // Repositories
   sl.registerLazySingleton<FinanceRepository>(
-    () => FinanceRepositoryImpl(remoteDataSource: sl()),
+    () => FinanceRepositoryImpl(
+      remoteDataSource: sl(),
+      connectivityService: sl(),
+    ),
   );
 
   // Use Cases
@@ -130,7 +142,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => AddManualAssetUseCase(sl()));
   sl.registerLazySingleton(() => AddAssetReminderUseCase(sl()));
 
-  // BLoC
+  // BLoCs
   sl.registerFactory(
     () => FinanceBloc(
       getNetworthUseCase: sl(),
@@ -147,6 +159,32 @@ Future<void> initializeDependencies() async {
       getWealthHistoryUseCase: sl(),
       addManualAssetUseCase: sl(),
       addAssetReminderUseCase: sl(),
+    ),
+  );
+
+  // Specialized BLoCs
+  sl.registerFactory(
+    () => DashboardBloc(
+      getNetworthUseCase: sl(),
+      getDailyChangeUseCase: sl(),
+    ),
+  );
+
+  sl.registerFactory(
+    () => AssetsBloc(
+      getAssetsUseCase: sl(),
+      watchAssetsUseCase: sl(),
+      addCryptoWalletUseCase: sl(),
+      addStockUseCase: sl(),
+      addManualAssetUseCase: sl(),
+      updateAssetQuantityUseCase: sl(),
+      financeRepository: sl(),
+    ),
+  );
+
+  sl.registerFactory(
+    () => InsightsBloc(
+      financeRepository: sl(),
     ),
   );
 }

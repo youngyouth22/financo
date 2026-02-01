@@ -33,6 +33,11 @@ class CacheFailure extends Failure {
   const CacheFailure(super.message);
 }
 
+/// Échec lié à l'absence de connexion internet
+class OfflineFailure extends Failure {
+  const OfflineFailure(super.message);
+}
+
 /// Échec générique
 class UnknownFailure extends Failure {
   const UnknownFailure(super.message);

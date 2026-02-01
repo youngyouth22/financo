@@ -30,26 +30,33 @@ class AppRouter {
       debugLogDiagnostics: true,
       refreshListenable: GoRouterRefreshStream(authBloc.stream),
       redirect: (BuildContext context, GoRouterState state) {
-        final authState = authBloc.state;
-        final isAuthRoute = state.matchedLocation == authRoute;
+        try {
+          final authState = authBloc.state;
+          final isAuthRoute = state.matchedLocation == authRoute;
 
-        // If user is authenticated and on auth page, redirect to home
-        if (authState is Authenticated && isAuthRoute) {
-          return homeRoute;
-        }
+          // If user is authenticated and on auth page, redirect to home
+          if (authState is Authenticated && isAuthRoute) {
+            return homeRoute;
+          }
 
-        // If user is not authenticated and not on auth page, redirect to auth
-        if (authState is Unauthenticated && !isAuthRoute) {
-          return authRoute;
-        }
+          // If user is not authenticated and not on auth page, redirect to auth
+          if (authState is Unauthenticated && !isAuthRoute) {
+            return authRoute;
+          }
 
-        // If loading or error, stay on current page
-        if (authState is AuthLoading || authState is AuthError) {
+          // If loading or error, stay on current page
+          if (authState is AuthLoading || authState is AuthError) {
+            return null;
+          }
+
+          // No redirect needed
+          return null;
+        } catch (e) {
+          // Handle any unexpected errors (e.g., Supabase connection issues)
+          // Stay on current page instead of crashing
+          debugPrint('Router redirect error: $e');
           return null;
         }
-
-        // No redirect needed
-        return null;
       },
       routes: [
         GoRoute(

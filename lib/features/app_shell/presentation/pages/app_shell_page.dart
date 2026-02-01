@@ -3,7 +3,9 @@ import 'package:financo/core/services/security_service.dart';
 import 'package:financo/features/assets/presentation/pages/assets_page.dart';
 import 'package:financo/features/finance/presentation/pages/add_asset_choice_page.dart';
 import 'package:financo/features/insights/presentation/pages/portfolio_insights_page.dart';
-import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
+import 'package:financo/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:financo/features/assets/presentation/bloc/assets_bloc.dart';
+import 'package:financo/features/insights/presentation/bloc/insights_bloc.dart';
 import 'package:financo/features/home/presentation/pages/dashboard_page.dart';
 import 'package:financo/features/home/presentation/widgets/custom_floating_button.dart';
 import 'package:financo/features/home/presentation/widgets/custom_nav_bar.dart';
@@ -22,10 +24,21 @@ class AppShellPage extends StatefulWidget {
 class _AppShellPageState extends State<AppShellPage> {
   int _currentIndex = 0;
   late PageController _controller;
+  
+  // Wrap pages with their respective BLoC providers
   List<Widget> get _pages => [
-    const DashboardPage(),
-    const AssetsPage(),
-    const PortfolioInsightsPage(),
+    BlocProvider(
+      create: (context) => sl<DashboardBloc>(),
+      child: const DashboardPage(),
+    ),
+    BlocProvider(
+      create: (context) => sl<AssetsBloc>(),
+      child: const AssetsPage(),
+    ),
+    BlocProvider(
+      create: (context) => sl<InsightsBloc>(),
+      child: const PortfolioInsightsPage(),
+    ),
     const SettingsPage(),
   ];
 
@@ -68,9 +81,7 @@ class _AppShellPageState extends State<AppShellPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => sl<FinanceBloc>(),
-      child: Scaffold(
+    return Scaffold(
         extendBody: true,
         floatingActionButton: CustomFloatingButton(
           onPressed: () {

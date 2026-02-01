@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:financo/common/app_themes.dart';
 import 'package:financo/core/router/app_router.dart';
+import 'package:financo/core/widgets/no_internet_banner.dart';
 import 'package:financo/di/injection_container.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_event.dart';
@@ -47,13 +48,15 @@ class MainApp extends StatelessWidget {
     return BlocProvider(
       // Provide AuthBloc at the root level for global access
       create: (context) => sl<AuthBloc>()..add(const AuthCheckRequested()),
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        title: 'Financo',
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.dark,
-        theme: ThemeData.dark(useMaterial3: true),
-        routerConfig: AppRouter.createRouter(),
+      child: NoInternetBanner(
+        child: MaterialApp.router(
+          debugShowCheckedModeBanner: false,
+          title: 'Financo',
+          darkTheme: AppTheme.darkTheme,
+          themeMode: ThemeMode.dark,
+          theme: ThemeData.dark(useMaterial3: true),
+          routerConfig: AppRouter.createRouter(),
+        ),
       ),
     );
   }

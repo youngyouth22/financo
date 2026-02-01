@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:financo/core/error/exceptions.dart';
 import 'package:financo/core/error/failures.dart';
+import 'package:financo/core/services/connectivity_service.dart';
 import 'package:financo/features/finance/data/datasources/finance_remote_datasource.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:financo/features/finance/domain/entities/networth_response.dart';
@@ -13,8 +14,17 @@ import 'package:financo/features/finance/domain/repositories/finance_repository.
 /// Maps data models to domain entities
 class FinanceRepositoryImpl implements FinanceRepository {
   final FinanceRemoteDataSource remoteDataSource;
+  final ConnectivityService connectivityService;
 
-  FinanceRepositoryImpl({required this.remoteDataSource});
+  FinanceRepositoryImpl({
+    required this.remoteDataSource,
+    required this.connectivityService,
+  });
+
+  /// Check if device is online before making API calls
+  Future<bool> _isOnline() async {
+    return await connectivityService.checkConnection();
+  }
 
   // ===========================================================================
   // ASSETS CRUD
@@ -22,6 +32,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, List<Asset>>> getAssets() async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       final assets = await remoteDataSource.getAssets();
       return Right(assets.map((model) => model.toEntity()).toList());
@@ -47,6 +60,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, void>> deleteAsset(String assetId) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       await remoteDataSource.deleteAsset(assetId);
       return const Right(null);
@@ -60,6 +76,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
   @override
   Future<Either<Failure, void>> updateAssetQuantity(
       String assetId, double newQuantity) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       await remoteDataSource.updateAssetQuantity(assetId, newQuantity);
       return const Right(null);
@@ -76,6 +95,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, void>> addCryptoWallet(String walletAddress) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       await remoteDataSource.addCryptoWallet(walletAddress);
       return const Right(null);
@@ -88,6 +110,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, void>> removeCryptoWallet(String walletAddress) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       await remoteDataSource.removeCryptoWallet(walletAddress);
       return const Right(null);
@@ -100,6 +125,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, Map<String, dynamic>>> setupMoralisStream() async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       final result = await remoteDataSource.setupMoralisStream();
       return Right(result);
@@ -112,6 +140,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, void>> cleanupUserCrypto() async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       await remoteDataSource.cleanupUserCrypto();
       return const Right(null);
@@ -128,6 +159,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, List<dynamic>>> searchStocks(String query) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       final results = await remoteDataSource.searchStocks(query);
       return Right(results);
@@ -141,6 +175,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
   @override
   Future<Either<Failure, Map<String, dynamic>>> addStock(
       String symbol, double quantity) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       final result = await remoteDataSource.addStock(symbol, quantity);
       return Right(result);
@@ -153,6 +190,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, Map<String, dynamic>>> updateStockPrices() async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       final result = await remoteDataSource.updateStockPrices();
       return Right(result);
@@ -165,6 +205,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, void>> removeStock(String assetId) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       await remoteDataSource.removeStock(assetId);
       return const Right(null);
@@ -181,6 +224,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, Map<String, dynamic>>> getPlaidLinkToken() async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       final result = await remoteDataSource.getPlaidLinkToken();
       return Right(result);
@@ -194,6 +240,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
   @override
   Future<Either<Failure, Map<String, dynamic>>> exchangePlaidToken(
       String publicToken) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       final result = await remoteDataSource.exchangePlaidToken(publicToken);
       return Right(result);
@@ -206,6 +255,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, Map<String, dynamic>>> syncBankAccounts() async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       final result = await remoteDataSource.syncBankAccounts();
       return Right(result);
@@ -219,6 +271,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
   @override
   Future<Either<Failure, Map<String, dynamic>>> getBankAccounts(
       String itemId) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       final result = await remoteDataSource.getBankAccounts(itemId);
       return Right(result);
@@ -231,6 +286,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, void>> removeBankConnection(String itemId) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       await remoteDataSource.removeBankConnection(itemId);
       return const Right(null);
@@ -248,6 +306,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
   @override
   Future<Either<Failure, NetworthResponse>> getNetworth(
       {bool forceRefresh = false}) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       final result = await remoteDataSource.getNetworth(forceRefresh: forceRefresh);
       return Right(result.toEntity());
@@ -260,6 +321,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, Map<String, dynamic>>> getDailyChange() async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       final result = await remoteDataSource.getDailyChange();
       return Right(result);
@@ -272,6 +336,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, Map<String, dynamic>>> recordWealthSnapshot() async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       final result = await remoteDataSource.recordWealthSnapshot();
       return Right(result);
@@ -289,6 +356,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
   @override
   Future<Either<Failure, List<WealthSnapshot>>> getWealthHistory(
       {int? limit}) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       final snapshots = await remoteDataSource.getWealthHistory(limit: limit);
       return Right(snapshots.map((model) => model.toEntity()).toList());
@@ -301,6 +371,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, void>> deleteOldSnapshots() async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       await remoteDataSource.deleteOldSnapshots();
       return const Right(null);
@@ -317,6 +390,9 @@ class FinanceRepositoryImpl implements FinanceRepository {
 
   @override
   Future<Either<Failure, Map<String, dynamic>>> getPortfolioInsights() async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
     try {
       final result = await remoteDataSource.getPortfolioInsights();
       return Right(result);
