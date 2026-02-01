@@ -119,7 +119,7 @@ class _RiskStrategyTabState extends State<RiskStrategyTab> {
   Widget build(BuildContext context) {
     return BlocBuilder<InsightsBloc, InsightsState>(
       builder: (context, state) {
-        if (state is NetworthLoaded) {
+        if (state is InsightsLoaded) {
           // Trigger AI once data is ready
           if (!_aiTriggered) {
             WidgetsBinding.instance.addPostFrameCallback((_) {

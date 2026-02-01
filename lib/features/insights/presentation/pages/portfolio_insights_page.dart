@@ -102,7 +102,7 @@ class _PortfolioInsightsPageState extends State<PortfolioInsightsPage>
         child: BlocBuilder<InsightsBloc, InsightsState>(
           builder: (context, state) {
             // If data is loaded, show the tabs
-            if (state is NetworthLoaded) {
+            if (state is InsightsLoaded) {
               return TabBarView(
                 controller: _tabController,
                 children: [

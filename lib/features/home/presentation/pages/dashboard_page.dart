@@ -31,7 +31,8 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   @override
-  Widget build(BuildContext context) {      child: BlocListener<DashboardBloc, DashboardState>(
+  Widget build(BuildContext context) {      
+    return BlocListener<DashboardBloc, DashboardState>(
       listener: (context, state) {
         if (state is DashboardError) {
           ScaffoldMessenger.of(
