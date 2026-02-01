@@ -7,9 +7,9 @@ import 'package:financo/common/common_widgets/status_button.dart';
 import 'package:financo/common/image_resources.dart';
 import 'package:financo/features/finance/data/models/networth_response_model.dart';
 import 'package:financo/features/home/presentation/widgets/subscription_home_row.dart';
-import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
-import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
-import 'package:financo/features/finance/presentation/bloc/finance_state.dart';
+import 'package:financo/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:financo/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:financo/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
@@ -27,26 +27,24 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    context.read<FinanceBloc>().add(const LoadNetworthEvent());
+    context.read<DashboardBloc>().add(const LoadDashboardEvent());
   }
 
   @override
-  Widget build(BuildContext context) {
-    return BlocListener<FinanceBloc, FinanceState>(
+  Widget build(BuildContext context) {      child: BlocListener<DashboardBloc, DashboardState>(
       listener: (context, state) {
-        if (state is FinanceError) {
+        if (state is DashboardError) {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(state.message)));
         }
-      },
-      child: Scaffold(
+      },      child: Scaffold(
         body: SingleChildScrollView(
-          child: BlocBuilder<FinanceBloc, FinanceState>(
+          child: BlocBuilder<DashboardBloc, DashboardState>(
             buildWhen: (previous, current) =>
-                current is NetworthLoaded || current is FinanceLoading,
+                current is NetworthLoaded || current is DashboardLoading,
             builder: (context, state) {
-              if (state is FinanceLoading) {
+              if (state is DashboardLoading) {
                 return SizedBox(
                   height: 500,
                   child: Center(

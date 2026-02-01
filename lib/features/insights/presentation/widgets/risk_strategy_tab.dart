@@ -5,8 +5,8 @@ import 'package:financo/common/app_typography.dart';
 import 'package:financo/features/finance/domain/entities/networth_response.dart';
 import 'package:financo/features/insights/presentation/utils/catalog.dart';
 import 'package:financo/features/insights/presentation/utils/finance_prompt.dart';
-import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
-import 'package:financo/features/finance/presentation/bloc/finance_state.dart';
+import 'package:financo/features/insights/presentation/bloc/insights_bloc.dart';
+import 'package:financo/features/insights/presentation/bloc/insights_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:genui/genui.dart';
@@ -117,7 +117,7 @@ class _RiskStrategyTabState extends State<RiskStrategyTab> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<FinanceBloc, FinanceState>(
+    return BlocBuilder<InsightsBloc, InsightsState>(
       builder: (context, state) {
         if (state is NetworthLoaded) {
           // Trigger AI once data is ready

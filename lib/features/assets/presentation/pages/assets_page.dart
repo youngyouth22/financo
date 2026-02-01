@@ -2,9 +2,9 @@ import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/core/utils/extract_two_first_letter.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
-import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
-import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
-import 'package:financo/features/finance/presentation/bloc/finance_state.dart';
+import 'package:financo/features/assets/presentation/bloc/assets_bloc.dart';
+import 'package:financo/features/assets/presentation/bloc/assets_event.dart';
+import 'package:financo/features/assets/presentation/bloc/assets_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -23,7 +23,7 @@ class _AssetsPageState extends State<AssetsPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
-    context.read<FinanceBloc>().add(const WatchAssetsEvent());
+    context.read<AssetsBloc>().add(const WatchAssetsEvent());
   }
 
   @override
@@ -65,7 +65,7 @@ class _AssetsPageState extends State<AssetsPage>
           ],
         ),
       ),
-      body: BlocBuilder<FinanceBloc, FinanceState>(
+      body: BlocBuilder<AssetsBloc, AssetsState>(
         builder: (context, state) {
           List<Asset> allAssets = [];
 
@@ -341,7 +341,7 @@ class _AssetsPageState extends State<AssetsPage>
               style: TextStyle(color: Colors.white),
             ),
             onTap: () {
-              context.read<FinanceBloc>().add(DeleteAssetEvent(asset.id));
+              context.read<AssetsBloc>().add(DeleteAssetEvent(asset.id));
               Navigator.pop(context);
             },
           ),

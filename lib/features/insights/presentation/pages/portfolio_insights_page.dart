@@ -1,8 +1,8 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
-import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
-import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
-import 'package:financo/features/finance/presentation/bloc/finance_state.dart';
+import 'package:financo/features/insights/presentation/bloc/insights_bloc.dart';
+import 'package:financo/features/insights/presentation/bloc/insights_event.dart';
+import 'package:financo/features/insights/presentation/bloc/insights_state.dart';
 import 'package:financo/features/insights/presentation/widgets/asset_allocation_tab.dart';
 import 'package:financo/features/insights/presentation/widgets/diversification_tab.dart';
 import 'package:financo/features/insights/presentation/widgets/risk_strategy_tab.dart';
@@ -27,7 +27,7 @@ class _PortfolioInsightsPageState extends State<PortfolioInsightsPage>
 
     // CRITICAL FIX: Trigger the data load when entering the page
     // This ensures the Bloc starts fetching the networth and insights.
-    context.read<FinanceBloc>().add(const LoadNetworthEvent());
+    context.read<InsightsBloc>().add(const LoadInsightsEvent());
 
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
@@ -99,7 +99,7 @@ class _PortfolioInsightsPageState extends State<PortfolioInsightsPage>
         ),
       ),
       body: SafeArea(
-        child: BlocBuilder<FinanceBloc, FinanceState>(
+        child: BlocBuilder<InsightsBloc, InsightsState>(
           builder: (context, state) {
             // If data is loaded, show the tabs
             if (state is NetworthLoaded) {
@@ -131,8 +131,8 @@ class _PortfolioInsightsPageState extends State<PortfolioInsightsPage>
                       style: const TextStyle(color: Colors.white),
                     ),
                     TextButton(
-                      onPressed: () => context.read<FinanceBloc>().add(
-                        const LoadNetworthEvent(),
+                      onPressed: () => context.read<InsightsBloc>().add(
+                        const LoadInsightsEvent(),
                       ),
                       child: const Text("Retry"),
                     ),
