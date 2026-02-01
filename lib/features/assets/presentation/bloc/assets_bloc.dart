@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:financo/core/error/failures.dart';
+import 'package:financo/core/usecase/usecase.dart';
 import 'package:financo/features/assets/presentation/bloc/assets_event.dart';
 import 'package:financo/features/assets/presentation/bloc/assets_state.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
@@ -56,7 +57,7 @@ class AssetsBloc extends Bloc<AssetsEvent, AssetsState> {
   ) async {
     emit(const AssetsLoading());
 
-    final result = await getAssetsUseCase();
+    final result = await getAssetsUseCase.call(const NoParams());
 
     result.fold(
       (failure) {
@@ -103,7 +104,7 @@ class AssetsBloc extends Bloc<AssetsEvent, AssetsState> {
   ) async {
     emit(const AssetsLoading());
 
-    final result = await addCryptoWalletUseCase(event.walletAddress);
+    final result = await addCryptoWalletUseCase.call(AddCryptoWalletParams(walletAddress:event.walletAddress));
 
     result.fold(
       (failure) {

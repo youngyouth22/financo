@@ -24,7 +24,7 @@ class AppShellPage extends StatefulWidget {
 class _AppShellPageState extends State<AppShellPage> {
   int _currentIndex = 0;
   late PageController _controller;
-  
+
   // Wrap pages with their respective BLoC providers
   List<Widget> get _pages => [
     BlocProvider(
@@ -82,39 +82,36 @@ class _AppShellPageState extends State<AppShellPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        extendBody: true,
-        floatingActionButton: CustomFloatingButton(
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const AddAssetChoicePage(),
-              ),
-            );
+      extendBody: true,
+      floatingActionButton: CustomFloatingButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const AddAssetChoicePage()),
+          );
+        },
+        isMenuOpen: false,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        clipBehavior: Clip.antiAlias,
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 7,
+        padding: EdgeInsets.zero,
+        color: Colors.transparent,
+        child: CustomNavBar(
+          currentIndex: _currentIndex,
+          onItemSelected: (index) {
+            setState(() {
+              _currentIndex = index;
+              animateToPage(index);
+            });
           },
-          isMenuOpen: false,
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        bottomNavigationBar: BottomAppBar(
-          clipBehavior: Clip.antiAlias,
-          shape: const CircularNotchedRectangle(),
-          notchMargin: 7,
-          padding: EdgeInsets.zero,
-          color: Colors.transparent,
-          child: CustomNavBar(
-            currentIndex: _currentIndex,
-            onItemSelected: (index) {
-              setState(() {
-                _currentIndex = index;
-                animateToPage(index);
-              });
-            },
-          ),
-        ),
-        body: PageView(
-          controller: _controller,
-          physics: const NeverScrollableScrollPhysics(),
-          children: _pages,
-        ),
+      ),
+      body: PageView(
+        controller: _controller,
+        physics: const NeverScrollableScrollPhysics(),
+        children: _pages,
       ),
     );
   }

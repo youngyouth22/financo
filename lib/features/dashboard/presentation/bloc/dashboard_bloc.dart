@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:financo/core/error/failures.dart';
+import 'package:financo/core/usecase/usecase.dart';
 import 'package:financo/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:financo/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:financo/features/finance/domain/usecases/get_daily_change_usecase.dart';
@@ -61,7 +62,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     GetDailyChangeEvent event,
     Emitter<DashboardState> emit,
   ) async {
-    final result = await getDailyChangeUseCase();
+    final result = await getDailyChangeUseCase.call(const NoParams());
 
     result.fold(
       (failure) {

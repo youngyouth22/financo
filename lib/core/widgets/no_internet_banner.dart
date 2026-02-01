@@ -1,4 +1,3 @@
-import 'package:financo/common/app_colors.dart';
 import 'package:financo/core/services/connectivity_service.dart';
 import 'package:flutter/material.dart';
 
@@ -69,6 +68,7 @@ class _NoInternetBannerState extends State<NoInternetBanner>
   @override
   Widget build(BuildContext context) {
     return Stack(
+      
       children: [
         widget.child,
         if (!_isConnected)
@@ -95,7 +95,7 @@ class _NoInternetBannerState extends State<NoInternetBanner>
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withValues(alpha: 0.2),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -105,13 +105,13 @@ class _NoInternetBannerState extends State<NoInternetBanner>
                     bottom: false,
                     child: Row(
                       children: [
-                        Icon(
+                       const Icon(
                           Icons.wifi_off_rounded,
                           color: Colors.white,
                           size: 20,
                         ),
                         const SizedBox(width: 12),
-                        Expanded(
+                       const Expanded(
                           child: Text(
                             'No internet connection',
                             style: TextStyle(
@@ -127,10 +127,10 @@ class _NoInternetBannerState extends State<NoInternetBanner>
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Text(
+                          child: const Text(
                             'Offline',
                             style: TextStyle(
                               color: Colors.white,

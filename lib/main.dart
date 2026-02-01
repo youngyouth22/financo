@@ -48,15 +48,18 @@ class MainApp extends StatelessWidget {
     return BlocProvider(
       // Provide AuthBloc at the root level for global access
       create: (context) => sl<AuthBloc>()..add(const AuthCheckRequested()),
-      child: NoInternetBanner(
-        child: MaterialApp.router(
-          debugShowCheckedModeBanner: false,
-          title: 'Financo',
-          darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeMode.dark,
-          theme: ThemeData.dark(useMaterial3: true),
-          routerConfig: AppRouter.createRouter(),
-        ),
+      child: MaterialApp.router(
+        debugShowCheckedModeBanner: false,
+        title: 'Financo',
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.dark,
+        theme: ThemeData.dark(useMaterial3: true),
+        routerConfig: AppRouter.createRouter(),
+         builder: (context, child) {
+          return NoInternetBanner(
+            child: child ?? const SizedBox.shrink(),
+          );
+        },
       ),
     );
   }

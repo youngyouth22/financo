@@ -137,19 +137,19 @@ class SecurityService {
   }
 
   /// Authenticate with device credentials only (PIN/Pattern/Password)
-  Future<bool> _authenticateWithDeviceCredentials(String reason) async {
-    try {
-      final authenticated = await _localAuth.authenticate(
-        localizedReason: reason,
-        biometricOnly: false,
-      );
+  // Future<bool> _authenticateWithDeviceCredentials(String reason) async {
+  //   try {
+  //     final authenticated = await _localAuth.authenticate(
+  //       localizedReason: reason,
+  //       biometricOnly: false,
+  //     );
 
-      return authenticated;
-    } catch (e) {
-      debugPrint('Device credentials authentication error: $e');
-      return false;
-    }
-  }
+  //     return authenticated;
+  //   } catch (e) {
+  //     debugPrint('Device credentials authentication error: $e');
+  //     return false;
+  //   }
+  // }
 
   /// Setup security for the first time
   ///
