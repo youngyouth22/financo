@@ -69,9 +69,9 @@ class _AssetsPageState extends State<AssetsPage>
         builder: (context, state) {
           List<Asset> allAssets = [];
 
-          if (state is AssetsWatching) {
+          if (state is AssetsRealTimeUpdated) {
             allAssets = state.assets;
-          } else if (state is FinanceLoading) {
+          } else if (state is AssetsLoading) {
             return Center(
               child: CircularProgressIndicator(color: AppColors.accent),
             );

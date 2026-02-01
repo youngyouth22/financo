@@ -75,7 +75,7 @@ class AssetsBloc extends Bloc<AssetsEvent, AssetsState> {
   ) async {
     await _assetsSubscription?.cancel();
 
-    _assetsSubscription = watchAssetsUseCase().listen(
+    _assetsSubscription = watchAssetsUseCase.call().listen(
       (either) {
         either.fold(
           (failure) {

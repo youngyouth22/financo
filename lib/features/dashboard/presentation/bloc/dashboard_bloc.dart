@@ -29,7 +29,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   ) async {
     emit(const DashboardLoading());
 
-    final result = await getNetworthUseCase();
+    final result = await getNetworthUseCase.call();
 
     result.fold(
       (failure) {
@@ -46,7 +46,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     Emitter<DashboardState> emit,
   ) async {
     // Don't show loading for refresh
-    final result = await getNetworthUseCase();
+    final result = await getNetworthUseCase.call();
 
     result.fold(
       (failure) {

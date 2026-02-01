@@ -19,6 +19,7 @@ import 'package:financo/features/finance/domain/usecases/get_daily_change_usecas
 import 'package:financo/features/finance/domain/usecases/get_networth_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_plaid_link_token_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/get_wealth_history_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/get_portfolio_insights_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/search_stocks_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/update_asset_quantity_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/watch_assets_usecase.dart';
@@ -141,6 +142,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => GetWealthHistoryUseCase(sl()));
   sl.registerLazySingleton(() => AddManualAssetUseCase(sl()));
   sl.registerLazySingleton(() => AddAssetReminderUseCase(sl()));
+  sl.registerLazySingleton(() => GetPortfolioInsightsUseCase(sl()));
 
   // BLoCs
   sl.registerFactory(
@@ -184,7 +186,7 @@ Future<void> initializeDependencies() async {
 
   sl.registerFactory(
     () => InsightsBloc(
-      financeRepository: sl(),
+      getPortfolioInsightsUseCase: sl(),
     ),
   );
 }

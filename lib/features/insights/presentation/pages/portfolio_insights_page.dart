@@ -102,20 +102,21 @@ class _PortfolioInsightsPageState extends State<PortfolioInsightsPage>
         child: BlocBuilder<InsightsBloc, InsightsState>(
           builder: (context, state) {
             // If data is loaded, show the tabs
-            if (state is NetworthLoaded) {
+            if (state is InsightsLoaded) {
+              // Use insights data (which contains networth-like structure)
+              final insights = state.insights;
               return TabBarView(
                 controller: _tabController,
                 children: [
-                  AssetAllocationTab(networth: state.networth),
-                  DiversificationTab(networth: state.networth),
-                  // FIX: Pass the networth to the Strategy tab as well
+                  AssetAllocationTab(networth: insights),
+                  DiversificationTab(networth: insights),
                   const RiskStrategyTab(),
                 ],
               );
             }
       
             // If an error occurs, show the error message
-            if (state is FinanceError) {
+            if (state is InsightsError) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
