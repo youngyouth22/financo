@@ -154,7 +154,7 @@ class BankAccountDetailPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.gray90,
+              color: AppColors.gray80,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.gray80, width: 1),
             ),
@@ -278,7 +278,7 @@ class BankAccountDetailPage extends StatelessWidget {
                         Text(
                           '${creditUtilization.toStringAsFixed(1)}%',
                           style: AppTypography.headline2SemiBold.copyWith(
-                            color: _getCreditUtilizationColor(creditUtilization),
+                            color: _getCreditUtilizationColor(creditUtilization as double),
                             fontSize: 12,
                           ),
                         ),
@@ -291,7 +291,7 @@ class BankAccountDetailPage extends StatelessWidget {
                         value: creditUtilization / 100,
                         backgroundColor: AppColors.gray80,
                         valueColor: AlwaysStoppedAnimation(
-                          _getCreditUtilizationColor(creditUtilization),
+                          _getCreditUtilizationColor(creditUtilization as double),
                         ),
                         minHeight: 8,
                       ),
@@ -345,7 +345,7 @@ class BankAccountDetailPage extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.gray90,
+        color: AppColors.gray80,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.gray80, width: 1),
       ),

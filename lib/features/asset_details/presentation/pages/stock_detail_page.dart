@@ -218,7 +218,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.gray90,
+        color: AppColors.gray80,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.gray80, width: 1),
       ),

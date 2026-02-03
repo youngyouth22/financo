@@ -12,7 +12,7 @@ class ManualAssetDetail extends Equatable {
   final String currency;
   final ManualAssetMetadata metadata;
   final List<AmortizationPayment>? amortizationSchedule;
-  final String? rruleString; // Recurrence rule for reminders
+  final String? rruleString;
   final List<double> valueHistory;
 
   const ManualAssetDetail({

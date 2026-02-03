@@ -234,7 +234,7 @@ class ManualAssetDetailPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.gray90,
+              color: AppColors.gray80,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.gray80, width: 1),
             ),
@@ -332,7 +332,7 @@ class ManualAssetDetailPage extends StatelessWidget {
       decoration: BoxDecoration(
         color: isOverdue
             ? AppColors.error.withOpacity(0.1)
-            : AppColors.gray90,
+            : AppColors.gray80,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isOverdue
@@ -490,7 +490,7 @@ class ManualAssetDetailPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: AppColors.gray90,
+        backgroundColor: AppColors.gray80,
         title: Text(
           'Re-evaluate Asset',
           style: AppTypography.headline3SemiBold.copyWith(

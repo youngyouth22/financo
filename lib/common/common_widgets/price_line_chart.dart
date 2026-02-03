@@ -166,8 +166,8 @@ class _PriceLineChartState extends State<PriceLineChart> {
         lineTouchData: LineTouchData(
           enabled: true,
           touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (touchedSpot) => AppColors.gray90,
-            tooltipRoundedRadius: 8,
+            getTooltipColor: (touchedSpot) => AppColors.gray80,
+            // tooltipRoundedRadius: 8,
             tooltipPadding: const EdgeInsets.all(8),
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {

@@ -215,7 +215,7 @@ class _CryptoWalletDetailPageState extends State<CryptoWalletDetailPage>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.gray90,
+        color: AppColors.gray80,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.gray80, width: 1),
       ),
@@ -364,7 +364,7 @@ class _CryptoWalletDetailPageState extends State<CryptoWalletDetailPage>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.gray90,
+        color: AppColors.gray80,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.gray80, width: 1),
       ),
