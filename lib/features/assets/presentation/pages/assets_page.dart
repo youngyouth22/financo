@@ -23,6 +23,7 @@ class _AssetsPageState extends State<AssetsPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    // Lance l'écoute en temps réel des changements d'actifs
     context.read<AssetsBloc>().add(const WatchAssetsEvent());
   }
 
@@ -30,19 +31,6 @@ class _AssetsPageState extends State<AssetsPage>
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  // --- LOGIQUE DE FILTRAGE ET GROUPAGE ---
-
-  Map<String, List<Asset>> _groupCryptoByAddress(List<Asset> assets) {
-    final Map<String, List<Asset>> grouped = {};
-    for (var asset in assets.where((a) => a.type == AssetType.crypto)) {
-      // On extrait l'adresse (on enlève le suffixe :symbol si présent)
-      final address = asset.assetAddressOrId.split(':').first;
-      if (!grouped.containsKey(address)) grouped[address] = [];
-      grouped[address]!.add(asset);
-    }
-    return grouped;
   }
 
   @override
@@ -55,7 +43,6 @@ class _AssetsPageState extends State<AssetsPage>
           controller: _tabController,
           isScrollable: true,
           indicatorColor: AppColors.accent,
-
           tabs: const [
             Tab(text: "All"),
             Tab(text: "Stocks"),
@@ -79,11 +66,13 @@ class _AssetsPageState extends State<AssetsPage>
 
           if (allAssets.isEmpty) return _buildEmptyState();
 
-          // Filtrage par catégorie
+          // --- FILTRAGE SIMPLE PAR CATÉGORIE ---
           final stocks = allAssets
               .where((a) => a.type == AssetType.stock)
               .toList();
-          final cryptoGrouped = _groupCryptoByAddress(allAssets);
+          final crypto = allAssets
+              .where((a) => a.type == AssetType.crypto)
+              .toList();
           final fixed = allAssets
               .where(
                 (a) =>
@@ -104,9 +93,9 @@ class _AssetsPageState extends State<AssetsPage>
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildAllTab(stocks, cryptoGrouped, fixed, vault),
+                _buildAllTab(stocks, crypto, fixed, vault),
                 _buildGenericGrid(stocks),
-                _buildCryptoTab(cryptoGrouped),
+                _buildGenericGrid(crypto),
                 _buildGenericGrid(fixed),
                 _buildGenericGrid(vault),
               ],
@@ -121,7 +110,7 @@ class _AssetsPageState extends State<AssetsPage>
 
   Widget _buildAllTab(
     List<Asset> stocks,
-    Map<String, List<Asset>> cryptoGrouped,
+    List<Asset> crypto,
     List<Asset> fixed,
     List<Asset> vault,
   ) {
@@ -134,14 +123,11 @@ class _AssetsPageState extends State<AssetsPage>
             _buildHeader('📈 Stocks'),
             _buildAssetGrid(stocks),
           ],
-          if (cryptoGrouped.isNotEmpty) ...[
+          if (crypto.isNotEmpty) ...[
             _buildHeader('₿ Cryptocurrency'),
-            ...cryptoGrouped.entries.map(
-              (e) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [_buildSubHeader(e.key), _buildAssetGrid(e.value)],
-              ),
-            ),
+            _buildAssetGrid(
+              crypto,
+            ), // Affichage direct des wallets sans sous-titres
           ],
           if (fixed.isNotEmpty) ...[
             _buildHeader('📋 Fixed Income'),
@@ -152,21 +138,6 @@ class _AssetsPageState extends State<AssetsPage>
             _buildAssetGrid(vault),
           ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildCryptoTab(Map<String, List<Asset>> cryptoGrouped) {
-    return SingleChildScrollView(
-      child: Column(
-        children: cryptoGrouped.entries
-            .map(
-              (e) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [_buildSubHeader(e.key), _buildAssetGrid(e.value)],
-              ),
-            )
-            .toList(),
       ),
     );
   }
@@ -187,13 +158,9 @@ class _AssetsPageState extends State<AssetsPage>
         childAspectRatio: 1 / 1,
       ),
       itemCount: assets.length,
-      itemBuilder: (context, index) => AssetCard( asset:assets[index]),
+      itemBuilder: (context, index) => AssetCard(asset: assets[index]),
     );
   }
-
-
-
- 
 
   Widget _buildHeader(String title) {
     return Padding(
@@ -205,23 +172,9 @@ class _AssetsPageState extends State<AssetsPage>
     );
   }
 
-  Widget _buildSubHeader(String address) {
-    final shortAddr =
-        "${address.substring(0, 6)}...${address.substring(address.length - 4)}";
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Text(
-        "Wallet $shortAddr",
-        style: AppTypography.headline1Bold.copyWith(color: AppColors.accent),
-      ),
-    );
-  }
-
   Widget _buildEmptyState() {
     return Center(
       child: Text("No assets found", style: TextStyle(color: AppColors.gray40)),
     );
   }
-
-
 }

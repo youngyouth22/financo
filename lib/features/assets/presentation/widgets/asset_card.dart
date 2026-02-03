@@ -4,6 +4,7 @@ import 'package:financo/common/common_widgets/mini_sparkline.dart';
 import 'package:financo/core/utils/extract_two_first_letter.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 
 class AssetCard extends StatelessWidget {
   final Asset asset;
@@ -26,12 +27,23 @@ class AssetCard extends StatelessWidget {
       ),
       child: ClipOval(
         child: asset.iconUrl.isNotEmpty
-            ? Image.network(
-                asset.iconUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) =>
-                    Icon(Icons.account_balance_wallet, color: AppColors.accent),
-              )
+            ? asset.type == AssetType.crypto
+                  ? SvgPicture.network(
+                      asset.iconUrl,
+                      fit: BoxFit.cover,
+                      height: 36,
+                      width: 36,
+                      errorBuilder: (_, _, _) =>
+                          Icon(Icons.currency_bitcoin, color: AppColors.accent),
+                    )
+                  : Image.network(
+                      asset.iconUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Icon(
+                        Icons.account_balance_wallet,
+                        color: AppColors.accent,
+                      ),
+                    )
             : Text(
                 extractTwoFirstLetter(asset.symbol),
                 textAlign: TextAlign.center,
