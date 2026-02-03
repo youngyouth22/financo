@@ -103,19 +103,20 @@ class _PortfolioInsightsPageState extends State<PortfolioInsightsPage>
           builder: (context, state) {
             // If data is loaded, show the tabs
             if (state is InsightsLoaded) {
+              // Use networth data which includes insights
+              final networth = state.networth;
               return TabBarView(
                 controller: _tabController,
                 children: [
-                  AssetAllocationTab(networth: state.networth),
-                  DiversificationTab(networth: state.networth),
-                  // FIX: Pass the networth to the Strategy tab as well
+                  AssetAllocationTab(networth: networth),
+                  DiversificationTab(networth: networth),
                   const RiskStrategyTab(),
                 ],
               );
             }
-      
+
             // If an error occurs, show the error message
-            if (state is FinanceError) {
+            if (state is InsightsError) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -140,7 +141,7 @@ class _PortfolioInsightsPageState extends State<PortfolioInsightsPage>
                 ),
               );
             }
-      
+
             // Show the loading spinner while waiting for data
             return Center(
               child: CircularProgressIndicator(color: AppColors.accent),
