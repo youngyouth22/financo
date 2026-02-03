@@ -33,8 +33,10 @@ class AssetCard extends StatelessWidget {
                       fit: BoxFit.cover,
                       height: 36,
                       width: 36,
-                      errorBuilder: (_, _, _) =>
-                          Icon(Icons.currency_bitcoin, color: AppColors.accent),
+                      errorBuilder: (_, _, _) => Icon(
+                        Icons.currency_bitcoin,
+                        color: AppColors.accent,
+                      ),
                     )
                   : Image.network(
                       asset.iconUrl,
