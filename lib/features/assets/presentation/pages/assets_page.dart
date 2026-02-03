@@ -1,6 +1,6 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
-import 'package:financo/core/utils/extract_two_first_letter.dart';
+import 'package:financo/features/assets/presentation/widgets/asset_card.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:financo/features/assets/presentation/bloc/assets_bloc.dart';
 import 'package:financo/features/assets/presentation/bloc/assets_event.dart';
@@ -187,117 +187,13 @@ class _AssetsPageState extends State<AssetsPage>
         childAspectRatio: 1 / 1,
       ),
       itemCount: assets.length,
-      itemBuilder: (context, index) => _buildAssetCard(assets[index]),
+      itemBuilder: (context, index) => AssetCard( asset:assets[index]),
     );
   }
 
-  Widget _buildAssetCard(Asset asset) {
-    final bool isPos = asset.change24h >= 0;
 
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: AppColors.gray80,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.gray70),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildAssetIcon(asset),
-              IconButton(
-                icon: Icon(Icons.more_vert, color: AppColors.gray40, size: 18),
-                onPressed: () => _showAssetActions(asset),
-              ),
-            ],
-          ),
-          const Spacer(),
-          Text(
-            asset.name,
-            style: AppTypography.headline3SemiBold.copyWith(
-              color: AppColors.white,
-              fontSize: 14,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  asset.symbol,
-                  style: AppTypography.headline1Regular.copyWith(
-                    color: AppColors.gray40,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              if (asset.change24h > 0)
-                _buildChangeBadge(asset.change24h, isPos),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '\$${asset.balanceUsd.toStringAsFixed(2)}',
-            style: AppTypography.headline3Bold.copyWith(color: AppColors.white),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildAssetIcon(Asset asset) {
-    return Container(
-      width: 36,
-      height: 36,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: AppColors.gray30.withValues(alpha: 0.1),
-        border: Border(
-          top: BorderSide(color: AppColors.gray40.withValues(alpha: 0.2)),
-          left: BorderSide(color: AppColors.gray40.withValues(alpha: 0.2)),
-        ),
-        shape: BoxShape.circle,
-      ),
-      child: ClipOval(
-        child: asset.iconUrl.isNotEmpty
-            ? Image.network(
-                asset.iconUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) =>
-                    Icon(Icons.account_balance_wallet, color: AppColors.accent),
-              )
-            : Text(
-                extractTwoFirstLetter(asset.symbol),
-                textAlign: TextAlign.center,
-                style: AppTypography.headline2Bold.copyWith(
-                  color: AppColors.gray60,
-                ),
-              ),
-      ),
-    );
-  }
-
-  Widget _buildChangeBadge(double change, bool isPos) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: (isPos ? Colors.green : Colors.red).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        '${isPos ? '+' : ''}${change.toStringAsFixed(2)}%',
-        style: TextStyle(
-          color: isPos ? Colors.green : Colors.red,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
+ 
 
   Widget _buildHeader(String title) {
     return Padding(
@@ -327,26 +223,5 @@ class _AssetsPageState extends State<AssetsPage>
     );
   }
 
-  void _showAssetActions(Asset asset) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.card,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.delete_outline, color: Colors.red),
-            title: const Text(
-              'Remove Asset',
-              style: TextStyle(color: Colors.white),
-            ),
-            onTap: () {
-              context.read<AssetsBloc>().add(DeleteAssetEvent(asset.id));
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
-    );
-  }
+
 }

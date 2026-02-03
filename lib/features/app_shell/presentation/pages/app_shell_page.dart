@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:financo/common/common_widgets/add_security_in_sheet.dart';
 import 'package:financo/core/services/security_service.dart';
 import 'package:financo/features/assets/presentation/pages/assets_page.dart';
@@ -13,6 +15,7 @@ import 'package:financo/features/settings/presentation/pages/settings_page.dart'
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:financo/di/injection_container.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AppShellPage extends StatefulWidget {
   const AppShellPage({super.key});
@@ -22,8 +25,33 @@ class AppShellPage extends StatefulWidget {
 }
 
 class _AppShellPageState extends State<AppShellPage> {
+  Timer? _priceTimer;
   int _currentIndex = 0;
   late PageController _controller;
+
+  void _startLivePriceSync() {
+  // 1. Première exécution
+  _refreshPrices();
+
+  // 2. Boucle de 30 secondes
+  _priceTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+    if (mounted) {
+      _refreshPrices();
+    }
+  });
+}
+
+Future<void> _refreshPrices() async {
+  try {
+    // On appelle la nouvelle fonction légère
+    await sl<SupabaseClient>().functions.invoke('refresh-market-prices', body: {
+      'userId': sl<SupabaseClient>()..auth.currentUser!.id,
+    });
+    debugPrint("Market Prices Updated!");
+  } catch (e) {
+    debugPrint("Sync error: $e");
+  }
+}
 
   // Wrap pages with their respective BLoC providers
   List<Widget> get _pages => [
@@ -45,6 +73,7 @@ class _AppShellPageState extends State<AppShellPage> {
   @override
   void initState() {
     super.initState();
+    _startLivePriceSync();
     _controller = PageController(initialPage: _currentIndex);
     _checkFirstLaunch();
   }
@@ -67,6 +96,7 @@ class _AppShellPageState extends State<AppShellPage> {
 
   @override
   void dispose() {
+    _priceTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

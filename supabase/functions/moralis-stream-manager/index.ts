@@ -1,40 +1,17 @@
 // Supabase Edge Function: moralis-stream-manager
-// Purpose: Manage Moralis Streams (create, add/remove addresses, cleanup)
+// Purpose: Manage Moralis Streams and Sync Assets with Real-time Prices & OHLCV History
+// Features: Native & ERC20 Sparklines, Correct 24h Change Mapping, Parallel Processing
 // Author: Finance Realtime Engine
-// Date: 2026-01-20
 
-// moralis-stream-manager.ts - CORRIGÉ POUR "Body already consumed"
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
 // ============================================================================
-// TYPES & INTERFACES
-// ============================================================================
-
-interface MoralisStream {
-  id?: string;
-  streamId?: string;
-  tag: string;
-  description: string;
-  webhookUrl: string;
-  chainIds: string[];
-  status: string;
-}
-
-interface RequestPayload {
-  action: "setup" | "add_address" | "remove_address" | "cleanup_user";
-  address?: string;
-  userId?: string;
-}
-
-// ============================================================================
 // CONFIGURATION
 // ============================================================================
-
 const MORALIS_API_KEY = Deno.env.get("MORALIS_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
 const WEBHOOK_URL =
   Deno.env.get("FINANCE_WEBHOOK_URL") ||
   `${SUPABASE_URL}/functions/v1/finance-webhook`;
@@ -56,225 +33,223 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// Map for Native history (Moralis needs a contract address for price-history)
+const WRAPPED_ADDR: Record<string, string> = {
+  eth: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2", // WETH
+  bsc: "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c", // WBNB
+  polygon: "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270", // WMATIC
+};
+
 const NATIVE_ICONS: Record<string, string> = {
   eth: "https://assets.coingecko.com/coins/images/279/small/ethereum.png",
   bsc: "https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png",
   polygon:
     "https://assets.coingecko.com/coins/images/4713/small/matic-token-icon.png",
-  avalanche:
-    "https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png",
-  arbitrum:
-    "https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-29_21.47.00.jpeg",
-  optimism:
-    "https://assets.coingecko.com/coins/images/25244/small/Optimism.png",
-  base: "https://assets.coingecko.com/coins/images/31069/small/base.png",
 };
 
 // ============================================================================
-// MORALIS API HELPERS
+// HELPERS
 // ============================================================================
-
-function extractStreamId(stream: MoralisStream): string {
-  const id = stream.id || stream.streamId;
-  if (!id) throw new Error("Could not find Stream ID in Moralis response");
-  return id;
-}
 
 async function moralisRequest(
   endpoint: string,
   method: string = "GET",
   body?: any,
-): Promise<any> {
-  if (!MORALIS_API_KEY) throw new Error("MORALIS_API_KEY not configured");
-
-  const options: RequestInit = {
-    method,
-    headers: {
-      "X-API-Key": MORALIS_API_KEY,
-      "Content-Type": "application/json",
-      accept: "application/json",
-    },
-  };
-  if (body) options.body = JSON.stringify(body);
-
+) {
   const response = await fetch(
-    `https://api.moralis-streams.com/streams/evm${endpoint}`,
-    options,
+    `https://deep-index.moralis.io/api/v2.2${endpoint}`,
+    {
+      method,
+      headers: {
+        "X-API-Key": MORALIS_API_KEY!,
+        "Content-Type": "application/json",
+        accept: "application/json",
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    },
   );
-  const responseData = await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      `Moralis API error: ${response.status} - ${JSON.stringify(responseData)}`,
-    );
-  }
-  return responseData;
+  return response.json();
 }
 
 /**
- * Find existing stream by tag.
- * Note: ?limit=10 is now required by Moralis API
+ * Fetches 24h history for sparklines.
  */
-async function findStreamByTag(tag: string): Promise<MoralisStream | null> {
+async function getHistory(address: string, chain: string): Promise<number[]> {
   try {
-    const response = await moralisRequest("?limit=10");
-    const streams = response.result || [];
-    return streams.find((s: MoralisStream) => s.tag === tag) || null;
-  } catch (error) {
-    console.error("Error fetching streams:", error);
-    return null;
+    const url = `/erc20/${address}/price-history?chain=${chain}&days=1&interval=1h`;
+    const response = await fetch(
+      `https://deep-index.moralis.io/api/v2.2${url}`,
+      {
+        headers: { "X-API-Key": MORALIS_API_KEY!, accept: "application/json" },
+      },
+    );
+    const text = await response.text();
+    if (text.startsWith("<!DOCTYPE")) return []; // Safety check for 404 HTML
+
+    const data = JSON.parse(text);
+    if (!data.result || !Array.isArray(data.result)) return [];
+    return data.result.map((p: any) => parseFloat(p.usdPrice || 0));
+  } catch {
+    return [];
   }
 }
 
-async function setupMoralisStream(): Promise<MoralisStream> {
-  let stream = await findStreamByTag(STREAM_TAG);
-  if (stream) return stream;
+async function setupMoralisStream() {
+  const response = await fetch(
+    `https://api.moralis-streams.com/streams/evm?limit=10`,
+    {
+      headers: { "X-API-Key": MORALIS_API_KEY!, accept: "application/json" },
+    },
+  );
+  const streams = await response.json();
+  const existing = (streams.result || []).find(
+    (s: any) => s.tag === STREAM_TAG,
+  );
+  if (existing) return existing.id;
 
-  console.log("Creating new global Moralis stream...");
-  return await moralisRequest("", "PUT", {
-    chainIds: SUPPORTED_CHAINS,
-    description: "Financo global wallet monitoring",
-    tag: STREAM_TAG,
-    webhookUrl: WEBHOOK_URL,
-    includeNativeTxs: true,
-    includeContractLogs: true,
-    includeInternalTxs: true,
+  const created = await fetch(`https://api.moralis-streams.com/streams/evm`, {
+    method: "PUT",
+    headers: {
+      "X-API-Key": MORALIS_API_KEY!,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chainIds: SUPPORTED_CHAINS,
+      description: "Financo global wallet monitoring",
+      tag: STREAM_TAG,
+      webhookUrl: WEBHOOK_URL,
+      includeNativeTxs: true,
+      includeContractLogs: true,
+    }),
   });
+  const data = await created.json();
+  return data.id;
 }
 
 // ============================================================================
-// MAIN HANDLER - CORRIGÉ POUR L'ERREUR "Body already consumed"
+// MAIN HANDLER
 // ============================================================================
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS")
     return new Response("ok", { headers: corsHeaders });
 
-  // STOCKER LE BODY AVANT TOUTE CHOSE
-  let payload: RequestPayload;
-  let action: string;
-
+  let action = "unknown";
   try {
-    // Lire le body une seule fois et le stocker
-    const requestData = await req.json();
-    payload = requestData as RequestPayload;
-    action = payload.action;
-
-    if (!action) {
-      throw new Error("Action is required");
-    }
-
+    const payload = await req.json();
+    action = (payload.action || "unknown").trim();
     const { address, userId } = payload;
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
     switch (action) {
       case "setup": {
-        console.log("Setting up Moralis stream...");
-        const stream = await setupMoralisStream();
-        return new Response(
-          JSON.stringify({
-            success: true,
-            streamId: extractStreamId(stream),
-          }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
+        const id = await setupMoralisStream();
+        return new Response(JSON.stringify({ success: true, streamId: id }), {
+          status: 200,
+          headers: corsHeaders,
+        });
       }
 
-      case "add_address": {
-        if (!address || !userId)
-          throw new Error("Address and userId are required");
-
+      case "add_address":
+      case "refresh_assets": {
+        if (!address || !userId) throw new Error("Missing parameters");
         const cleanAddress = address.toLowerCase();
-        console.log(`Adding address ${cleanAddress} for user ${userId}`);
 
-        // 1. Setup stream and add address
-        const stream = await setupMoralisStream();
-        const streamId = extractStreamId(stream);
-
-        await moralisRequest(`/${streamId}/address`, "POST", {
-          address: cleanAddress,
-        });
-
-        // 2. Fetch wallet data
-        const [nwRes, tokenRes] = await Promise.all([
-          fetch(
-            `https://deep-index.moralis.io/api/v2.2/wallets/${cleanAddress}/net-worth?exclude_spam=true`,
+        // 1. Ensure Stream Registration
+        if (action === "add_address") {
+          const sId = await setupMoralisStream();
+          await fetch(
+            `https://api.moralis-streams.com/streams/evm/${sId}/address`,
             {
+              method: "POST",
               headers: {
                 "X-API-Key": MORALIS_API_KEY!,
-                accept: "application/json",
+                "Content-Type": "application/json",
               },
+              body: JSON.stringify({ address: cleanAddress }),
             },
+          );
+        }
+
+        // 2. Fetch Wallet State
+        const [nwData, tokenRes] = await Promise.all([
+          moralisRequest(
+            `/wallets/${cleanAddress}/net-worth?exclude_spam=true`,
           ),
-          fetch(
-            `https://deep-index.moralis.io/api/v2.2/wallets/${cleanAddress}/tokens?exclude_spam=true`,
-            {
-              headers: {
-                "X-API-Key": MORALIS_API_KEY!,
-                accept: "application/json",
-              },
-            },
+          moralisRequest(
+            `/wallets/${cleanAddress}/tokens?exclude_spam=true&exclude_unverified_contracts=true`,
           ),
         ]);
 
-        const nwData = await nwRes.json();
-        const tokenData = await tokenRes.json();
-        const tokens = tokenData.result || [];
-
+        const tokens = tokenRes.result || [];
         const upsertData = [];
 
-        // Process Native Assets
+        // 3. Process Native Assets (Millions in ETH, etc.)
         if (nwData.chains) {
-          for (const chain of nwData.chains) {
-            const nativeUsd = parseFloat(chain.native_balance_usd || "0");
-            if (nativeUsd > 1) {
+          for (const c of nwData.chains) {
+            const usd = parseFloat(c.native_balance_usd || "0");
+            if (usd > 0.1) {
+              const wrappedAddr = WRAPPED_ADDR[c.chain.toLowerCase()];
+              const history = wrappedAddr
+                ? await getHistory(wrappedAddr, c.chain)
+                : [];
+
               upsertData.push({
                 user_id: userId,
-                asset_address_or_id: `${cleanAddress}:native:${chain.chain}`,
+                asset_address_or_id: `${cleanAddress}:native:${c.chain}`,
                 provider: "moralis",
                 type: "crypto",
-                symbol:
-                  chain.chain === "eth" ? "ETH" : chain.chain.toUpperCase(),
-                name: `${chain.chain.toUpperCase()} Native`,
-                icon_url: NATIVE_ICONS[chain.chain] || null,
-                quantity: parseFloat(chain.native_balance_formatted),
-                price_usd:
-                  nativeUsd / parseFloat(chain.native_balance_formatted),
-                balance_usd: nativeUsd,
+                symbol: c.chain === "eth" ? "ETH" : c.chain.toUpperCase(),
+                name: `${c.chain.toUpperCase()} Native`,
+                icon_url: NATIVE_ICONS[c.chain.toLowerCase()] || null,
+                quantity: parseFloat(c.native_balance_formatted),
+                price_usd: usd / parseFloat(c.native_balance_formatted),
+                balance_usd: usd,
+                change_24h: 0,
+                sparkline: history,
                 last_sync: new Date().toISOString(),
               });
             }
           }
         }
 
-        // Process Tokens with Anti-Spam filters
-        for (const token of tokens) {
-          const usdValue = parseFloat(token.usd_value || "0");
+        // 4. Process ERC20 Tokens (Top 10 with Parallel History)
+        const topTokens = tokens
+          .filter(
+            (t: any) =>
+              t.possible_spam !== true && parseFloat(t.usd_value || "0") > 5,
+          )
+          .sort(
+            (a: any, b: any) =>
+              parseFloat(b.usd_value) - parseFloat(a.usd_value),
+          )
+          .slice(0, 10);
 
-          if (token.possible_spam === true) continue;
-          if (usdValue < 5) continue;
+        const histories = await Promise.all(
+          topTokens.map((t: any) =>
+            getHistory(t.token_address, t.chain || "eth"),
+          ),
+        );
 
-          // Block high-value tokens that are NOT verified
-          if (usdValue > 50000 && token.verified_contract !== true) continue;
-
+        topTokens.forEach((t: any, index: number) => {
           upsertData.push({
             user_id: userId,
-            asset_address_or_id: `${cleanAddress}:${token.token_address}`,
+            asset_address_or_id: `${cleanAddress}:${t.token_address}`,
             provider: "moralis",
             type: "crypto",
-            symbol: token.symbol,
-            name: token.name,
-            icon_url: token.thumbnail || token.logo || null,
-            quantity: parseFloat(token.balance_formatted),
-            price_usd: parseFloat(token.usd_price || "0"),
-            balance_usd: usdValue,
-            change_24h: parseFloat(token.usd_price_24h_percent_change || "0"),
+            symbol: t.symbol,
+            name: t.name,
+            icon_url: t.thumbnail || t.logo || null,
+            quantity: parseFloat(t.balance_formatted),
+            price_usd: parseFloat(t.usd_price || "0"),
+            balance_usd: parseFloat(t.usd_value || "0"),
+            change_24h: parseFloat(t.usd_price_24hr_percent_change || "0"), // CORRECTED MAPPING
+            sparkline: histories[index],
             last_sync: new Date().toISOString(),
           });
-        }
+        });
 
+        // 5. Database Sync
         if (upsertData.length > 0) {
           const { error } = await supabase
             .from("assets")
@@ -282,126 +257,46 @@ serve(async (req: Request) => {
           if (error) throw error;
         }
 
-        // Record snapshot
-        try {
-          await supabase.rpc("record_wealth_snapshot", { p_user_id: userId });
-        } catch (snapshotError) {
-          console.warn("Failed to record snapshot:", snapshotError);
-        }
+        // 6. Maintenance
+        await supabase.rpc("record_wealth_snapshot", { p_user_id: userId });
+        await supabase.rpc("generate_portfolio_insights", {
+          p_user_id: userId,
+        });
 
         return new Response(
-          JSON.stringify({ success: true, count: upsertData.length }),
+          JSON.stringify({
+            success: true,
+            networth: nwData.total_networth_usd,
+            count: upsertData.length,
+          }),
           {
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           },
         );
       }
 
       case "remove_address": {
-        if (!address || !userId)
-          throw new Error("Address and userId are required");
-
-        const cleanAddress = address.toLowerCase();
-        console.log(`Removing address ${cleanAddress} for user ${userId}`);
-
-        // 1. Remove address from Moralis stream
-        const stream = await findStreamByTag(STREAM_TAG);
-        if (stream) {
-          await moralisRequest(
-            `/${extractStreamId(stream)}/address`,
-            "DELETE",
-            { address: cleanAddress },
-          );
-        }
-
-        // 2. Delete only THIS USER'S associated assets
+        const clean = address!.toLowerCase();
         await supabase
           .from("assets")
           .delete()
-          .like("asset_address_or_id", `${cleanAddress}%`)
-          .eq("user_id", userId); // <-- CRITIQUE : sans ça, tu supprimes pour tous les users
-
+          .like("asset_address_or_id", `${clean}%`)
+          .eq("user_id", userId);
         return new Response(JSON.stringify({ success: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: corsHeaders,
         });
-      }
-      case "cleanup_user": {
-        if (!userId) throw new Error("userId is required for cleanup");
-
-        console.log(`Cleaning up all assets for user ${userId}`);
-
-        // 1. Get all addresses for this user
-        const { data: userAssets, error: fetchError } = await supabase
-          .from("assets")
-          .select("asset_address_or_id")
-          .eq("user_id", userId)
-          .eq("provider", "moralis");
-
-        if (fetchError)
-          throw new Error(`Failed to fetch user assets: ${fetchError.message}`);
-
-        // 2. Extract unique addresses
-        const addresses = new Set<string>();
-        userAssets?.forEach((asset) => {
-          if (asset.asset_address_or_id) {
-            const parts = asset.asset_address_or_id.split(":");
-            if (parts.length > 0) {
-              addresses.add(parts[0].toLowerCase());
-            }
-          }
-        });
-
-        // 3. Remove each address from Moralis stream
-        const stream = await findStreamByTag(STREAM_TAG);
-        if (stream) {
-          const streamId = extractStreamId(stream);
-          for (const addr of addresses) {
-            try {
-              await moralisRequest(`/${streamId}/address`, "DELETE", {
-                address: addr,
-              });
-            } catch (err) {
-              console.warn(`Failed to remove ${addr}:`, err);
-            }
-          }
-        }
-
-        // 4. Delete all user's moralis assets
-        await supabase
-          .from("assets")
-          .delete()
-          .eq("user_id", userId)
-          .eq("provider", "moralis");
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            removed_addresses: Array.from(addresses),
-            message: `Cleaned up ${addresses.size} addresses for user ${userId}`,
-          }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
       }
 
       default:
-        throw new Error(`Unknown action: ${action}`);
+        throw new Error(`Action ${action} not recognized`);
     }
   } catch (error) {
-    console.error("Moralis Stream Manager Error:", error.message);
-
-    return new Response(
-      JSON.stringify({
-        error: "Internal Error",
-        message: error.message,
-        action: action || "unknown", // Utilise la variable stockée
-      }),
-      {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    console.error(`[Error] Action: ${action} ->`, error.message);
+    return new Response(JSON.stringify({ error: error.message, action }), {
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
 // supabase secrets set MORALIS_API_KEY=your_moralis_api_key_here

@@ -12,18 +12,9 @@ enum AssetType {
   other,
 }
 
-enum AssetProvider {
-  moralis,
-  fmp,
-  plaid,
-  manual,
-}
+enum AssetProvider { moralis, fmp, plaid, manual }
 
-enum AssetStatus {
-  active,
-  inactive,
-  pending,
-}
+enum AssetStatus { active, inactive, pending }
 
 class Asset extends Equatable {
   final String id;
@@ -50,6 +41,7 @@ class Asset extends Equatable {
   final AssetStatus status;
   final String currency;
   final double? manualValue;
+  final List<double>? sparkline;
   final Map<String, dynamic>? metadata;
 
   const Asset({
@@ -77,6 +69,7 @@ class Asset extends Equatable {
     required this.status,
     required this.currency,
     this.manualValue,
+    this.sparkline,
     this.metadata,
   });
 
@@ -92,32 +85,33 @@ class Asset extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        userId,
-        name,
-        type,
-        provider,
-        balanceUsd,
-        assetAddressOrId,
-        lastSync,
-        realizedPnlUsd,
-        realizedPnlPercent,
-        symbol,
-        quantity,
-        currentPrice,
-        change24h,
-        priceUsd,
-        iconUrl,
-        country,
-        sector,
-        industry,
-        createdAt,
-        updatedAt,
-        status,
-        currency,
-        manualValue,
-        metadata,
-      ];
+    id,
+    userId,
+    name,
+    type,
+    provider,
+    balanceUsd,
+    assetAddressOrId,
+    lastSync,
+    realizedPnlUsd,
+    realizedPnlPercent,
+    symbol,
+    quantity,
+    currentPrice,
+    change24h,
+    priceUsd,
+    iconUrl,
+    country,
+    sector,
+    industry,
+    createdAt,
+    updatedAt,
+    status,
+    currency,
+    manualValue,
+    sparkline,
+    metadata,
+  ];
 
   Asset copyWith({
     String? id,
@@ -144,6 +138,7 @@ class Asset extends Equatable {
     AssetStatus? status,
     String? currency,
     double? manualValue,
+    List<double>? sparkline,
     Map<String, dynamic>? metadata,
   }) {
     return Asset(
@@ -171,6 +166,7 @@ class Asset extends Equatable {
       status: status ?? this.status,
       currency: currency ?? this.currency,
       manualValue: manualValue ?? this.manualValue,
+      sparkline: sparkline ?? this.sparkline,
       metadata: metadata ?? this.metadata,
     );
   }

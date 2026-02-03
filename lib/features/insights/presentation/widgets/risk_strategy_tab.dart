@@ -68,7 +68,9 @@ class _RiskStrategyTabState extends State<RiskStrategyTab> {
       onSurfaceUpdated: (SurfaceUpdated update) {
         if (mounted) {
           setState(() {
-            _surfaceIds.add(update.surfaceId);
+            if (!_surfaceIds.contains(update.surfaceId)) {
+              _surfaceIds.add(update.surfaceId);
+            }
           });
         }
       },
@@ -99,7 +101,7 @@ class _RiskStrategyTabState extends State<RiskStrategyTab> {
     };
 
     final prompt =
-        "Analyze this portfolio and generate the 'InsightCard': ${portfolioData.toString()}";
+        "Analyze this portfolio, you should generate UI that displays one new InsightCard : ${portfolioData.toString()}";
 
     try {
       await _financialConversation.sendRequest(UserMessage.text(prompt));

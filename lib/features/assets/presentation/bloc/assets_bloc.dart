@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
+import 'package:dartz/dartz.dart';
 import 'package:financo/core/error/failures.dart';
 import 'package:financo/core/usecase/usecase.dart';
 import 'package:financo/features/assets/presentation/bloc/assets_event.dart';
 import 'package:financo/features/assets/presentation/bloc/assets_state.dart';
+import 'package:financo/features/finance/data/models/asset_model.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:financo/features/finance/domain/usecases/add_crypto_wallet_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/add_manual_asset_usecase.dart';
@@ -68,26 +70,26 @@ class AssetsBloc extends Bloc<AssetsEvent, AssetsState> {
     );
   }
 
-  /// Watch assets for real-time updates
-  Future<void> _onWatchAssets(
-    WatchAssetsEvent event,
-    Emitter<AssetsState> emit,
-  ) async {
-    await _assetsSubscription?.cancel();
-
-    _assetsSubscription = watchAssetsUseCase.call().listen(
-      (either) {
-        either.fold(
-          (failure) {
-            final isOffline = failure is OfflineFailure;
-            emit(AssetsError(failure.message, isOffline: isOffline));
-          },
-          (assets) => emit(AssetsRealTimeUpdated(assets)),
-        );
-      },
-    );
-  }
-
+ Future<void> _onWatchAssets(
+  WatchAssetsEvent event,
+  Emitter<AssetsState> emit,
+) async {
+  await emit.forEach<Either<Failure, List<Asset>>>(
+    watchAssetsUseCase.call(),
+    onData: (either) {
+      return either.fold(
+        (failure) {
+          final isOffline = failure is OfflineFailure;
+          return AssetsError(failure.message, isOffline: isOffline);
+        },
+        (assets) => AssetsRealTimeUpdated(assets),
+      );
+    },
+    onError: (error, stackTrace) {
+      return AssetsError('Connection to assets lost: $error');
+    },
+  );
+}
   /// Stop watching assets
   Future<void> _onStopWatchingAssets(
     StopWatchingAssetsEvent event,

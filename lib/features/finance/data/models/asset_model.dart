@@ -30,6 +30,7 @@ class AssetModel extends Asset {
     required super.updatedAt,
     required super.status,
     required super.currency,
+    super.sparkline,
     super.manualValue,
     super.metadata,
   });
@@ -63,6 +64,7 @@ class AssetModel extends Asset {
       manualValue: json['balance_usd_manual'] != null 
           ? _parseDecimal(json['balance_usd_manual'])
           : null,
+      sparkline: _parseSparkline(json['sparkline']),
       metadata: json['metadata'] != null
           ? Map<String, dynamic>.from(json['metadata'] as Map)
           : null,
@@ -95,6 +97,7 @@ class AssetModel extends Asset {
       'updated_at': updatedAt.toIso8601String(),
       'status': _assetStatusToString(status),
       'currency': currency,
+      'sparkline': sparkline,
       if (manualValue != null) 'balance_usd_manual': manualValue,
       if (metadata != null) 'metadata': metadata,
     };
@@ -127,6 +130,7 @@ class AssetModel extends Asset {
       status: entity.status,
       currency: entity.currency,
       manualValue: entity.manualValue,
+      sparkline: entity.sparkline,
       metadata: entity.metadata,
     );
   }
@@ -158,6 +162,7 @@ class AssetModel extends Asset {
       status: status,
       currency: currency,
       manualValue: manualValue,
+      sparkline: sparkline,
       metadata: metadata,
     );
   }
@@ -188,6 +193,15 @@ class AssetModel extends Asset {
       default:
         return AssetType.other;
     }
+  }
+
+ 
+  static List<double>? _parseSparkline(dynamic value) {
+    if (value == null) return null;
+    if (value is List) {
+      return value.map((e) => (e as num).toDouble()).toList();
+    }
+    return null;
   }
 
   /// Parse asset provider from string
