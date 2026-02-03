@@ -5,6 +5,8 @@ import 'package:financo/core/utils/extract_two_first_letter.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:financo/features/asset_details/presentation/utils/asset_detail_navigator.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AssetCard extends StatelessWidget {
   final Asset asset;
@@ -100,7 +102,16 @@ class AssetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
+        AssetDetailNavigator.navigateToAssetDetail(
+          context,
+          asset,
+          userId,
+        );
+      },
+      child: Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: AppColors.gray80,
@@ -157,6 +168,7 @@ class AssetCard extends StatelessWidget {
             style: AppTypography.headline3Bold.copyWith(color: AppColors.white),
           ),
         ],
+      ),
       ),
     );
   }
