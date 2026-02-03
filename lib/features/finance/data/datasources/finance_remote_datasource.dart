@@ -5,6 +5,14 @@ import 'package:financo/core/error/exceptions.dart';
 import 'package:financo/features/finance/data/models/asset_model.dart';
 import 'package:financo/features/finance/data/models/wealth_snapshot_model.dart';
 import 'package:financo/features/finance/data/models/networth_response_model.dart';
+import 'package:financo/features/finance/domain/entities/crypto_wallet_detail.dart';
+import 'package:financo/features/finance/domain/entities/stock_detail.dart';
+import 'package:financo/features/finance/domain/entities/bank_account_detail.dart';
+import 'package:financo/features/finance/domain/entities/manual_asset_detail.dart';
+import 'package:financo/features/finance/data/models/detail_models/crypto_wallet_detail_model.dart';
+import 'package:financo/features/finance/data/models/detail_models/stock_detail_model.dart';
+import 'package:financo/features/finance/data/models/detail_models/bank_account_detail_model.dart';
+import 'package:financo/features/finance/data/models/detail_models/manual_asset_detail_model.dart';
 
 abstract class FinanceRemoteDataSource {
   // --- ASSETS CRUD ---
@@ -63,6 +71,28 @@ abstract class FinanceRemoteDataSource {
     double? amountExpected,
   });
 
+  // --- ASSET DETAILS (Edge Functions) ---
+  Future<CryptoWalletDetail> getCryptoWalletDetails({
+    required String address,
+    String chain = 'eth',
+  });
+  
+  Future<StockDetail> getStockDetails({
+    required String symbol,
+    required String userId,
+    String timeframe = '1hour',
+  });
+  
+  Future<BankAccountDetail> getBankAccountDetails({
+    required String itemId,
+    required String accountId,
+    required String userId,
+  });
+  
+  Future<ManualAssetDetail> getManualAssetDetails({
+    required String assetId,
+    required String userId,
+  });
 }
 
 class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
@@ -625,6 +655,110 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
       });
     } catch (e) {
       throw ServerException('Failed to create reminder: ${e.toString()}');
+    }
+  }
+
+  // ===========================================================================
+  // ASSET DETAILS (Edge Functions)
+  // ===========================================================================
+
+  @override
+  Future<CryptoWalletDetail> getCryptoWalletDetails({
+    required String address,
+    String chain = 'eth',
+  }) async {
+    try {
+      final response = await supabaseClient.functions.invoke(
+        'get-wallet-details',
+        body: {
+          'address': address,
+          'chain': chain,
+        },
+      );
+
+      if (response.status != 200) {
+        throw ServerException(response.data['error'] ?? 'Failed to fetch wallet details');
+      }
+
+      return CryptoWalletDetailModel.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      throw ServerException('Failed to fetch crypto wallet details: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<StockDetail> getStockDetails({
+    required String symbol,
+    required String userId,
+    String timeframe = '1hour',
+  }) async {
+    try {
+      final response = await supabaseClient.functions.invoke(
+        'get-stock-details',
+        body: {
+          'symbol': symbol,
+          'userId': userId,
+          'timeframe': timeframe,
+        },
+      );
+
+      if (response.status != 200) {
+        throw ServerException(response.data['error'] ?? 'Failed to fetch stock details');
+      }
+
+      return StockDetailModel.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      throw ServerException('Failed to fetch stock details: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<BankAccountDetail> getBankAccountDetails({
+    required String itemId,
+    required String accountId,
+    required String userId,
+  }) async {
+    try {
+      final response = await supabaseClient.functions.invoke(
+        'get-bank-details',
+        body: {
+          'itemId': itemId,
+          'accountId': accountId,
+          'userId': userId,
+        },
+      );
+
+      if (response.status != 200) {
+        throw ServerException(response.data['error'] ?? 'Failed to fetch bank account details');
+      }
+
+      return BankAccountDetailModel.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      throw ServerException('Failed to fetch bank account details: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<ManualAssetDetail> getManualAssetDetails({
+    required String assetId,
+    required String userId,
+  }) async {
+    try {
+      final response = await supabaseClient.functions.invoke(
+        'get-manual-asset-details',
+        body: {
+          'assetId': assetId,
+          'userId': userId,
+        },
+      );
+
+      if (response.status != 200) {
+        throw ServerException(response.data['error'] ?? 'Failed to fetch manual asset details');
+      }
+
+      return ManualAssetDetailModel.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      throw ServerException('Failed to fetch manual asset details: ${e.toString()}');
     }
   }
 

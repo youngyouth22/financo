@@ -27,6 +27,11 @@ import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
 import 'package:financo/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:financo/features/assets/presentation/bloc/assets_bloc.dart';
 import 'package:financo/features/insights/presentation/bloc/insights_bloc.dart';
+import 'package:financo/features/asset_details/presentation/bloc/asset_detail_bloc.dart';
+import 'package:financo/features/finance/domain/usecases/detail_usecases/get_crypto_wallet_details_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/detail_usecases/get_stock_details_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/detail_usecases/get_bank_account_details_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/detail_usecases/get_manual_asset_details_usecase.dart';
 import 'package:financo/core/services/connectivity_service.dart';
 import 'package:financo/core/services/security_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -143,6 +148,12 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => AddManualAssetUseCase(sl()));
   sl.registerLazySingleton(() => AddAssetReminderUseCase(sl()));
   sl.registerLazySingleton(() => GetPortfolioInsightsUseCase(sl()));
+  
+  // Asset Detail Use Cases
+  sl.registerLazySingleton(() => GetCryptoWalletDetailsUseCase(sl()));
+  sl.registerLazySingleton(() => GetStockDetailsUseCase(sl()));
+  sl.registerLazySingleton(() => GetBankAccountDetailsUseCase(sl()));
+  sl.registerLazySingleton(() => GetManualAssetDetailsUseCase(sl()));
 
   // BLoCs
   sl.registerFactory(
@@ -187,6 +198,15 @@ Future<void> initializeDependencies() async {
   sl.registerFactory(
     () => InsightsBloc(
       getPortfolioInsightsUseCase: sl(),
+    ),
+  );
+
+  sl.registerFactory(
+    () => AssetDetailBloc(
+      getCryptoWalletDetailsUseCase: sl(),
+      getStockDetailsUseCase: sl(),
+      getBankAccountDetailsUseCase: sl(),
+      getManualAssetDetailsUseCase: sl(),
     ),
   );
 }

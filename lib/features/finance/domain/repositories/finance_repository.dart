@@ -3,6 +3,10 @@ import 'package:financo/core/error/failures.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:financo/features/finance/domain/entities/wealth_snapshot.dart';
 import 'package:financo/features/finance/domain/entities/networth_response.dart';
+import 'package:financo/features/finance/domain/entities/crypto_wallet_detail.dart';
+import 'package:financo/features/finance/domain/entities/stock_detail.dart';
+import 'package:financo/features/finance/domain/entities/bank_account_detail.dart';
+import 'package:financo/features/finance/domain/entities/manual_asset_detail.dart';
 
 /// Repository interface for finance operations
 ///
@@ -113,5 +117,33 @@ abstract class FinanceRepository {
     required String rruleExpression,
     required DateTime nextEventDate,
     double? amountExpected,
+  });
+
+  // --- ASSET DETAILS (Edge Functions) ---
+  
+  /// Get detailed crypto wallet information
+  Future<Either<Failure, CryptoWalletDetail>> getCryptoWalletDetails({
+    required String address,
+    String chain = 'eth',
+  });
+  
+  /// Get detailed stock information
+  Future<Either<Failure, StockDetail>> getStockDetails({
+    required String symbol,
+    required String userId,
+    String timeframe = '1hour',
+  });
+  
+  /// Get detailed bank account information
+  Future<Either<Failure, BankAccountDetail>> getBankAccountDetails({
+    required String itemId,
+    required String accountId,
+    required String userId,
+  });
+  
+  /// Get detailed manual asset information
+  Future<Either<Failure, ManualAssetDetail>> getManualAssetDetails({
+    required String assetId,
+    required String userId,
   });
 }

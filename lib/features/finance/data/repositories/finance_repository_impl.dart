@@ -7,6 +7,10 @@ import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:financo/features/finance/domain/entities/networth_response.dart';
 import 'package:financo/features/finance/domain/entities/wealth_snapshot.dart';
 import 'package:financo/features/finance/domain/repositories/finance_repository.dart';
+import 'package:financo/features/finance/domain/entities/crypto_wallet_detail.dart';
+import 'package:financo/features/finance/domain/entities/stock_detail.dart';
+import 'package:financo/features/finance/domain/entities/bank_account_detail.dart';
+import 'package:financo/features/finance/domain/entities/manual_asset_detail.dart';
 
 /// Implementation of FinanceRepository
 ///
@@ -458,6 +462,98 @@ class FinanceRepositoryImpl implements FinanceRepository {
       return Left(ServerFailure(e.message));
     } catch (e) {
       return Left(ServerFailure('Unexpected error: ${e.toString()}'));
+    }
+  }
+
+  // ===========================================================================
+  // ASSET DETAILS (Edge Functions)
+  // ===========================================================================
+
+  @override
+  Future<Either<Failure, CryptoWalletDetail>> getCryptoWalletDetails({
+    required String address,
+    String chain = 'eth',
+  }) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
+    try {
+      final detail = await remoteDataSource.getCryptoWalletDetails(
+        address: address,
+        chain: chain,
+      );
+      return Right(detail);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to fetch crypto wallet details: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, StockDetail>> getStockDetails({
+    required String symbol,
+    required String userId,
+    String timeframe = '1hour',
+  }) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
+    try {
+      final detail = await remoteDataSource.getStockDetails(
+        symbol: symbol,
+        userId: userId,
+        timeframe: timeframe,
+      );
+      return Right(detail);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to fetch stock details: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, BankAccountDetail>> getBankAccountDetails({
+    required String itemId,
+    required String accountId,
+    required String userId,
+  }) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
+    try {
+      final detail = await remoteDataSource.getBankAccountDetails(
+        itemId: itemId,
+        accountId: accountId,
+        userId: userId,
+      );
+      return Right(detail);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to fetch bank account details: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, ManualAssetDetail>> getManualAssetDetails({
+    required String assetId,
+    required String userId,
+  }) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
+    try {
+      final detail = await remoteDataSource.getManualAssetDetails(
+        assetId: assetId,
+        userId: userId,
+      );
+      return Right(detail);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to fetch manual asset details: ${e.toString()}'));
     }
   }
 }
