@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
 import 'package:financo/core/error/failures.dart';
-import 'package:financo/core/usecases/usecase.dart';
+import 'package:financo/core/usecase/usecase.dart';
 import 'package:financo/features/finance/domain/entities/crypto_wallet_detail.dart';
 import 'package:financo/features/finance/domain/repositories/finance_repository.dart';
 

@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:financo/features/asset_details/presentation/bloc/asset_detail_event.dart';
 import 'package:financo/features/finance/domain/entities/crypto_wallet_detail.dart';
 import 'package:financo/features/finance/domain/entities/stock_detail.dart';
 import 'package:financo/features/finance/domain/entities/bank_account_detail.dart';
