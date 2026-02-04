@@ -34,6 +34,7 @@ import 'package:financo/features/finance/domain/usecases/detail_usecases/get_ban
 import 'package:financo/features/finance/domain/usecases/detail_usecases/get_manual_asset_details_usecase.dart';
 import 'package:financo/core/services/connectivity_service.dart';
 import 'package:financo/core/services/security_service.dart';
+import 'package:financo/core/services/supabase_error_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -53,14 +54,35 @@ Future<void> initializeDependencies() async {
   // External Dependencies (Clients externes)
   // ============================================================================
 
-  // Initialisation de Supabase
+  // Initialisation de Supabase avec gestion d'erreur de connexion
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_KEY']!,
+    authOptions: const FlutterAuthClientOptions(
+      authFlowType: AuthFlowType.pkce,
+      // Disable auto-refresh when offline to prevent connection errors
+      autoRefreshToken: true,
+    ),
+    realtimeClientOptions: const RealtimeClientOptions(
+      // Disable realtime when offline
+      eventsPerSecond: 2,
+    ),
   );
 
   // Enregistrement du client Supabase
   sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);
+  
+  // Initialize ConnectivityService first
+  final connectivityService = ConnectivityService();
+  await connectivityService.initialize();
+  sl.registerLazySingleton<ConnectivityService>(() => connectivityService);
+  
+  // Initialize SupabaseErrorHandler to catch auth errors
+  final errorHandler = SupabaseErrorHandler(
+    connectivityService: connectivityService,
+  );
+  errorHandler.initialize(Supabase.instance.client);
+  sl.registerLazySingleton<SupabaseErrorHandler>(() => errorHandler);
 
   // Enregistrement de SharedPreferences
   final sharedPreferences = await SharedPreferences.getInstance();
@@ -77,10 +99,7 @@ Future<void> initializeDependencies() async {
     ),
   );
 
-  // Enregistrement du ConnectivityService
-  sl.registerLazySingleton<ConnectivityService>(
-    () => ConnectivityService(),
-  );
+  // ConnectivityService already initialized above
 
   final GoogleSignIn googleSignIn = GoogleSignIn.instance;
 
