@@ -8,9 +8,10 @@ import 'package:country_picker/country_picker.dart';
 
 /// Premium Stock & Commodity Detail Page with market stats and diversification
 class StockDetailPage extends StatefulWidget {
+  final String? logoUrl;
   final StockDetail stockDetail;
 
-  const StockDetailPage({super.key, required this.stockDetail});
+  const StockDetailPage({super.key, required this.stockDetail, this.logoUrl});
 
   @override
   State<StockDetailPage> createState() => _StockDetailPageState();
@@ -26,6 +27,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
+        forceMaterialTransparency: true,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () => Navigator.pop(context),
@@ -277,7 +279,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
                 icon: Icons.business,
                 label: 'Sector',
                 value: div.sector,
-                color: const Color(0xFF3861FB),
+                color: AppColors.gray80,
               ),
               const SizedBox(width: 12),
 
@@ -286,7 +288,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
                 icon: Icons.factory,
                 label: 'Industry',
                 value: div.industry,
-                color: const Color(0xFF00D16C),
+                color: AppColors.gray80,
               ),
             ],
           ),
@@ -309,16 +311,15 @@ class _StockDetailPageState extends State<StockDetailPage> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: color,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(icon, color: color, size: 14),
+                Icon(icon, color: AppColors.white, size: 14),
                 const SizedBox(width: 4),
                 Text(
                   label,
@@ -349,12 +350,8 @@ class _StockDetailPageState extends State<StockDetailPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFAA00).withValues(alpha: 0.1),
+        color: AppColors.gray80,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: const Color(0xFFFFAA00).withValues(alpha: 0.3),
-          width: 1,
-        ),
       ),
       child: Row(
         children: [

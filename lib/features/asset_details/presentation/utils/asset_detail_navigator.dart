@@ -84,7 +84,7 @@ class _AssetDetailWrapperState extends State<_AssetDetailWrapper> {
         } else if (state is CryptoWalletDetailLoaded) {
           return CryptoWalletDetailPage(walletDetail: state.detail);
         } else if (state is StockDetailLoaded) {
-          return StockDetailPage(stockDetail: state.detail);
+          return StockDetailPage(stockDetail: state.detail,);
         } else if (state is BankAccountDetailLoaded) {
           return BankAccountDetailPage(accountDetail: state.detail);
         } else if (state is ManualAssetDetailLoaded) {

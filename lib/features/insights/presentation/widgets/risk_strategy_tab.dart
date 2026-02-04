@@ -101,7 +101,7 @@ class _RiskStrategyTabState extends State<RiskStrategyTab> {
     };
 
     final prompt =
-        "Analyze this portfolio, you should generate UI that displays one new InsightCard : ${portfolioData.toString()}";
+        "Analyze this portfolio: ${portfolioData.toString()}";
 
     try {
       await _financialConversation.sendRequest(UserMessage.text(prompt));

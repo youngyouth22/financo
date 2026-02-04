@@ -1,6 +1,4 @@
 import 'package:financo/common/common_widgets/budgets_row.dart';
-import 'package:financo/common/common_widgets/custom_arc_180_painter.dart';
-import 'package:financo/common/common_widgets/custom_arc_painter.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
@@ -21,25 +19,25 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
 
   final Map<String, dynamic> _typeConfig = {
     'crypto': {
-      'color': const Color(0xFF3861FB),
+      'color': AppColors.primary,
       'icon': Icons.currency_bitcoin_rounded,
       'label': 'Crypto',
       'liquid': true,
     },
     'stock': {
-      'color': const Color(0xFF00D16C),
+      'color': AppColors.primary500,
       'icon': Icons.trending_up_rounded,
       'label': 'Stocks',
       'liquid': true,
     },
     'cash': {
-      'color': const Color(0xFFFFAA00),
+      'color': AppColors.accentS,
       'icon': Icons.payments_rounded,
       'label': 'Cash',
       'liquid': true,
     },
     'real_estate': {
-      'color': const Color(0xFFFF4D4D),
+      'color': AppColors.primary5,
       'icon': Icons.home_rounded,
       'label': 'Real Estate',
       'liquid': false,
@@ -57,7 +55,7 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
       'liquid': false,
     },
     'liability': {
-      'color': const Color(0xFF6B7280),
+      'color': AppColors.warning,
       'icon': Icons.credit_card_rounded,
       'label': 'Liabilities',
       'liquid': true,
@@ -111,27 +109,9 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTotalValueCard(),
-          const SizedBox(height: 32),
-          Text(
-            'Portfolio Composition',
-            style: AppTypography.headline3SemiBold.copyWith(
-              color: AppColors.white,
-              fontSize: 18,
-            ),
-          ),
           const SizedBox(height: 20),
           _buildPieChart(),
           const SizedBox(height: 32),
-          Center(child: _buildTotalStat()),
-          Text(
-            'Asset Class Breakdown',
-            style: AppTypography.headline3SemiBold.copyWith(
-              color: AppColors.white,
-              fontSize: 18,
-            ),
-          ),
-          const SizedBox(height: 16),
           ...allocations.asMap().entries.map(
             (entry) => _buildLegendItem(entry.key, entry.value),
           ),
@@ -142,115 +122,60 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
     );
   }
 
-  Widget _buildTotalStat() {
-    final media = MediaQuery.of(context).size;
-
-    return Stack(
-      alignment: Alignment.bottomCenter,
-      children: [
-        SizedBox(
-          width: media.width * 0.7,
-          height: media.width * 0.50,
-          child: NetWorthGauge(
-            segments: allocations.map((a) {
-              final absValue = a.amount.abs();
-              final double percentage = totalGrossWeight > 0
-                  ? (absValue / totalGrossWeight)
-                  : 0;
-              return ArcValueModel(color: a.color, value: percentage);
-            }).toList(),
-            width: 16,
-            bgWidth: 12,
-            space: 6,
-          ),
-        ),
-        Column(
-          children: [
-            Text(
-              "\$82,90",
-              style: TextStyle(
-                color: AppColors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            Text(
-              "of \$2,0000 budget",
-              style: TextStyle(
-                color: AppColors.gray30,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTotalValueCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF3861FB).withValues(alpha: 0.2),
-            const Color(0xFF3861FB).withValues(alpha: 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF3861FB).withValues(alpha: 0.3),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildPieChart() {
+    return SizedBox(
+      height: 250,
+      child: Stack(
         children: [
-          Text(
-            'Net Worth (Total Wealth)',
-            style: AppTypography.headline3Regular.copyWith(
-              color: AppColors.gray30,
+          PieChart(
+            PieChartData(
+              pieTouchData: PieTouchData(
+                touchCallback: (event, response) {
+                  setState(() {
+                    if (!event.isInterestedForInteractions ||
+                        response == null ||
+                        response.touchedSection == null) {
+                      touchedIndex = -1;
+                      return;
+                    }
+                    touchedIndex = response.touchedSection!.touchedSectionIndex;
+                  });
+                },
+              ),
+              centerSpaceColor: AppColors.gray80,
+              sectionsSpace: 1,
+              centerSpaceRadius: 120,
+              sections: _buildPieSections(),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            '\$${_formatNumber(totalNetWorth)}',
-            style: AppTypography.headline3Bold.copyWith(
-              color: AppColors.white,
-              fontSize: 32,
+          Align(
+            alignment: AlignmentGeometry.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Total Value',
+                  style: AppTypography.headline2Regular.copyWith(
+                    color: AppColors.gray30,
+                  ),
+                ),
+                Text(
+                  '\$${_formatNumber(totalGrossWeight)}',
+                  style: AppTypography.headline3Bold.copyWith(
+                    color: AppColors.white,
+                    fontSize: 32,
+                  ),
+                ),
+                Text(
+                  '+ 33.4%',
+                  style: AppTypography.headline1Regular.copyWith(
+                    color: AppColors.success,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildPieChart() {
-    return SizedBox(
-      height: 240,
-      child: PieChart(
-        PieChartData(
-          pieTouchData: PieTouchData(
-            touchCallback: (event, response) {
-              setState(() {
-                if (!event.isInterestedForInteractions ||
-                    response == null ||
-                    response.touchedSection == null) {
-                  touchedIndex = -1;
-                  return;
-                }
-                touchedIndex = response.touchedSection!.touchedSectionIndex;
-              });
-            },
-          ),
-          sectionsSpace: 1,
-          centerSpaceRadius: 60,
-
-          sections: _buildPieSections(),
-        ),
       ),
     );
   }
@@ -270,8 +195,10 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
       return PieChartSectionData(
         color: allocation.color,
         value: absValue,
+        showTitle: false,
         title: percentage > 5 ? '${percentage.toStringAsFixed(0)}%' : '',
-        radius: isTouched ? 65.0 : 55.0,
+        radius: isTouched ? 30 : 20,
+
         titleStyle: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.bold,

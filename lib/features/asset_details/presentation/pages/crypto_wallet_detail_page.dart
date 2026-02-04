@@ -1,6 +1,7 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/common/common_widgets/price_line_chart.dart';
+import 'package:financo/core/utils/extract_two_first_letter.dart';
 import 'package:financo/features/finance/domain/entities/crypto_wallet_detail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,10 +11,7 @@ import 'package:intl/intl.dart';
 class CryptoWalletDetailPage extends StatefulWidget {
   final CryptoWalletDetail walletDetail;
 
-  const CryptoWalletDetailPage({
-    super.key,
-    required this.walletDetail,
-  });
+  const CryptoWalletDetailPage({super.key, required this.walletDetail});
 
   @override
   State<CryptoWalletDetailPage> createState() => _CryptoWalletDetailPageState();
@@ -40,126 +38,139 @@ class _CryptoWalletDetailPageState extends State<CryptoWalletDetailPage>
     final isPositive = widget.walletDetail.change24h >= 0;
 
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.share, color: AppColors.white),
-            onPressed: () {
-              // Share functionality
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Header Section
-          _buildHeader(isPositive),
-          
-          // Chart Section
-          _buildChartSection(isPositive),
-          
-          // Tab Bar
-          _buildTabBar(),
-          
-          // Tab Content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildAssetsTab(),
-                _buildActivityTab(),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            // AppBar fixe en haut
+            SliverAppBar(
+              pinned: true,
+              floating: false,
+              elevation: 0,
+              backgroundColor: AppColors.gray,
+              forceMaterialTransparency: false,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back, color: AppColors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+              actions: [
+                IconButton(
+                  icon: Icon(Icons.share, color: AppColors.white),
+                  onPressed: () {
+                    // Share functionality
+                  },
+                ),
               ],
             ),
-          ),
-        ],
+
+            // Header Section (toujours visible, ne scroll pas)
+            SliverToBoxAdapter(child: _buildHeader(isPositive)),
+
+            // Chart Section (scrollable)
+            SliverToBoxAdapter(child: _buildChartSection(isPositive)),
+
+            // Tab Bar (fixe sous le chart quand on scroll)
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _TabBarDelegate(child: _buildTabBar()),
+            ),
+          ];
+        },
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            // Assets Tab - Liste simple (scroll géré par NestedScrollView)
+            _buildAssetsTab(),
+
+            // Activity Tab - Liste simple (scroll géré par NestedScrollView)
+            _buildActivityTab(),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildHeader(bool isPositive) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Wallet Name
-          Text(
-            widget.walletDetail.name,
-            style: AppTypography.headline3Bold.copyWith(
-              color: AppColors.white,
-              fontSize: 24,
+    return Container(
+      color: AppColors.gray,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Wallet Name
+            Text(
+              widget.walletDetail.name,
+              style: AppTypography.headline3Bold.copyWith(
+                color: AppColors.white,
+                fontSize: 24,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          
-          // Wallet Address
-          GestureDetector(
-            onTap: () {
-              Clipboard.setData(
-                ClipboardData(text: widget.walletDetail.walletAddress),
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Address copied to clipboard')),
-              );
-            },
-            child: Row(
+            const SizedBox(height: 4),
+
+            // Wallet Address
+            GestureDetector(
+              onTap: () {
+                Clipboard.setData(
+                  ClipboardData(text: widget.walletDetail.walletAddress),
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Address copied to clipboard')),
+                );
+              },
+              child: Row(
+                children: [
+                  Text(
+                    _formatAddress(widget.walletDetail.walletAddress),
+                    style: AppTypography.headline2Regular.copyWith(
+                      color: AppColors.gray40,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.copy, size: 12, color: AppColors.gray40),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Total Value
+            Text(
+              '\$${NumberFormat('#,##0.00').format(widget.walletDetail.totalValueUsd)}',
+              style: AppTypography.headline3Bold.copyWith(
+                color: AppColors.white,
+                fontSize: 36,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // 24h Change
+            Row(
               children: [
+                Icon(
+                  isPositive ? Icons.arrow_upward : Icons.arrow_downward,
+                  color: isPositive ? AppColors.success : AppColors.error,
+                  size: 16,
+                ),
+                const SizedBox(width: 4),
                 Text(
-                  _formatAddress(widget.walletDetail.walletAddress),
+                  '${isPositive ? '+' : ''}${widget.walletDetail.change24h.toStringAsFixed(2)}%',
+                  style: AppTypography.headline2SemiBold.copyWith(
+                    color: isPositive ? AppColors.success : AppColors.error,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '24h',
                   style: AppTypography.headline2Regular.copyWith(
                     color: AppColors.gray40,
                     fontSize: 12,
                   ),
                 ),
-                const SizedBox(width: 4),
-                Icon(Icons.copy, size: 12, color: AppColors.gray40),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Total Value
-          Text(
-            '\$${NumberFormat('#,##0.00').format(widget.walletDetail.totalValueUsd)}',
-            style: AppTypography.headline3Bold.copyWith(
-              color: AppColors.white,
-              fontSize: 36,
-            ),
-          ),
-          const SizedBox(height: 8),
-          
-          // 24h Change
-          Row(
-            children: [
-              Icon(
-                isPositive ? Icons.arrow_upward : Icons.arrow_downward,
-                color: isPositive ? AppColors.success : AppColors.error,
-                size: 16,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${isPositive ? '+' : ''}${widget.walletDetail.change24h.toStringAsFixed(2)}%',
-                style: AppTypography.headline2SemiBold.copyWith(
-                  color: isPositive ? AppColors.success : AppColors.error,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '24h',
-                style: AppTypography.headline2Regular.copyWith(
-                  color: AppColors.gray40,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -178,7 +189,7 @@ class _CryptoWalletDetailPageState extends State<CryptoWalletDetailPage>
 
   Widget _buildTabBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      color: AppColors.gray,
       child: TabBar(
         controller: _tabController,
         indicatorColor: AppColors.accent,
@@ -195,9 +206,33 @@ class _CryptoWalletDetailPageState extends State<CryptoWalletDetailPage>
     );
   }
 
+  Widget _buildDefaultIcon(String symbol) {
+    return Container(
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: AppColors.gray30.withValues(alpha: 0.1),
+        border: Border(
+          top: BorderSide(color: AppColors.gray40.withValues(alpha: 0.2)),
+          left: BorderSide(color: AppColors.gray40.withValues(alpha: 0.2)),
+        ),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          extractTwoFirstLetter(symbol),
+          textAlign: TextAlign.center,
+          style: AppTypography.headline2Bold.copyWith(color: AppColors.gray60),
+        ),
+      ),
+    );
+  }
+
   Widget _buildAssetsTab() {
     return ListView.builder(
       padding: const EdgeInsets.all(20),
+      physics: const ClampingScrollPhysics(), // Important pour NestedScrollView
       itemCount: widget.walletDetail.tokens.length,
       itemBuilder: (context, index) {
         final token = widget.walletDetail.tokens[index];
@@ -208,7 +243,7 @@ class _CryptoWalletDetailPageState extends State<CryptoWalletDetailPage>
 
   Widget _buildTokenCard(CryptoToken token) {
     final isPositive = token.change24h >= 0;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -233,16 +268,14 @@ class _CryptoWalletDetailPageState extends State<CryptoWalletDetailPage>
                     child: Image.network(
                       token.iconUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Icon(
-                        Icons.currency_bitcoin,
-                        color: AppColors.accent,
-                      ),
+                      errorBuilder: (_, _, _) =>
+                          _buildDefaultIcon(token.symbol),
                     ),
                   )
-                : Icon(Icons.currency_bitcoin, color: AppColors.accent),
+                : _buildDefaultIcon(token.symbol),
           ),
           const SizedBox(width: 12),
-          
+
           // Token Info
           Expanded(
             child: Column(
@@ -266,7 +299,7 @@ class _CryptoWalletDetailPageState extends State<CryptoWalletDetailPage>
               ],
             ),
           ),
-          
+
           // Value & Change
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -317,6 +350,7 @@ class _CryptoWalletDetailPageState extends State<CryptoWalletDetailPage>
 
     return ListView.builder(
       padding: const EdgeInsets.all(20),
+      physics: const ClampingScrollPhysics(), // Important pour NestedScrollView
       itemCount: widget.walletDetail.transactions.length,
       itemBuilder: (context, index) {
         final tx = widget.walletDetail.transactions[index];
@@ -373,13 +407,13 @@ class _CryptoWalletDetailPageState extends State<CryptoWalletDetailPage>
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: iconColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(icon, color: iconColor, size: 20),
           ),
           const SizedBox(width: 12),
-          
+
           // Transaction Info
           Expanded(
             child: Column(
@@ -411,7 +445,7 @@ class _CryptoWalletDetailPageState extends State<CryptoWalletDetailPage>
               ],
             ),
           ),
-          
+
           // Amount
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -441,5 +475,32 @@ class _CryptoWalletDetailPageState extends State<CryptoWalletDetailPage>
   String _formatAddress(String address) {
     if (address.length <= 10) return address;
     return '${address.substring(0, 6)}...${address.substring(address.length - 4)}';
+  }
+}
+
+// Custom delegate pour le TabBar fixe
+class _TabBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+
+  _TabBarDelegate({required this.child});
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(color: AppColors.gray, child: child);
+  }
+
+  @override
+  double get maxExtent => 48; // Hauteur du TabBar
+
+  @override
+  double get minExtent => 48; // Même hauteur, ne se réduit pas
+
+  @override
+  bool shouldRebuild(_TabBarDelegate oldDelegate) {
+    return child != oldDelegate.child;
   }
 }
