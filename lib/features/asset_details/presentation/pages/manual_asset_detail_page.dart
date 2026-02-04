@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:rrule/rrule.dart';
 
 import '../../../finance/domain/entities/asset_payout.dart';
+import '../widgets/payment_dialog.dart';
 
 class ManualAssetDetailPage extends StatefulWidget {
   final ManualAssetDetail assetDetail;
@@ -138,6 +139,36 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
 
         return Scaffold(
           backgroundColor: AppColors.gray,
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (dialogContext) => PaymentDialog(
+                  assetId: widget.assetDetail.assetId,
+                  onSubmit: (amount, date, notes) {
+                    context.read<ManualAssetDetailBloc>().add(
+                      MarkReminderReceivedEvent(
+                        assetId: widget.assetDetail.assetId,
+                        amount: amount,
+                        payoutDate: date,
+                        reminderId: 'manual_${DateTime.now().millisecondsSinceEpoch}',
+                        notes: notes,
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+            backgroundColor: AppColors.primary,
+            icon: const Icon(Icons.add, color: AppColors.white),
+            label: Text(
+              'Add Payment',
+              style: AppTypography.body.copyWith(
+                color: AppColors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
           body: SafeArea(
             child: NestedScrollView(
               headerSliverBuilder: (context, innerBoxIsScrolled) => [
@@ -334,14 +365,24 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
                         ),
                       ),
                       onPressed: () {
-                        context.read<ManualAssetDetailBloc>().add(
-                          MarkReminderReceivedEvent(
+                        showDialog(
+                          context: context,
+                          builder: (dialogContext) => PaymentDialog(
                             assetId: widget.assetDetail.assetId,
-                            amount: payment.totalPayment,
-                            payoutDate: payment.dueDate,
-                            reminderId:
-                                'rem_${payment.dueDate.millisecondsSinceEpoch}',
-                            notes: 'Manual payment received',
+                            suggestedAmount: payment.totalPayment,
+                            suggestedDate: payment.dueDate,
+                            onSubmit: (amount, date, notes) {
+                              context.read<ManualAssetDetailBloc>().add(
+                                MarkReminderReceivedEvent(
+                                  assetId: widget.assetDetail.assetId,
+                                  amount: amount,
+                                  payoutDate: date,
+                                  reminderId:
+                                      'rem_${payment.dueDate.millisecondsSinceEpoch}',
+                                  notes: notes,
+                                ),
+                              );
+                            },
                           ),
                         );
                       },

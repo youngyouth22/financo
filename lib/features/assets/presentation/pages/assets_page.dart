@@ -1,6 +1,8 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/features/assets/presentation/widgets/asset_card.dart';
+import 'package:financo/common/widgets/shimmer/asset_card_shimmer.dart';
+import 'package:financo/common/widgets/empty_states/no_data_state.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:financo/features/assets/presentation/bloc/assets_bloc.dart';
 import 'package:financo/features/assets/presentation/bloc/assets_event.dart';
@@ -60,8 +62,10 @@ class _AssetsPageState extends State<AssetsPage>
           if (state is AssetsRealTimeUpdated) {
             allAssets = state.assets;
           } else if (state is AssetsLoading) {
-            return Center(
-              child: CircularProgressIndicator(color: AppColors.accent),
+            return ListView.builder(
+              padding: const EdgeInsets.all(20),
+              itemCount: 6,
+              itemBuilder: (context, index) => const AssetCardShimmer(),
             );
           }
 

@@ -58,14 +58,22 @@ Future<void> initializeDependencies() async {
   // External Dependencies (Clients externes)
   // ============================================================================
 
+  // Initialize ConnectivityService first to check connection
+  final connectivityService = ConnectivityService();
+  await connectivityService.initialize();
+  sl.registerLazySingleton<ConnectivityService>(() => connectivityService);
+  
+  // Check if we have connection before initializing Supabase
+  final hasConnection = await connectivityService.hasConnection;
+  
   // Initialisation de Supabase avec gestion d'erreur de connexion
   await Supabase.initialize(
     url: dotenv.env['SUPABASE_URL']!,
     anonKey: dotenv.env['SUPABASE_KEY']!,
-    authOptions: const FlutterAuthClientOptions(
+    authOptions: FlutterAuthClientOptions(
       authFlowType: AuthFlowType.pkce,
       // Disable auto-refresh when offline to prevent connection errors
-      autoRefreshToken: true,
+      autoRefreshToken: hasConnection,
     ),
     realtimeClientOptions: const RealtimeClientOptions(
       // Disable realtime when offline
@@ -76,16 +84,11 @@ Future<void> initializeDependencies() async {
   // Enregistrement du client Supabase
   sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);
   
-  // Initialize ConnectivityService first
-  final connectivityService = ConnectivityService();
-  await connectivityService.initialize();
-  sl.registerLazySingleton<ConnectivityService>(() => connectivityService);
-  
   // Initialize SupabaseErrorHandler to catch auth errors
   final errorHandler = SupabaseErrorHandler(
     connectivityService: connectivityService,
   );
-  errorHandler.initialize(Supabase.instance.client);
+  await errorHandler.initialize(Supabase.instance.client);
   sl.registerLazySingleton<SupabaseErrorHandler>(() => errorHandler);
 
   // Enregistrement de SharedPreferences
