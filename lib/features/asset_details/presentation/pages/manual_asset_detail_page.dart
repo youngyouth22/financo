@@ -1,12 +1,20 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
-import 'package:financo/common/common_widgets/price_line_chart.dart';
 import 'package:financo/features/finance/domain/entities/manual_asset_detail.dart';
+import 'package:financo/features/finance/presentation/bloc/manual_asset_detail/manual_asset_detail_bloc.dart';
+import 'package:financo/features/finance/presentation/bloc/manual_asset_detail/manual_asset_detail_event.dart';
+import 'package:financo/features/finance/presentation/bloc/manual_asset_detail/manual_asset_detail_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 /// Premium Manual Asset Detail Page with Amortization Engine
-class ManualAssetDetailPage extends StatelessWidget {
+///
+/// Features:
+/// - Header stats (Total Expected, Total Received, Remaining Balance)
+/// - Tab 1: Schedule (Future reminders with mark as received)
+/// - Tab 2: History (Past payouts)
+class ManualAssetDetailPage extends StatefulWidget {
   final ManualAssetDetail assetDetail;
 
   const ManualAssetDetailPage({
@@ -15,261 +23,184 @@ class ManualAssetDetailPage extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final isPositive = assetDetail.totalGain >= 0;
+  State<ManualAssetDetailPage> createState() => _ManualAssetDetailPageState();
+}
 
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.edit, color: AppColors.white),
-            onPressed: () {
-              // Edit asset
-            },
+class _ManualAssetDetailPageState extends State<ManualAssetDetailPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Load payout data when page opens
+    context.read<ManualAssetDetailBloc>().add(
+          LoadAssetDetailEvent(widget.assetDetail.assetId),
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: AppColors.background,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.white),
+            onPressed: () => Navigator.pop(context),
           ),
-          IconButton(
-            icon: Icon(Icons.more_vert, color: AppColors.white),
-            onPressed: () {
-              // More options
-            },
+          title: Text(
+            widget.assetDetail.name,
+            style: AppTypography.h3.copyWith(color: AppColors.white),
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Section
-            _buildHeader(isPositive),
-            
-            // Chart Section
-            _buildChartSection(isPositive),
-            
-            const SizedBox(height: 24),
-            
-            // Re-evaluate Button
-            _buildReEvaluateButton(context),
-            
-            const SizedBox(height: 24),
-            
-            // Asset Metadata
-            _buildMetadata(),
-            
-            const SizedBox(height: 24),
-            
-            // Amortization Schedule (if applicable)
-            if (assetDetail.amortizationSchedule != null &&
-                assetDetail.amortizationSchedule!.isNotEmpty) ...[
-              _buildAmortizationSection(),
-              const SizedBox(height: 24),
-            ],
-            
-            const SizedBox(height: 32),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.edit, color: AppColors.white),
+              onPressed: () {
+                // TODO: Edit asset
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.more_vert, color: AppColors.white),
+              onPressed: () {
+                // TODO: More options
+              },
+            ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(bool isPositive) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Category Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: _getCategoryColor().withValues(alpha:0.2),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _getCategoryColor().withValues(alpha:0.5),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  _getCategoryIcon(),
-                  color: _getCategoryColor(),
-                  size: 14,
+        body: BlocConsumer<ManualAssetDetailBloc, ManualAssetDetailState>(
+          listener: (context, state) {
+            if (state is ReminderMarkedSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Payment marked as received!'),
+                  backgroundColor: Colors.green,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  _formatCategory(),
-                  style: AppTypography.headline2SemiBold.copyWith(
-                    color: _getCategoryColor(),
-                    fontSize: 11,
+              );
+            } else if (state is ManualAssetDetailError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            if (state is ManualAssetDetailLoading) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              );
+            }
+
+            if (state is ManualAssetDetailError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text(
+                      state.message,
+                      style: AppTypography.body.copyWith(color: AppColors.white),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<ManualAssetDetailBloc>().add(
+                              RefreshAssetDetailEvent(widget.assetDetail.assetId),
+                            );
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            if (state is! ManualAssetDetailLoaded) {
+              return const SizedBox.shrink();
+            }
+
+            return Column(
+              children: [
+                // Header Stats Section
+                _buildHeaderStats(state),
+
+                // TabBar
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.cardBackground,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: TabBar(
+                    indicator: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppColors.primary, AppColors.accent],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    labelColor: AppColors.white,
+                    unselectedLabelColor: AppColors.gray60,
+                    labelStyle: AppTypography.body.copyWith(fontWeight: FontWeight.w600),
+                    tabs: const [
+                      Tab(text: 'Schedule'),
+                      Tab(text: 'History'),
+                    ],
+                  ),
+                ),
+
+                // TabBarView
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _buildScheduleTab(state),
+                      _buildHistoryTab(state),
+                    ],
                   ),
                 ),
               ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          
-          // Asset Name
-          Text(
-            assetDetail.name,
-            style: AppTypography.headline3Bold.copyWith(
-              color: AppColors.white,
-              fontSize: 24,
-            ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Current Value
-          Text(
-            '\$${NumberFormat('#,##0.00').format(assetDetail.currentValue)}',
-            style: AppTypography.headline3Bold.copyWith(
-              color: AppColors.white,
-              fontSize: 36,
-            ),
-          ),
-          const SizedBox(height: 8),
-          
-          // Total Gain/Loss
-          Row(
-            children: [
-              Icon(
-                isPositive ? Icons.arrow_upward : Icons.arrow_downward,
-                color: isPositive ? AppColors.success : AppColors.error,
-                size: 16,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${isPositive ? '+' : ''}\$${assetDetail.totalGain.toStringAsFixed(2)}',
-                style: AppTypography.headline2SemiBold.copyWith(
-                  color: isPositive ? AppColors.success : AppColors.error,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '(${isPositive ? '+' : ''}${assetDetail.totalGainPercent.toStringAsFixed(2)}%)',
-                style: AppTypography.headline2Regular.copyWith(
-                  color: isPositive ? AppColors.success : AppColors.error,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChartSection(bool isPositive) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: PriceLineChart(
-        priceHistory: assetDetail.valueHistory,
-        isPositive: isPositive,
-        height: 180,
-        showTimeframeSelector: true,
-      ),
-    );
-  }
-
-  Widget _buildReEvaluateButton(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () {
-            _showReEvaluateDialog(context);
+            );
           },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.accent,
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.refresh, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Re-evaluate Asset',
-                style: AppTypography.headline2SemiBold.copyWith(
-                  color: AppColors.white,
-                  fontSize: 14,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
   }
 
-  Widget _buildMetadata() {
-    final metadata = assetDetail.metadata;
-    
+  /// Build header stats cards
+  Widget _buildHeaderStats(ManualAssetDetailLoaded state) {
+    final summary = state.summary;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.all(20),
+      child: Row(
         children: [
-          Text(
-            'Asset Details',
-            style: AppTypography.headline3SemiBold.copyWith(
-              color: AppColors.white,
-              fontSize: 18,
+          Expanded(
+            child: _buildStatCard(
+              'Total Expected',
+              '\$${NumberFormat('#,##0.00').format(summary.totalExpected)}',
+              Icons.account_balance_wallet,
+              AppColors.primary,
             ),
           ),
-          const SizedBox(height: 16),
-          
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.gray80,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.gray80, width: 1),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildStatCard(
+              'Total Received',
+              '\$${NumberFormat('#,##0.00').format(summary.totalReceived)}',
+              Icons.check_circle,
+              Colors.green,
             ),
-            child: Column(
-              children: [
-                _buildInfoRow('Purchase Price', '\$${NumberFormat('#,##0.00').format(assetDetail.purchasePrice)}'),
-                const Divider(color: Color(0xFF2A2D36), height: 24),
-                _buildInfoRow('Purchase Date', DateFormat('MMM d, yyyy').format(assetDetail.purchaseDate)),
-                const Divider(color: Color(0xFF2A2D36), height: 24),
-                _buildInfoRow('Currency', assetDetail.currency),
-                
-                // Category-specific metadata
-                if (metadata.propertyAddress != null) ...[
-                  const Divider(color: Color(0xFF2A2D36), height: 24),
-                  _buildInfoRow('Property Address', metadata.propertyAddress!),
-                ],
-                if (metadata.propertyType != null) ...[
-                  const Divider(color: Color(0xFF2A2D36), height: 24),
-                  _buildInfoRow('Property Type', metadata.propertyType!),
-                ],
-                if (metadata.loanAmount != null) ...[
-                  const Divider(color: Color(0xFF2A2D36), height: 24),
-                  _buildInfoRow('Loan Amount', '\$${NumberFormat('#,##0.00').format(metadata.loanAmount!)}'),
-                ],
-                if (metadata.interestRate != null) ...[
-                  const Divider(color: Color(0xFF2A2D36), height: 24),
-                  _buildInfoRow('Interest Rate', '${metadata.interestRate!.toStringAsFixed(2)}%'),
-                ],
-                if (metadata.commodityType != null) ...[
-                  const Divider(color: Color(0xFF2A2D36), height: 24),
-                  _buildInfoRow('Commodity Type', metadata.commodityType!),
-                ],
-                if (metadata.purity != null) ...[
-                  const Divider(color: Color(0xFF2A2D36), height: 24),
-                  _buildInfoRow('Purity', '${metadata.purity!.toStringAsFixed(1)}%'),
-                ],
-              ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildStatCard(
+              'Remaining',
+              '\$${NumberFormat('#,##0.00').format(summary.remainingBalance)}',
+              Icons.pending,
+              Colors.orange,
             ),
           ),
         ],
@@ -277,265 +208,142 @@ class ManualAssetDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildAmortizationSection() {
-    final schedule = assetDetail.amortizationSchedule!;
-    final upcomingPayments = schedule.where((p) => p.isUpcoming).take(5).toList();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.calendar_today, color: AppColors.accent, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Upcoming Recalls / Amortization',
-                style: AppTypography.headline3SemiBold.copyWith(
-                  color: AppColors.white,
-                  fontSize: 18,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          
-          if (upcomingPayments.isEmpty)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Text(
-                  'No upcoming payments',
-                  style: AppTypography.headline2Regular.copyWith(
-                    color: AppColors.gray40,
-                  ),
-                ),
-              ),
-            )
-          else
-            ...upcomingPayments.map((payment) => _buildPaymentCard(payment)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPaymentCard(AmortizationPayment payment) {
-    final daysUntil = payment.dueDate.difference(DateTime.now()).inDays;
-    final isOverdue = payment.isOverdue;
-
+  /// Build individual stat card
+  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isOverdue
-            ? AppColors.error.withValues(alpha:0.1)
-            : AppColors.gray80,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isOverdue
-              ? AppColors.error.withValues(alpha:0.5)
-              : AppColors.gray80,
+          color: color.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Payment #${payment.paymentNumber}',
-                style: AppTypography.headline2SemiBold.copyWith(
-                  color: AppColors.white,
-                  fontSize: 14,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isOverdue
-                      ? AppColors.error.withValues(alpha:0.2)
-                      : AppColors.accent.withValues(alpha:0.2),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  isOverdue
-                      ? 'OVERDUE'
-                      : daysUntil == 0
-                          ? 'TODAY'
-                          : '$daysUntil days',
-                  style: AppTypography.headline2SemiBold.copyWith(
-                    color: isOverdue ? AppColors.error : AppColors.accent,
-                    fontSize: 10,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          Icon(icon, color: color, size: 24),
           const SizedBox(height: 8),
-          
           Text(
-            DateFormat('MMMM d, yyyy').format(payment.dueDate),
-            style: AppTypography.headline2Regular.copyWith(
-              color: AppColors.gray40,
-              fontSize: 12,
-            ),
+            label,
+            style: AppTypography.caption.copyWith(color: AppColors.gray60),
           ),
-          const SizedBox(height: 12),
-          
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Principal',
-                    style: AppTypography.headline1Regular.copyWith(
-                      color: AppColors.gray40,
-                      fontSize: 10,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '\$${NumberFormat('#,##0.00').format(payment.principalAmount)}',
-                    style: AppTypography.headline2SemiBold.copyWith(
-                      color: AppColors.white,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Interest',
-                    style: AppTypography.headline1Regular.copyWith(
-                      color: AppColors.gray40,
-                      fontSize: 10,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '\$${NumberFormat('#,##0.00').format(payment.interestAmount)}',
-                    style: AppTypography.headline2SemiBold.copyWith(
-                      color: AppColors.white,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    'Total Payment',
-                    style: AppTypography.headline1Regular.copyWith(
-                      color: AppColors.gray40,
-                      fontSize: 10,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '\$${NumberFormat('#,##0.00').format(payment.totalPayment)}',
-                    style: AppTypography.headline2Bold.copyWith(
-                      color: AppColors.accent,
-                      fontSize: 15,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: AppTypography.body.copyWith(
+              color: AppColors.white,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  /// Build Schedule tab (future reminders)
+  Widget _buildScheduleTab(ManualAssetDetailLoaded state) {
+    // TODO: Fetch reminders from database
+    // For now, show placeholder
+    return ListView(
+      padding: const EdgeInsets.all(20),
       children: [
         Text(
-          label,
-          style: AppTypography.headline2Regular.copyWith(
-            color: AppColors.gray40,
-            fontSize: 13,
-          ),
+          'Upcoming Payments',
+          style: AppTypography.h3.copyWith(color: AppColors.white),
         ),
-        Flexible(
-          child: Text(
-            value,
-            style: AppTypography.headline2SemiBold.copyWith(
-              color: AppColors.white,
-              fontSize: 13,
-            ),
-            textAlign: TextAlign.right,
-          ),
+        const SizedBox(height: 16),
+        _buildEmptyState(
+          'No upcoming reminders',
+          'Add a reminder to track future payments',
+          Icons.calendar_today,
         ),
       ],
     );
   }
 
-  void _showReEvaluateDialog(BuildContext context) {
-    final controller = TextEditingController(
-      text: assetDetail.currentValue.toStringAsFixed(2),
-    );
+  /// Build History tab (past payouts)
+  Widget _buildHistoryTab(ManualAssetDetailLoaded state) {
+    final payouts = state.payouts;
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.gray80,
-        title: Text(
-          'Re-evaluate Asset',
-          style: AppTypography.headline3SemiBold.copyWith(
-            color: AppColors.white,
-          ),
+    if (payouts.isEmpty) {
+      return _buildEmptyState(
+        'No payment history',
+        'Mark reminders as received to see history here',
+        Icons.history,
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: payouts.length,
+      itemBuilder: (context, index) {
+        final payout = payouts[index];
+        return _buildPayoutCard(payout);
+      },
+    );
+  }
+
+  /// Build payout card
+  Widget _buildPayoutCard(payout) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.gray70.withValues(alpha: 0.3),
+          width: 1,
         ),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          style: AppTypography.headline2Regular.copyWith(
-            color: AppColors.white,
-          ),
-          decoration: InputDecoration(
-            labelText: 'New Value (USD)',
-            labelStyle: AppTypography.headline2Regular.copyWith(
-              color: AppColors.gray40,
+      ),
+      child: Row(
+        children: [
+          // Icon
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
             ),
-            prefixText: '\$',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: AppColors.gray70),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: AppTypography.headline2Regular.copyWith(
-                color: AppColors.gray40,
-              ),
+            child: const Icon(
+              Icons.check_circle,
+              color: Colors.green,
+              size: 24,
             ),
           ),
-          ElevatedButton(
-            onPressed: () {
-              // Update asset value
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accent,
-            ),
-            child: Text(
-              'Update',
-              style: AppTypography.headline2SemiBold.copyWith(
-                color: AppColors.white,
-              ),
+          const SizedBox(width: 16),
+          // Details
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '\$${NumberFormat('#,##0.00').format(payout.amount)}',
+                  style: AppTypography.body.copyWith(
+                    color: AppColors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  DateFormat('MMM dd, yyyy').format(payout.payoutDate),
+                  style: AppTypography.caption.copyWith(color: AppColors.gray60),
+                ),
+                if (payout.notes != null && payout.notes!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    payout.notes!,
+                    style: AppTypography.caption.copyWith(color: AppColors.gray60),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
             ),
           ),
         ],
@@ -543,54 +351,30 @@ class ManualAssetDetailPage extends StatelessWidget {
     );
   }
 
-  String _formatCategory() {
-    switch (assetDetail.category) {
-      case ManualAssetCategory.realEstate:
-        return 'Real Estate';
-      case ManualAssetCategory.privateEquity:
-        return 'Private Equity';
-      case ManualAssetCategory.commodity:
-        return 'Commodity';
-      case ManualAssetCategory.collectible:
-        return 'Collectible';
-      case ManualAssetCategory.loan:
-        return 'Loan';
-      case ManualAssetCategory.other:
-        return 'Other';
-    }
-  }
-
-  IconData _getCategoryIcon() {
-    switch (assetDetail.category) {
-      case ManualAssetCategory.realEstate:
-        return Icons.home;
-      case ManualAssetCategory.privateEquity:
-        return Icons.business;
-      case ManualAssetCategory.commodity:
-        return Icons.diamond;
-      case ManualAssetCategory.collectible:
-        return Icons.collections;
-      case ManualAssetCategory.loan:
-        return Icons.account_balance;
-      case ManualAssetCategory.other:
-        return Icons.category;
-    }
-  }
-
-  Color _getCategoryColor() {
-    switch (assetDetail.category) {
-      case ManualAssetCategory.realEstate:
-        return const Color(0xFF00D16C);
-      case ManualAssetCategory.privateEquity:
-        return const Color(0xFF3861FB);
-      case ManualAssetCategory.commodity:
-        return const Color(0xFFFFAA00);
-      case ManualAssetCategory.collectible:
-        return const Color(0xFFFF4D4D);
-      case ManualAssetCategory.loan:
-        return const Color(0xFF9B51E0);
-      case ManualAssetCategory.other:
-        return AppColors.gray40;
-    }
+  /// Build empty state
+  Widget _buildEmptyState(String title, String subtitle, IconData icon) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 64, color: AppColors.gray60),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: AppTypography.h3.copyWith(color: AppColors.white),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: AppTypography.body.copyWith(color: AppColors.gray60),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
