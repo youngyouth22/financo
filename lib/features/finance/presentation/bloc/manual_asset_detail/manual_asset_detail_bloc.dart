@@ -57,8 +57,9 @@ class ManualAssetDetailBloc extends Bloc<ManualAssetDetailEvent, ManualAssetDeta
     MarkReminderReceivedEvent event,
     Emitter<ManualAssetDetailState> emit,
   ) async {
-    emit(const MarkingReminderReceived());
-
+    // Don't emit loading state to avoid black screen
+    // Keep current state while processing
+    
     final params = MarkReminderAsReceivedParams(
       reminderId: event.reminderId,
       assetId: event.assetId,
@@ -72,6 +73,7 @@ class ManualAssetDetailBloc extends Bloc<ManualAssetDetailEvent, ManualAssetDeta
     result.fold(
       (failure) => emit(ManualAssetDetailError(failure.message)),
       (_) {
+        // Emit success state briefly to show snackbar
         emit(const ReminderMarkedSuccess());
         // Reload data after marking as received
         add(LoadAssetDetailEvent(event.assetId));

@@ -118,6 +118,15 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
             const SnackBar(
               content: Text('Payment marked as received!'),
               backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        } else if (state is ManualAssetDetailError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -130,10 +139,70 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
           );
         }
 
+        // Handle error state
+        if (state is ManualAssetDetailError) {
+          return Scaffold(
+            backgroundColor: AppColors.gray,
+            appBar: AppBar(
+              backgroundColor: AppColors.gray,
+              leading: IconButton(
+                icon: const Icon(Icons.arrow_back, color: AppColors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error',
+                    style: AppTypography.headline2SemiBold.copyWith(
+                      color: AppColors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    state.message,
+                    style: AppTypography.headline3Regular.copyWith(
+                      color: AppColors.gray60,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () {
+                      context.read<ManualAssetDetailBloc>().add(
+                        LoadAssetDetailEvent(widget.assetDetail.assetId),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                    ),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // Handle success state (show previous loaded data)
+        if (state is ReminderMarkedSuccess) {
+          // This state is transient, keep showing loaded data
+          // The BLoC will automatically trigger LoadAssetDetailEvent
+          return Scaffold(
+            backgroundColor: AppColors.gray,
+            body: const Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        // Only render if we have loaded data
         if (state is! ManualAssetDetailLoaded) {
           return Scaffold(
             backgroundColor: AppColors.gray,
-            body: const SizedBox.shrink(),
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
 

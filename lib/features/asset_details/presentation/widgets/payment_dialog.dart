@@ -30,6 +30,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
   DateTime? _selectedDate;
+  bool _isSubmitting = false;
 
   @override
   void initState() {
@@ -73,19 +74,29 @@ class _PaymentDialogState extends State<PaymentDialog> {
     }
   }
 
-  void _submit() {
+  void _submit() async {
     if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isSubmitting = true;
+      });
+
       final amount = double.parse(_amountController.text);
       final date = _selectedDate ?? DateTime.now();
       final notes = _notesController.text.trim();
 
+      // Call onSubmit callback
       widget.onSubmit(
         amount,
         date,
         notes.isEmpty ? null : notes,
       );
 
-      Navigator.of(context).pop();
+      // Wait a bit for the BLoC to process
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 
@@ -304,8 +315,8 @@ class _PaymentDialogState extends State<PaymentDialog> {
               // Submit Button
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _submit,
+                  child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submit,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: AppColors.white,
@@ -315,13 +326,22 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     ),
                     elevation: 0,
                   ),
-                  child: Text(
-                    'Record Payment',
-                    style: AppTypography.headline3Regular.copyWith(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Text(
+                          'Record Payment',
+                          style: AppTypography.headline3Regular.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
                 ),
               ),
             ],
