@@ -9,17 +9,12 @@ import 'package:intl/intl.dart';
 class BankAccountDetailPage extends StatelessWidget {
   final BankAccountDetail accountDetail;
 
-  const BankAccountDetailPage({
-    super.key,
-    required this.accountDetail,
-  });
+  const BankAccountDetailPage({super.key, required this.accountDetail});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppColors.white),
@@ -40,26 +35,26 @@ class BankAccountDetailPage extends StatelessWidget {
           children: [
             // Header Section
             _buildHeader(),
-            
+
             // Chart Section
             _buildChartSection(),
-            
+
             const SizedBox(height: 24),
-            
+
             // Account Info
             _buildAccountInfo(),
-            
+
             const SizedBox(height: 24),
-            
+
             // Credit Card Section (if applicable)
             if (accountDetail.isCreditCard) ...[
               _buildCreditCardInfo(),
               const SizedBox(height: 24),
             ],
-            
+
             // Transactions
             _buildTransactions(),
-            
+
             const SizedBox(height: 32),
           ],
         ),
@@ -82,7 +77,7 @@ class BankAccountDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          
+
           // Account Name
           Text(
             accountDetail.name,
@@ -92,7 +87,7 @@ class BankAccountDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          
+
           // Account Mask
           Text(
             accountDetail.accountMask,
@@ -102,10 +97,12 @@ class BankAccountDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Current Balance
           Text(
-            accountDetail.isCreditCard ? 'Available Balance' : 'Current Balance',
+            accountDetail.isCreditCard
+                ? 'Available Balance'
+                : 'Current Balance',
             style: AppTypography.headline2Regular.copyWith(
               color: AppColors.gray40,
               fontSize: 12,
@@ -150,7 +147,7 @@ class BankAccountDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -181,7 +178,9 @@ class BankAccountDetailPage extends StatelessWidget {
   Widget _buildCreditCardInfo() {
     final creditLimit = accountDetail.creditLimit ?? 0;
     final creditUsed = accountDetail.creditUsed;
-    final creditUtilization = creditLimit > 0 ? (creditUsed / creditLimit) * 100 : 0;
+    final creditUtilization = creditLimit > 0
+        ? (creditUsed / creditLimit) * 100
+        : 0;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -196,7 +195,7 @@ class BankAccountDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -204,12 +203,15 @@ class BankAccountDetailPage extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  const Color(0xFF3861FB).withOpacity(0.2),
-                  const Color(0xFF3861FB).withOpacity(0.05),
+                  const Color(0xFF3861FB).withValues(alpha: 0.2),
+                  const Color(0xFF3861FB).withValues(alpha: 0.05),
                 ],
               ),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.accent.withOpacity(0.3), width: 1),
+              border: Border.all(
+                color: AppColors.accent.withValues(alpha: 0.3),
+                width: 1,
+              ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,7 +262,7 @@ class BankAccountDetailPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Credit Utilization Bar
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,7 +280,9 @@ class BankAccountDetailPage extends StatelessWidget {
                         Text(
                           '${creditUtilization.toStringAsFixed(1)}%',
                           style: AppTypography.headline2SemiBold.copyWith(
-                            color: _getCreditUtilizationColor(creditUtilization as double),
+                            color: _getCreditUtilizationColor(
+                              creditUtilization as double,
+                            ),
                             fontSize: 12,
                           ),
                         ),
@@ -291,7 +295,7 @@ class BankAccountDetailPage extends StatelessWidget {
                         value: creditUtilization / 100,
                         backgroundColor: AppColors.gray80,
                         valueColor: AlwaysStoppedAnimation(
-                          _getCreditUtilizationColor(creditUtilization as double),
+                          _getCreditUtilizationColor(creditUtilization),
                         ),
                         minHeight: 8,
                       ),
@@ -320,7 +324,7 @@ class BankAccountDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           if (accountDetail.transactions.isEmpty)
             Center(
               child: Padding(
@@ -334,7 +338,9 @@ class BankAccountDetailPage extends StatelessWidget {
               ),
             )
           else
-            ...accountDetail.transactions.map((tx) => _buildTransactionCard(tx)),
+            ...accountDetail.transactions.map(
+              (tx) => _buildTransactionCard(tx),
+            ),
         ],
       ),
     );
@@ -357,8 +363,8 @@ class BankAccountDetailPage extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               color: tx.isDebit
-                  ? AppColors.error.withOpacity(0.1)
-                  : AppColors.success.withOpacity(0.1),
+                  ? AppColors.error.withValues(alpha: 0.1)
+                  : AppColors.success.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
@@ -368,7 +374,7 @@ class BankAccountDetailPage extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          
+
           // Transaction Info
           Expanded(
             child: Column(
@@ -407,7 +413,7 @@ class BankAccountDetailPage extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.warning.withOpacity(0.2),
+                          color: AppColors.warning.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -424,7 +430,7 @@ class BankAccountDetailPage extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Amount
           Text(
             '${tx.isDebit ? '-' : '+'}\$${tx.amount.abs().toStringAsFixed(2)}',

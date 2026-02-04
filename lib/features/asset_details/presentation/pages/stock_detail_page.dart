@@ -10,10 +10,7 @@ import 'package:country_picker/country_picker.dart';
 class StockDetailPage extends StatefulWidget {
   final StockDetail stockDetail;
 
-  const StockDetailPage({
-    super.key,
-    required this.stockDetail,
-  });
+  const StockDetailPage({super.key, required this.stockDetail});
 
   @override
   State<StockDetailPage> createState() => _StockDetailPageState();
@@ -27,9 +24,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
     final isPositive = widget.stockDetail.change24h >= 0;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppColors.white),
@@ -56,25 +51,25 @@ class _StockDetailPageState extends State<StockDetailPage> {
           children: [
             // Header Section
             _buildHeader(isPositive),
-            
+
             // Chart Section
             _buildChartSection(isPositive),
-            
+
             const SizedBox(height: 24),
-            
+
             // Market Stats
             _buildMarketStats(),
-            
+
             const SizedBox(height: 24),
-            
+
             // Diversification Info
             _buildDiversificationInfo(),
-            
+
             const SizedBox(height: 24),
-            
+
             // Description
             _buildDescription(),
-            
+
             const SizedBox(height: 32),
           ],
         ),
@@ -98,7 +93,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
             ),
           ),
           const SizedBox(height: 4),
-          
+
           // Company Name
           Text(
             widget.stockDetail.name,
@@ -108,7 +103,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Current Price
           Text(
             '\$${NumberFormat('#,##0.00').format(widget.stockDetail.currentPrice)}',
@@ -118,7 +113,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
             ),
           ),
           const SizedBox(height: 8),
-          
+
           // 24h Change & Holdings
           Row(
             children: [
@@ -171,7 +166,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
 
   Widget _buildMarketStats() {
     final stats = widget.stockDetail.marketStats;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -185,7 +180,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Stats Grid
           GridView.count(
             crossAxisCount: 2,
@@ -196,17 +191,29 @@ class _StockDetailPageState extends State<StockDetailPage> {
             crossAxisSpacing: 12,
             children: [
               if (stats.marketCap != null)
-                _buildStatCard('Market Cap', _formatMarketCap(stats.marketCap!)),
+                _buildStatCard(
+                  'Market Cap',
+                  _formatMarketCap(stats.marketCap!),
+                ),
               if (stats.peRatio != null)
                 _buildStatCard('P/E Ratio', stats.peRatio!.toStringAsFixed(2)),
               if (stats.week52High != null)
-                _buildStatCard('52W High', '\$${stats.week52High!.toStringAsFixed(2)}'),
+                _buildStatCard(
+                  '52W High',
+                  '\$${stats.week52High!.toStringAsFixed(2)}',
+                ),
               if (stats.week52Low != null)
-                _buildStatCard('52W Low', '\$${stats.week52Low!.toStringAsFixed(2)}'),
+                _buildStatCard(
+                  '52W Low',
+                  '\$${stats.week52Low!.toStringAsFixed(2)}',
+                ),
               if (stats.volume != null)
                 _buildStatCard('Volume', _formatVolume(stats.volume!)),
               if (stats.dividendYield != null)
-                _buildStatCard('Dividend Yield', '${stats.dividendYield!.toStringAsFixed(2)}%'),
+                _buildStatCard(
+                  'Dividend Yield',
+                  '${stats.dividendYield!.toStringAsFixed(2)}%',
+                ),
             ],
           ),
         ],
@@ -248,7 +255,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
 
   Widget _buildDiversificationInfo() {
     final div = widget.stockDetail.diversification;
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -262,7 +269,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
             ),
           ),
           const SizedBox(height: 16),
-          
+
           Row(
             children: [
               // Sector Badge
@@ -273,7 +280,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
                 color: const Color(0xFF3861FB),
               ),
               const SizedBox(width: 12),
-              
+
               // Industry Badge
               _buildBadge(
                 icon: Icons.factory,
@@ -284,7 +291,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
             ],
           ),
           const SizedBox(height: 12),
-          
+
           // Country Badge with Flag
           _buildCountryBadge(div.country, div.countryCode),
         ],
@@ -302,9 +309,9 @@ class _StockDetailPageState extends State<StockDetailPage> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.3), width: 1),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -342,10 +349,10 @@ class _StockDetailPageState extends State<StockDetailPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFAA00).withOpacity(0.1),
+        color: const Color(0xFFFFAA00).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: const Color(0xFFFFAA00).withOpacity(0.3),
+          color: const Color(0xFFFFAA00).withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -396,7 +403,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           AnimatedCrossFade(
             firstChild: Text(
               widget.stockDetail.description,
@@ -421,9 +428,9 @@ class _StockDetailPageState extends State<StockDetailPage> {
                 : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 200),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           GestureDetector(
             onTap: () {
               setState(() {

@@ -19,9 +19,7 @@ class ManualAssetDetailPage extends StatelessWidget {
     final isPositive = assetDetail.totalGain >= 0;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppColors.white),
@@ -88,10 +86,10 @@ class ManualAssetDetailPage extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _getCategoryColor().withOpacity(0.2),
+              color: _getCategoryColor().withValues(alpha:0.2),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: _getCategoryColor().withOpacity(0.5),
+                color: _getCategoryColor().withValues(alpha:0.5),
                 width: 1,
               ),
             ),
@@ -331,12 +329,12 @@ class ManualAssetDetailPage extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isOverdue
-            ? AppColors.error.withOpacity(0.1)
+            ? AppColors.error.withValues(alpha:0.1)
             : AppColors.gray80,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isOverdue
-              ? AppColors.error.withOpacity(0.5)
+              ? AppColors.error.withValues(alpha:0.5)
               : AppColors.gray80,
           width: 1,
         ),
@@ -358,8 +356,8 @@ class ManualAssetDetailPage extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: isOverdue
-                      ? AppColors.error.withOpacity(0.2)
-                      : AppColors.accent.withOpacity(0.2),
+                      ? AppColors.error.withValues(alpha:0.2)
+                      : AppColors.accent.withValues(alpha:0.2),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(

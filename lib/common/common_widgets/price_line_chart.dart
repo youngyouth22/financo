@@ -47,11 +47,11 @@ class _PriceLineChartState extends State<PriceLineChart> {
         SizedBox(
           height: widget.height,
           child: Padding(
-            padding: const EdgeInsets.only(right: 16, top: 16),
+            padding: const EdgeInsets.only(top: 16),
             child: _buildChart(),
           ),
         ),
-        
+
         // Timeframe Selector
         if (widget.showTimeframeSelector) ...[
           const SizedBox(height: 16),
@@ -87,7 +87,7 @@ class _PriceLineChartState extends State<PriceLineChart> {
           horizontalInterval: 1,
           getDrawingHorizontalLine: (value) {
             return FlLine(
-              color: AppColors.gray80.withOpacity(0.1),
+              color: AppColors.gray80.withValues(alpha: 0.1),
               strokeWidth: 1,
             );
           },
@@ -121,7 +121,7 @@ class _PriceLineChartState extends State<PriceLineChart> {
           ),
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
-              showTitles: true,
+              showTitles: false,
               interval: null,
               reservedSize: 50,
               getTitlesWidget: (value, meta) {
@@ -156,8 +156,8 @@ class _PriceLineChartState extends State<PriceLineChart> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  lineColor.withOpacity(0.3),
-                  lineColor.withOpacity(0.0),
+                  lineColor.withValues(alpha: 0.3),
+                  lineColor.withValues(alpha: 0.0),
                 ],
               ),
             ),
@@ -233,21 +233,21 @@ class _PriceLineChartState extends State<PriceLineChart> {
       case ChartTimeframe.oneDay:
         return '${index * 2}h';
       case ChartTimeframe.sevenDays:
-        return DateFormat('E').format(
-          DateTime.now().subtract(Duration(days: 7 - index)),
-        );
+        return DateFormat(
+          'E',
+        ).format(DateTime.now().subtract(Duration(days: 7 - index)));
       case ChartTimeframe.thirtyDays:
-        return DateFormat('MMM d').format(
-          DateTime.now().subtract(Duration(days: 30 - index)),
-        );
+        return DateFormat(
+          'MMM d',
+        ).format(DateTime.now().subtract(Duration(days: 30 - index)));
       case ChartTimeframe.oneYear:
-        return DateFormat('MMM').format(
-          DateTime.now().subtract(Duration(days: 365 - (index * 30))),
-        );
+        return DateFormat(
+          'MMM',
+        ).format(DateTime.now().subtract(Duration(days: 365 - (index * 30))));
       case ChartTimeframe.all:
-        return DateFormat('yy').format(
-          DateTime.now().subtract(Duration(days: totalPoints - index)),
-        );
+        return DateFormat(
+          'yy',
+        ).format(DateTime.now().subtract(Duration(days: totalPoints - index)));
     }
   }
 

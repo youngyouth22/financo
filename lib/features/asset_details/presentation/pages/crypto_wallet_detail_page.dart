@@ -40,9 +40,7 @@ class _CryptoWalletDetailPageState extends State<CryptoWalletDetailPage>
     final isPositive = widget.walletDetail.change24h >= 0;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppColors.white),

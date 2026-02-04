@@ -41,56 +41,81 @@ serve(async (req: Request) => {
 
   try {
     const payload = await req.json();
-    console.log("Received payload:", JSON.stringify(payload));
+    console.log("[Log] Payload received:", JSON.stringify(payload));
 
-    // Utilisation de noms de clés flexibles (camelCase ou snake_case)
-    const itemId = payload.itemId || payload.item_id;
-    const accountId = payload.accountId || payload.account_id;
+    let rawItemId = payload.itemId || payload.item_id;
+    let providedAccountId = payload.accountId || payload.account_id;
     const userId = payload.userId || payload.user_id;
 
-    if (!itemId || !accountId || !userId) {
-      throw new Error(
-        `Missing parameters. Received: itemId=${itemId}, accountId=${accountId}, userId=${userId}`,
+    if (!rawItemId || !userId) throw new Error("Missing itemId or userId");
+
+    // ==========================================================
+    // LOGIQUE D'EXTRACTION CRITIQUE (FIX POUR L'ERREUR 400)
+    // ==========================================================
+    let finalPlaidItemId = rawItemId;
+    let finalPlaidAccountId = providedAccountId;
+
+    // Si rawItemId est au format "plaid:item_id:account_id"
+    if (rawItemId.startsWith("plaid:")) {
+      const parts = rawItemId.split(":");
+      finalPlaidItemId = parts[1]; // Le vrai Item ID de Plaid
+      // Priorité ABSOLUE au 3ème segment du composite ID car c'est le vrai ID Plaid
+      if (parts[2]) {
+        finalPlaidAccountId = parts[2];
+        console.log(
+          `[Log] Extracted real Plaid Account ID: ${finalPlaidAccountId}`,
+        );
+      }
+    }
+
+    if (!finalPlaidAccountId || finalPlaidAccountId.includes("-")) {
+      // Si l'ID contient des tirets, c'est probablement un UUID de base de données, pas un ID Plaid.
+      console.warn(
+        "[Warning] The accountId looks like a Database UUID, this might fail Plaid API.",
       );
     }
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
-    // 1. Fetch connection
+    // 1. Fetch connection using the extracted Item ID
     const { data: connection, error: connError } = await supabase
-      .from("bank_connections")
-      .select("access_token, iv, institution_name")
-      .eq("item_id", itemId)
+      .from("plaid_items")
+      .select("access_token_encrypted, iv")
+      .eq("item_id", finalPlaidItemId)
       .eq("user_id", userId)
       .single();
 
-    if (connError || !connection)
-      throw new Error("Bank connection not found in database");
+    if (connError || !connection) {
+      throw new Error(`Connection not found for Item ID: ${finalPlaidItemId}`);
+    }
 
     // 2. Decrypt
     const realAccessToken = await decryptToken(
-      connection.access_token,
+      connection.access_token_encrypted,
       connection.iv,
     );
 
-    // 3. Plaid Calls
+    // 3. Plaid API calls
+    const plaidBaseUrl = `https://${PLAID_ENV}.plaid.com`;
     const today = new Date().toISOString().split("T")[0];
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0];
 
+    console.log(`[Log] Requesting Plaid for account: ${finalPlaidAccountId}`);
+
     const [balanceRes, transRes] = await Promise.all([
-      fetch(`https://${PLAID_ENV}.plaid.com/accounts/balance/get`, {
+      fetch(`${plaidBaseUrl}/accounts/balance/get`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           client_id: PLAID_CLIENT_ID,
           secret: PLAID_SECRET,
           access_token: realAccessToken,
-          options: { account_ids: [accountId] },
+          options: { account_ids: [finalPlaidAccountId] }, // Doit être l'ID Plaid
         }),
       }).then((r) => r.json()),
-      fetch(`https://${PLAID_ENV}.plaid.com/transactions/get`, {
+      fetch(`${plaidBaseUrl}/transactions/get`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -99,15 +124,18 @@ serve(async (req: Request) => {
           access_token: realAccessToken,
           start_date: thirtyDaysAgo,
           end_date: today,
-          options: { account_ids: [accountId], count: 15 },
+          options: { account_ids: [finalPlaidAccountId], count: 20 },
         }),
       }).then((r) => r.json()),
     ]);
 
-    const account = balanceRes.accounts?.[0];
-    if (!account) throw new Error("Plaid could not find this specific account");
+    if (balanceRes.error_code)
+      throw new Error(`Plaid Error: ${balanceRes.error_message}`);
 
-    // 4. Map History
+    const account = balanceRes.accounts?.[0];
+    if (!account) throw new Error("Account not found in Plaid response");
+
+    // 4. Map Balance History
     let current = account.balances.current;
     const history = [current];
     (transRes.transactions || []).forEach((t: any) => {
@@ -119,23 +147,14 @@ serve(async (req: Request) => {
       JSON.stringify({
         accountId: account.account_id,
         name: account.name,
-        institutionName: connection.institution_name,
         accountMask: `**** ${account.mask || "0000"}`,
-        accountType: account.type,
-        accountSubtype: account.subtype,
         currentBalance: account.balances.current,
-        availableBalance:
-          account.balances.available || account.balances.current,
-        creditLimit: account.balances.limit || null,
         currency: account.balances.iso_currency_code || "USD",
         transactions: (transRes.transactions || []).map((t: any) => ({
           transactionId: t.transaction_id,
           name: t.name,
-          merchantName: t.merchant_name,
           amount: t.amount,
-          category: t.category?.[0] || "General",
           date: t.date,
-          isPending: t.pending,
           logoUrl: t.personal_finance_category_icon_url || null,
         })),
         balanceHistory: history.reverse(),
@@ -146,9 +165,10 @@ serve(async (req: Request) => {
       },
     );
   } catch (error) {
+    console.error(`[Execution Error]: ${error.message}`);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
