@@ -11,13 +11,13 @@ import 'package:financo/features/finance/domain/repositories/finance_repository.
 /// - Commodities (gold, silver, etc.)
 /// - Liabilities (loans, mortgages)
 /// - Other assets not tracked via APIs
-class AddManualAssetUseCase implements UseCase<void, AddManualAssetParams> {
+class AddManualAssetUseCase implements UseCase<String, AddManualAssetParams> {
   final FinanceRepository repository;
 
   AddManualAssetUseCase(this.repository);
 
   @override
-  Future<Either<Failure, void>> call(AddManualAssetParams params) async {
+  Future<Either<Failure, String>> call(AddManualAssetParams params) async {
     return await repository.addManualAsset(
       name: params.name,
       type: params.type,

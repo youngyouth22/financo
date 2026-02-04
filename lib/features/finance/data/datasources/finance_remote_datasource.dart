@@ -53,7 +53,8 @@ abstract class FinanceRemoteDataSource {
   Future<Map<String, dynamic>> getPortfolioInsights();
 
   // --- MANUAL ASSETS ---
-  Future<void> addManualAsset({
+  /// Returns the created asset ID
+  Future<String> addManualAsset({
     required String name,
     required AssetType type,
     required double amount,
@@ -590,7 +591,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
   // ===========================================================================
 
   @override
-  Future<void> addManualAsset({
+  Future<String> addManualAsset({
     required String name,
     required AssetType type,
     required double amount,
@@ -602,9 +603,9 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
       // 1. Create a unique identifier for the manual asset
       final String manualId = 'manual_${DateTime.now().millisecondsSinceEpoch}';
 
-      // 2. Insert the asset into the 'assets' table
+      // 2. Insert the asset into the 'assets' table and get the ID
       // We fill balance_usd directly since it's a manual entry
-      await supabaseClient.from('assets').insert({
+      final response = await supabaseClient.from('assets').insert({
         'user_id': _currentUserId,
         'asset_address_or_id': manualId,
         'provider': 'manual',
@@ -619,13 +620,17 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
         'country': country ?? 'Global',
         'last_sync': DateTime.now().toIso8601String(),
         'status': 'active',
-      });
+      }).select('id').single();
+      
+      final String assetId = response['id'] as String;
 
       // 3. RE-CALCULATE ANALYTICS IMMEDIATELY (Production Requirement)
       // This ensures the diversification chart updates right away
       await recordWealthSnapshot();
       await supabaseClient.rpc('generate_portfolio_insights', params: {'p_user_id': _currentUserId});
       
+      // 4. Return the asset ID for potential reminder creation
+      return assetId;
     } catch (e) {
       throw ServerException('Failed to add manual asset: ${e.toString()}');
     }

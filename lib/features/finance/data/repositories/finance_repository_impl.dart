@@ -412,7 +412,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
   // ===========================================================================
 
   @override
-  Future<Either<Failure, void>> addManualAsset({
+  Future<Either<Failure, String>> addManualAsset({
     required String name,
     required AssetType type,
     required double amount,
@@ -421,7 +421,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
     String? country,
   }) async {
     try {
-      await remoteDataSource.addManualAsset(
+      final assetId = await remoteDataSource.addManualAsset(
         name: name,
         type: type,
         amount: amount,
@@ -429,7 +429,7 @@ class FinanceRepositoryImpl implements FinanceRepository {
         sector: sector,
         country: country,
       );
-      return const Right(null);
+      return Right(assetId);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
     } catch (e) {

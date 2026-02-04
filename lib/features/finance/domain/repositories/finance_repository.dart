@@ -99,7 +99,8 @@ abstract class FinanceRepository {
   // --- MANUAL ASSETS ---
   
   /// Add a manual asset (real estate, commodity, liability, etc.)
-  Future<Either<Failure, void>> addManualAsset({
+  /// Returns the created asset ID
+  Future<Either<Failure, String>> addManualAsset({
     required String name,
     required AssetType type,
     required double amount,

@@ -369,8 +369,8 @@ class FinanceBloc extends Bloc<FinanceEvent, FinanceState> {
 
     result.fold(
       (failure) => emit(FinanceError(failure.message)),
-      (_) {
-        emit(const ManualAssetAdded());
+      (assetId) {
+        emit(ManualAssetAdded(assetId));
         add(const LoadNetworthEvent()); // Reload networth after adding manual asset
       },
     );

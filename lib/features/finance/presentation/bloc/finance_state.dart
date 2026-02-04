@@ -210,7 +210,12 @@ class PortfolioInsightsLoaded extends FinanceState {
 
 /// State when manual asset is added
 class ManualAssetAdded extends FinanceState {
-  const ManualAssetAdded();
+  final String assetId;
+  
+  const ManualAssetAdded(this.assetId);
+  
+  @override
+  List<Object?> get props => [assetId];
 }
 
 // ===========================================================================
