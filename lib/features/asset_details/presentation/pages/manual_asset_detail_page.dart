@@ -160,10 +160,10 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
               );
             },
             backgroundColor: AppColors.primary,
-            icon: const Icon(Icons.add, color: AppColors.white),
+            icon:  Icon(Icons.add, color: AppColors.white),
             label: Text(
               'Add Payment',
-              style: AppTypography.body.copyWith(
+              style: AppTypography.headline3Regular.copyWith(
                 color: AppColors.white,
                 fontWeight: FontWeight.w600,
               ),

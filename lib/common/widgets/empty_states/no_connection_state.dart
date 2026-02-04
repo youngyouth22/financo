@@ -43,7 +43,7 @@ class NoConnectionState extends StatelessWidget {
             // Title
             Text(
               'No Internet Connection',
-              style: AppTypography.h2.copyWith(
+              style: AppTypography.headline4Regular.copyWith(
                 color: AppColors.white,
                 fontWeight: FontWeight.bold,
               ),
@@ -55,7 +55,7 @@ class NoConnectionState extends StatelessWidget {
             // Message
             Text(
               message ?? 'Please check your internet connection and try again',
-              style: AppTypography.body.copyWith(
+              style: AppTypography.headline3Regular.copyWith(
                 color: AppColors.gray60,
               ),
               textAlign: TextAlign.center,
@@ -86,7 +86,7 @@ class NoConnectionState extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       'Retry',
-                      style: AppTypography.body.copyWith(
+                      style: AppTypography.headline3Regular.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),

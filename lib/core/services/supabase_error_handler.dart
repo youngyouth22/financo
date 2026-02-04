@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/cupertino.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:financo/core/services/connectivity_service.dart';
 
@@ -19,19 +20,19 @@ class SupabaseErrorHandler {
   /// Initialize error handling for Supabase auth
   Future<void> initialize(SupabaseClient client) async {
     // Get initial connectivity status
-    _isOnline = await _connectivityService.hasConnection;
+    _isOnline =  _connectivityService.isConnected;
     
     // Listen to connectivity changes
-    _connectivitySubscription = _connectivityService.onConnectivityChanged.listen(
+    _connectivitySubscription = _connectivityService.connectivityStream.listen(
       (isConnected) {
         _isOnline = isConnected;
         
         if (!isConnected) {
-          print('[SupabaseErrorHandler] Connection lost - disabling auth refresh');
+          debugPrint('[SupabaseErrorHandler] Connection lost - disabling auth refresh');
           // Cancel any pending auth refresh
           _cancelAuthRefresh(client);
         } else {
-          print('[SupabaseErrorHandler] Connection restored - enabling auth refresh');
+          debugPrint('[SupabaseErrorHandler] Connection restored - enabling auth refresh');
         }
       },
     );
@@ -42,13 +43,13 @@ class SupabaseErrorHandler {
         final event = data.event;
         
         if (event == AuthChangeEvent.tokenRefreshed) {
-          print('[SupabaseErrorHandler] Token refreshed successfully');
+          debugPrint('[SupabaseErrorHandler] Token refreshed successfully');
         }
       },
       onError: (error) {
         // Always suppress auth errors when offline
         if (!_isOnline) {
-          print('[SupabaseErrorHandler] Auth error suppressed (offline): ${error.runtimeType}');
+          debugPrint('[SupabaseErrorHandler] Auth error suppressed (offline): ${error.runtimeType}');
           // Don't rethrow - just suppress
           return;
         }
@@ -60,12 +61,12 @@ class SupabaseErrorHandler {
             errorStr.contains('Failed host lookup') ||
             errorStr.contains('Connection closed') ||
             errorStr.contains('No address associated with hostname')) {
-          print('[SupabaseErrorHandler] Network error suppressed: ${error.runtimeType}');
+          debugPrint('[SupabaseErrorHandler] Network error suppressed: ${error.runtimeType}');
           return;
         }
         
         // Log other errors for debugging
-        print('[SupabaseErrorHandler] Auth error: $error');
+        debugPrint('[SupabaseErrorHandler] Auth error: $error');
       },
       cancelOnError: false, // Don't cancel subscription on error
     );
@@ -78,7 +79,7 @@ class SupabaseErrorHandler {
       // Note: Supabase doesn't expose a direct way to cancel refresh,
       // but errors will be caught and suppressed
     } catch (e) {
-      print('[SupabaseErrorHandler] Error canceling auth refresh: $e');
+      debugPrint('[SupabaseErrorHandler] Error canceling auth refresh: $e');
     }
   }
 
@@ -89,14 +90,14 @@ class SupabaseErrorHandler {
   }) async {
     // Check connectivity first
     if (!_isOnline) {
-      print('[SupabaseErrorHandler] Operation blocked: No internet connection');
+      debugPrint('[SupabaseErrorHandler] Operation blocked: No internet connection');
       return fallback();
     }
 
     try {
       return await operation();
     } on AuthException catch (error) {
-      print('[SupabaseErrorHandler] Auth error caught: ${error.message}');
+      debugPrint('[SupabaseErrorHandler] Auth error caught: ${error.message}');
       return fallback();
     } catch (error) {
       // Handle specific network errors
@@ -106,7 +107,7 @@ class SupabaseErrorHandler {
           errorStr.contains('Failed host lookup') ||
           errorStr.contains('Connection closed') ||
           errorStr.contains('No address associated with hostname')) {
-        print('[SupabaseErrorHandler] Network error caught: ${error.runtimeType}');
+        debugPrint('[SupabaseErrorHandler] Network error caught: ${error.runtimeType}');
         return fallback();
       }
       
@@ -132,16 +133,16 @@ extension SupabaseClientExtension on SupabaseClient {
     Future<T> Function() operation,
     ConnectivityService connectivityService,
   ) async {
-    final hasConnection = await connectivityService.hasConnection;
+    final hasConnection =  connectivityService.isConnected;
     if (!hasConnection) {
-      print('[SupabaseClient] Operation skipped: No internet connection');
+      debugPrint('[SupabaseClient] Operation skipped: No internet connection');
       return null;
     }
 
     try {
       return await operation();
     } on AuthException catch (error) {
-      print('[SupabaseClient] Auth error: ${error.message}');
+      debugPrint('[SupabaseClient] Auth error: ${error.message}');
       return null;
     } catch (error) {
       final errorStr = error.toString();
@@ -150,7 +151,7 @@ extension SupabaseClientExtension on SupabaseClient {
           errorStr.contains('Failed host lookup') ||
           errorStr.contains('Connection closed') ||
           errorStr.contains('No address associated with hostname')) {
-        print('[SupabaseClient] Network error suppressed: ${error.runtimeType}');
+        debugPrint('[SupabaseClient] Network error suppressed: ${error.runtimeType}');
         return null;
       }
       rethrow;

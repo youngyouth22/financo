@@ -64,7 +64,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton<ConnectivityService>(() => connectivityService);
   
   // Check if we have connection before initializing Supabase
-  final hasConnection = await connectivityService.hasConnection;
+  final hasConnection =  connectivityService.isConnected;
   
   // Initialisation de Supabase avec gestion d'erreur de connexion
   await Supabase.initialize(

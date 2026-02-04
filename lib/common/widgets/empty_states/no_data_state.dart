@@ -49,7 +49,7 @@ class NoDataState extends StatelessWidget {
             // Title
             Text(
               title,
-              style: AppTypography.h2.copyWith(
+              style: AppTypography.headline4Regular.copyWith(
                 color: AppColors.white,
                 fontWeight: FontWeight.bold,
               ),
@@ -61,7 +61,7 @@ class NoDataState extends StatelessWidget {
             // Message
             Text(
               message,
-              style: AppTypography.body.copyWith(
+              style: AppTypography.headline3Regular.copyWith(
                 color: AppColors.gray60,
               ),
               textAlign: TextAlign.center,
@@ -87,7 +87,7 @@ class NoDataState extends StatelessWidget {
                 ),
                 child: Text(
                   actionLabel!,
-                  style: AppTypography.body.copyWith(
+                  style: AppTypography.headline3Regular.copyWith(
                     fontWeight: FontWeight.w600,
                   ),
                 ),

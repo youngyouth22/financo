@@ -54,10 +54,10 @@ class _PaymentDialogState extends State<PaymentDialog> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
+            colorScheme:  ColorScheme.dark(
               primary: AppColors.primary,
               onPrimary: AppColors.white,
-              surface: AppColors.cardBackground,
+              surface: AppColors.gray40,
               onSurface: AppColors.white,
             ),
           ),
@@ -92,7 +92,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: AppColors.cardBackground,
+      backgroundColor: AppColors.gray40,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
       ),
@@ -115,7 +115,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                       color: AppColors.primary.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child:  Icon(
                       Icons.payment,
                       color: AppColors.primary,
                       size: 24,
@@ -128,14 +128,14 @@ class _PaymentDialogState extends State<PaymentDialog> {
                       children: [
                         Text(
                           'Record Payment',
-                          style: AppTypography.h3.copyWith(
+                          style: AppTypography.headline4SemiBold.copyWith(
                             color: AppColors.white,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
                           'Enter payment details',
-                          style: AppTypography.caption.copyWith(
+                          style: AppTypography.headline3Medium.copyWith(
                             color: AppColors.gray60,
                           ),
                         ),
@@ -143,7 +143,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close, color: AppColors.gray60),
+                    icon:  Icon(Icons.close, color: AppColors.gray60),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -154,7 +154,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
               // Amount Field
               Text(
                 'Amount',
-                style: AppTypography.body.copyWith(
+                style: AppTypography.headline3Regular.copyWith(
                   color: AppColors.white,
                   fontWeight: FontWeight.w600,
                 ),
@@ -166,12 +166,12 @@ class _PaymentDialogState extends State<PaymentDialog> {
                 inputFormatters: [
                   FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
                 ],
-                style: AppTypography.body.copyWith(color: AppColors.white),
+                style: AppTypography.headline3Regular.copyWith(color: AppColors.white),
                 decoration: InputDecoration(
                   hintText: '0.00',
-                  hintStyle: AppTypography.body.copyWith(color: AppColors.gray60),
+                  hintStyle: AppTypography.headline3Regular.copyWith(color: AppColors.gray60),
                   prefixText: '\$ ',
-                  prefixStyle: AppTypography.body.copyWith(color: AppColors.white),
+                  prefixStyle: AppTypography.headline3Regular.copyWith(color: AppColors.white),
                   filled: true,
                   fillColor: AppColors.background,
                   border: OutlineInputBorder(
@@ -187,7 +187,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
+                    borderSide:  BorderSide(
                       color: AppColors.primary,
                       width: 2,
                     ),
@@ -217,7 +217,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
               // Date Field
               Text(
                 'Payment Date',
-                style: AppTypography.body.copyWith(
+                style: AppTypography.headline3Regular.copyWith(
                   color: AppColors.white,
                   fontWeight: FontWeight.w600,
                 ),
@@ -237,7 +237,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
+                       Icon(
                         Icons.calendar_today,
                         color: AppColors.primary,
                         size: 20,
@@ -247,7 +247,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                         _selectedDate != null
                             ? DateFormat('MMM dd, yyyy').format(_selectedDate!)
                             : 'Select date',
-                        style: AppTypography.body.copyWith(
+                        style: AppTypography.headline3Regular.copyWith(
                           color: _selectedDate != null
                               ? AppColors.white
                               : AppColors.gray60,
@@ -263,7 +263,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
               // Notes Field
               Text(
                 'Notes (Optional)',
-                style: AppTypography.body.copyWith(
+                style: AppTypography.headline3Regular.copyWith(
                   color: AppColors.white,
                   fontWeight: FontWeight.w600,
                 ),
@@ -272,10 +272,10 @@ class _PaymentDialogState extends State<PaymentDialog> {
               TextFormField(
                 controller: _notesController,
                 maxLines: 3,
-                style: AppTypography.body.copyWith(color: AppColors.white),
+                style: AppTypography.headline3Regular.copyWith(color: AppColors.white),
                 decoration: InputDecoration(
                   hintText: 'Add any additional notes...',
-                  hintStyle: AppTypography.body.copyWith(color: AppColors.gray60),
+                  hintStyle: AppTypography.headline3Regular.copyWith(color: AppColors.gray60),
                   filled: true,
                   fillColor: AppColors.background,
                   border: OutlineInputBorder(
@@ -291,7 +291,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
+                    borderSide:  BorderSide(
                       color: AppColors.primary,
                       width: 2,
                     ),
@@ -317,7 +317,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                   ),
                   child: Text(
                     'Record Payment',
-                    style: AppTypography.body.copyWith(
+                    style: AppTypography.headline3Regular.copyWith(
                       fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
