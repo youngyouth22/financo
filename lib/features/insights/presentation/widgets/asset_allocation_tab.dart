@@ -1,3 +1,6 @@
+import 'package:financo/common/common_widgets/budgets_row.dart';
+import 'package:financo/common/common_widgets/custom_arc_180_painter.dart';
+import 'package:financo/common/common_widgets/custom_arc_painter.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
@@ -120,6 +123,7 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
           const SizedBox(height: 20),
           _buildPieChart(),
           const SizedBox(height: 32),
+          Center(child: _buildTotalStat()),
           Text(
             'Asset Class Breakdown',
             style: AppTypography.headline3SemiBold.copyWith(
@@ -138,6 +142,52 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
     );
   }
 
+  Widget _buildTotalStat() {
+    final media = MediaQuery.of(context).size;
+
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      children: [
+        SizedBox(
+          width: media.width * 0.7,
+          height: media.width * 0.50,
+          child: NetWorthGauge(
+            segments: allocations.map((a) {
+              final absValue = a.amount.abs();
+              final double percentage = totalGrossWeight > 0
+                  ? (absValue / totalGrossWeight)
+                  : 0;
+              return ArcValueModel(color: a.color, value: percentage);
+            }).toList(),
+            width: 16,
+            bgWidth: 12,
+            space: 6,
+          ),
+        ),
+        Column(
+          children: [
+            Text(
+              "\$82,90",
+              style: TextStyle(
+                color: AppColors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              "of \$2,0000 budget",
+              style: TextStyle(
+                color: AppColors.gray30,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildTotalValueCard() {
     return Container(
       width: double.infinity,
@@ -145,14 +195,16 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF3861FB).withOpacity(0.2),
-            const Color(0xFF3861FB).withOpacity(0.05),
+            const Color(0xFF3861FB).withValues(alpha: 0.2),
+            const Color(0xFF3861FB).withValues(alpha: 0.05),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF3861FB).withOpacity(0.3)),
+        border: Border.all(
+          color: const Color(0xFF3861FB).withValues(alpha: 0.3),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,8 +246,9 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
               });
             },
           ),
-          sectionsSpace: 2,
-          centerSpaceRadius: 50,
+          sectionsSpace: 1,
+          centerSpaceRadius: 60,
+
           sections: _buildPieSections(),
         ),
       ),
@@ -235,50 +288,15 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
         : 0;
     final isSelected = touchedIndex == index;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.gray80 : AppColors.card,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected ? allocation.color : AppColors.gray70,
-          width: isSelected ? 2 : 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(allocation.icon, color: allocation.color, size: 24),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  allocation.type,
-                  style: AppTypography.headline3Medium.copyWith(
-                    color: AppColors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '\$${_formatNumber(allocation.amount)}',
-                  style: AppTypography.headline2Regular.copyWith(
-                    color: allocation.amount < 0
-                        ? const Color(0xFFFF4D4D)
-                        : AppColors.gray30,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '${percentage.toStringAsFixed(1)}%',
-            style: AppTypography.headline3Bold.copyWith(
-              color: allocation.color,
-            ),
-          ),
-        ],
+    return Transform.scale(
+      scale: isSelected ? 1.1 : 1.0,
+      child: BudgetsRow(
+        icon: Icon(allocation.icon, size: 30, color: AppColors.gray40),
+        title: allocation.type,
+        subtitle: '\$${_formatNumber(allocation.amount)}',
+        value: '${percentage.toStringAsFixed(1)}%',
+        percent: percentage / 100,
+        color: allocation.color,
       ),
     );
   }
@@ -287,9 +305,9 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: AppColors.gray60.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.gray70),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.05)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,23 +329,24 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
           ),
           const SizedBox(height: 20),
           ClipRRect(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: liquidityRatio / 100,
+              borderRadius: BorderRadius.circular(4),
               minHeight: 12,
-              backgroundColor: const Color(0xFFFF4D4D).withOpacity(0.3),
+              backgroundColor: const Color(0xFFFF4D4D).withValues(alpha: 0.3),
               valueColor: const AlwaysStoppedAnimation<Color>(
                 Color(0xFF00D16C),
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            '${liquidityRatio.toStringAsFixed(1)}% of your assets are liquid (Cash/Crypto)',
-            style: AppTypography.headline2Regular.copyWith(
-              color: AppColors.gray40,
-            ),
-          ),
+          // const SizedBox(height: 12),
+          // Text(
+          //   '${liquidityRatio.toStringAsFixed(1)}% of your assets are liquid (Cash/Crypto)',
+          //   style: AppTypography.headline2Regular.copyWith(
+          //     color: AppColors.gray40,
+          //   ),
+          // ),
         ],
       ),
     );
@@ -381,8 +400,9 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
   String _formatNumber(double number) {
     String sign = number < 0 ? '-' : '';
     double absNum = number.abs();
-    if (absNum >= 1000000)
+    if (absNum >= 1000000) {
       return '$sign${(absNum / 1000000).toStringAsFixed(2)}M';
+    }
     if (absNum >= 1000) return '$sign${(absNum / 1000).toStringAsFixed(1)}K';
     return '$sign${absNum.toStringAsFixed(0)}';
   }

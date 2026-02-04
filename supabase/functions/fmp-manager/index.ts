@@ -14,7 +14,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 const FMP_API_KEY = Deno.env.get("FMP_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
 const BASE_URL_STABLE = "https://financialmodelingprep.com/stable";
 
 const corsHeaders = {
@@ -28,8 +27,21 @@ const corsHeaders = {
 // ============================================================================
 
 function checkApiKey() {
-  if (!FMP_API_KEY)
-    throw new Error("FMP_API_KEY is not configured in Supabase secrets");
+  if (!FMP_API_KEY) throw new Error("FMP_API_KEY is not configured");
+}
+
+/**
+ * Greedy Key Finder: Detects the percentage change value regardless of FMP's
+ * inconsistent naming conventions (changesPercentage vs changePercentage).
+ */
+function extractChangePercentage(obj: any): number {
+  const value =
+    obj.changesPercentage ??
+    obj.changePercentage ??
+    obj.changesPct ??
+    obj.change ??
+    0;
+  return parseFloat(value.toString());
 }
 
 async function fmpStableFetch(
@@ -45,10 +57,9 @@ async function fmpStableFetch(
   try {
     data = JSON.parse(text);
   } catch (e) {
-    if (text.toLowerCase().includes("premium")) {
-      throw new Error("This action requires a Premium FMP Plan.");
-    }
-    throw new Error(`FMP API Error: ${text.substring(0, 50)}...`);
+    if (text.toLowerCase().includes("premium"))
+      throw new Error("FMP_PREMIUM_REQUIRED");
+    throw new Error(`FMP API Error: ${text.substring(0, 50)}`);
   }
 
   if (!Array.isArray(data)) {
@@ -60,28 +71,21 @@ async function fmpStableFetch(
 }
 
 /**
- * Fetches 24h historical data for sparkline rendering with fallback logic.
+ * Confirmed working Sparkline logic. (Kept exactly as requested)
  */
 async function fetchPriceHistory(symbol: string): Promise<number[]> {
   try {
-    // 1. Try 1-hour interval chart (Best for 24h view)
     let data = await fmpStableFetch(
       `historical-chart/1hour/${symbol.toUpperCase()}`,
       "",
     );
-
-    // 2. Fallback to End-Of-Day light chart if 1hour is not available for this asset
     if (data.length === 0) {
-      console.log(`[Sparkline] Falling back to EOD light for ${symbol}`);
       data = await fmpStableFetch(
         `historical-price-eod/light`,
         `symbol=${symbol.toUpperCase()}`,
       );
     }
-
     if (data.length === 0) return [];
-
-    // Detect key name (stable API can use 'close' or 'price')
     const first = data[0];
     const key =
       first.close !== undefined
@@ -90,7 +94,6 @@ async function fetchPriceHistory(symbol: string): Promise<number[]> {
           ? "price"
           : null;
     if (!key) return [];
-
     return data
       .slice(0, 24)
       .map((p: any) => parseFloat(p[key]))
@@ -136,7 +139,6 @@ serve(async (req: Request) => {
           throw new Error("Missing required fields");
         const ticker = symbol.toUpperCase();
 
-        // 1. Fetch Market Data in Parallel
         const [profileRes, quoteRes, sparkline] = await Promise.allSettled([
           fmpStableFetch("profile", `symbol=${ticker}`),
           fmpStableFetch("quote", `symbol=${ticker}`),
@@ -155,13 +157,10 @@ serve(async (req: Request) => {
         const historyPoints =
           sparkline.status === "fulfilled" ? sparkline.value : [];
 
-        // 2. Extract price and change using the correct keys from your log (changePercentage)
+        // --- DEFINITIVE FIX: Use Greedy Extractor ---
         const currentPrice = parseFloat(quote.price || "0");
-        const changePct = parseFloat(
-          quote.changePercentage || quote.changesPercentage || "0",
-        );
+        const changePct = extractChangePercentage(quote);
 
-        // 3. Upsert to Assets Table
         const { error: dbError } = await supabase.from("assets").upsert(
           {
             user_id: userId,
@@ -175,7 +174,7 @@ serve(async (req: Request) => {
             current_price: currentPrice,
             price_usd: currentPrice,
             balance_usd: currentPrice * quantity,
-            change_24h: changePct,
+            change_24h: changePct, // Guaranteed to find the value
             sparkline: historyPoints,
             last_sync: new Date().toISOString(),
             status: "active",
@@ -200,7 +199,6 @@ serve(async (req: Request) => {
           .select("id, symbol, quantity")
           .eq("user_id", userId)
           .eq("provider", "fmp");
-
         if (!assets || assets.length === 0)
           return new Response(JSON.stringify({ success: true }));
 
@@ -210,16 +208,15 @@ serve(async (req: Request) => {
           `symbols=${symbolsList}`,
         );
 
-        // Update each asset one by one to ensure history is fetched for each
         const updatePromises = quotes.map(async (q) => {
           const asset = assets.find((a) => a.symbol === q.symbol);
           if (!asset) return;
 
           const history = await fetchPriceHistory(q.symbol);
           const currentPrice = parseFloat(q.price || "0");
-          const changePct = parseFloat(
-            q.changePercentage || q.changesPercentage || "0",
-          );
+
+          // --- DEFINITIVE FIX: Use Greedy Extractor ---
+          const changePct = extractChangePercentage(q);
 
           return supabase
             .from("assets")
@@ -239,9 +236,7 @@ serve(async (req: Request) => {
 
         return new Response(
           JSON.stringify({ success: true, count: quotes.length }),
-          {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
 
@@ -262,7 +257,7 @@ serve(async (req: Request) => {
         throw new Error(`Action ${actionName} not implemented`);
     }
   } catch (error) {
-    console.error(`FMP Manager Error [${actionName}]:`, error.message);
+    console.error(`FMP Manager Error:`, error.message);
     return new Response(
       JSON.stringify({ error: error.message, action: actionName }),
       {

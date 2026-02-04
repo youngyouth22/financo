@@ -24,10 +24,7 @@ class AssetDetailNavigator {
       MaterialPageRoute(
         builder: (context) => BlocProvider(
           create: (context) => sl<AssetDetailBloc>(),
-          child: _AssetDetailWrapper(
-            asset: asset,
-            userId: userId,
-          ),
+          child: _AssetDetailWrapper(asset: asset, userId: userId),
         ),
       ),
     );
@@ -39,10 +36,7 @@ class _AssetDetailWrapper extends StatefulWidget {
   final Asset asset;
   final String userId;
 
-  const _AssetDetailWrapper({
-    required this.asset,
-    required this.userId,
-  });
+  const _AssetDetailWrapper({required this.asset, required this.userId});
 
   @override
   State<_AssetDetailWrapper> createState() => _AssetDetailWrapperState();
@@ -62,30 +56,21 @@ class _AssetDetailWrapperState extends State<_AssetDetailWrapper> {
 
     // Determine which Edge Function to call based on provider
     if (asset.provider == AssetProvider.moralis) {
-      // Crypto wallet - use address from metadata or symbol
-      final address = asset.metadata?['address'] as String? ?? asset.symbol;
-      bloc.add(LoadCryptoWalletDetailEvent(address: address));
+      bloc.add(LoadCryptoWalletDetailEvent(address: asset.assetAddressOrId));
     } else if (asset.provider == AssetProvider.fmp) {
       // Stock - use symbol
-      bloc.add(LoadStockDetailEvent(
-        symbol: asset.symbol,
-        userId: userId,
-      ));
+      bloc.add(LoadStockDetailEvent(symbol: asset.symbol, userId: userId));
     } else if (asset.provider == AssetProvider.plaid) {
-      // Bank account - use itemId and accountId from metadata
-      final itemId = asset.metadata?['itemId'] as String? ?? '';
-      final accountId = asset.metadata?['accountId'] as String? ?? asset.id;
-      bloc.add(LoadBankAccountDetailEvent(
-        itemId: itemId,
-        accountId: accountId,
-        userId: userId,
-      ));
+      bloc.add(
+        LoadBankAccountDetailEvent(
+          itemId: asset.assetAddressOrId,
+          accountId: asset.id,
+          userId: userId,
+        ),
+      );
     } else if (asset.provider == AssetProvider.manual) {
       // Manual asset - use asset ID
-      bloc.add(LoadManualAssetDetailEvent(
-        assetId: asset.id,
-        userId: userId,
-      ));
+      bloc.add(LoadManualAssetDetailEvent(assetId: asset.id, userId: userId));
     }
   }
 
@@ -123,10 +108,7 @@ class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ErrorView({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ErrorView({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -164,10 +146,7 @@ class _ErrorView extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 message,
-                style: const TextStyle(
-                  color: Color(0xFF9CA3AF),
-                  fontSize: 14,
-                ),
+                style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),

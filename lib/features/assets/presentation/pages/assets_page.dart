@@ -43,6 +43,7 @@ class _AssetsPageState extends State<AssetsPage>
           controller: _tabController,
           isScrollable: true,
           indicatorColor: AppColors.accent,
+          labelColor: AppColors.white,
           tabs: const [
             Tab(text: "All"),
             Tab(text: "Stocks"),
@@ -151,8 +152,8 @@ class _AssetsPageState extends State<AssetsPage>
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 200,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
         childAspectRatio: 1 / 1,
