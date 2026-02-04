@@ -32,6 +32,10 @@ import 'package:financo/features/finance/domain/usecases/detail_usecases/get_cry
 import 'package:financo/features/finance/domain/usecases/detail_usecases/get_stock_details_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/detail_usecases/get_bank_account_details_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/detail_usecases/get_manual_asset_details_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/payout_usecases/get_asset_payout_summary_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/payout_usecases/get_asset_payouts_usecase.dart';
+import 'package:financo/features/finance/domain/usecases/payout_usecases/mark_reminder_as_received_usecase.dart';
+import 'package:financo/features/finance/presentation/bloc/manual_asset_detail/manual_asset_detail_bloc.dart';
 import 'package:financo/core/services/connectivity_service.dart';
 import 'package:financo/core/services/security_service.dart';
 import 'package:financo/core/services/supabase_error_handler.dart';
@@ -173,6 +177,11 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => GetStockDetailsUseCase(sl()));
   sl.registerLazySingleton(() => GetBankAccountDetailsUseCase(sl()));
   sl.registerLazySingleton(() => GetManualAssetDetailsUseCase(sl()));
+  
+  // Asset Payout Use Cases
+  sl.registerLazySingleton(() => GetAssetPayoutSummaryUseCase(sl()));
+  sl.registerLazySingleton(() => GetAssetPayoutsUseCase(sl()));
+  sl.registerLazySingleton(() => MarkReminderAsReceivedUseCase(sl()));
 
   // BLoCs
   sl.registerFactory(
@@ -226,6 +235,14 @@ Future<void> initializeDependencies() async {
       getStockDetailsUseCase: sl(),
       getBankAccountDetailsUseCase: sl(),
       getManualAssetDetailsUseCase: sl(),
+    ),
+  );
+  
+  sl.registerFactory(
+    () => ManualAssetDetailBloc(
+      getAssetPayoutSummaryUseCase: sl(),
+      getAssetPayoutsUseCase: sl(),
+      markReminderAsReceivedUseCase: sl(),
     ),
   );
 }

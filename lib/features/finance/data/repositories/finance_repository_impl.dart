@@ -11,6 +11,8 @@ import 'package:financo/features/finance/domain/entities/crypto_wallet_detail.da
 import 'package:financo/features/finance/domain/entities/stock_detail.dart';
 import 'package:financo/features/finance/domain/entities/bank_account_detail.dart';
 import 'package:financo/features/finance/domain/entities/manual_asset_detail.dart';
+import 'package:financo/features/finance/domain/entities/asset_payout.dart';
+import 'package:financo/features/finance/data/models/asset_payout_model.dart';
 
 /// Implementation of FinanceRepository
 ///
@@ -462,6 +464,67 @@ class FinanceRepositoryImpl implements FinanceRepository {
       return Left(ServerFailure(e.message));
     } catch (e) {
       return Left(ServerFailure('Unexpected error: ${e.toString()}'));
+    }
+  }
+
+  // ===========================================================================
+  // ASSET PAYOUTS
+  // ===========================================================================
+
+  @override
+  Future<Either<Failure, AssetPayoutSummary>> getAssetPayoutSummary(String assetId) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
+    try {
+      final summary = await remoteDataSource.getAssetPayoutSummary(assetId);
+      return Right(summary);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to fetch payout summary: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<AssetPayout>>> getAssetPayouts(String assetId) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
+    try {
+      final payouts = await remoteDataSource.getAssetPayouts(assetId);
+      return Right(payouts);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to fetch payouts: ${e.toString()}'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> markReminderAsReceived({
+    required String reminderId,
+    required String assetId,
+    required double amount,
+    required DateTime payoutDate,
+    String? notes,
+  }) async {
+    if (!await _isOnline()) {
+      return const Left(OfflineFailure('No internet connection. Please check your network.'));
+    }
+    try {
+      await remoteDataSource.markReminderAsReceived(
+        reminderId: reminderId,
+        assetId: assetId,
+        amount: amount,
+        payoutDate: payoutDate,
+        notes: notes,
+      );
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure('Failed to mark reminder as received: ${e.toString()}'));
     }
   }
 

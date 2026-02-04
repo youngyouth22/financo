@@ -9,6 +9,8 @@ import 'package:financo/features/finance/domain/entities/crypto_wallet_detail.da
 import 'package:financo/features/finance/domain/entities/stock_detail.dart';
 import 'package:financo/features/finance/domain/entities/bank_account_detail.dart';
 import 'package:financo/features/finance/domain/entities/manual_asset_detail.dart';
+import 'package:financo/features/finance/domain/entities/asset_payout.dart';
+import 'package:financo/features/finance/data/models/asset_payout_model.dart';
 import 'package:financo/features/finance/data/models/detail_models/crypto_wallet_detail_model.dart';
 import 'package:financo/features/finance/data/models/detail_models/stock_detail_model.dart';
 import 'package:financo/features/finance/data/models/detail_models/bank_account_detail_model.dart';
@@ -70,6 +72,17 @@ abstract class FinanceRemoteDataSource {
     required String rruleExpression,
     required DateTime nextEventDate,
     double? amountExpected,
+  });
+  
+  // --- ASSET PAYOUTS (Payment History) ---
+  Future<AssetPayoutSummary> getAssetPayoutSummary(String assetId);
+  Future<List<AssetPayout>> getAssetPayouts(String assetId);
+  Future<void> markReminderAsReceived({
+    required String reminderId,
+    required String assetId,
+    required double amount,
+    required DateTime payoutDate,
+    String? notes,
   });
 
   // --- ASSET DETAILS (Edge Functions) ---
@@ -660,6 +673,81 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
       });
     } catch (e) {
       throw ServerException('Failed to create reminder: ${e.toString()}');
+    }
+  }
+
+  // ===========================================================================
+  // ASSET PAYOUTS (Payment History)
+  // ===========================================================================
+
+  @override
+  Future<AssetPayoutSummary> getAssetPayoutSummary(String assetId) async {
+    try {
+      // Call the database function to get payout summary
+      final response = await supabaseClient
+          .rpc('get_asset_payout_summary', params: {'p_asset_id': assetId})
+          .single();
+
+      return AssetPayoutSummaryModel.fromJson(response as Map<String, dynamic>);
+    } catch (e) {
+      throw ServerException('Failed to fetch payout summary: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<List<AssetPayout>> getAssetPayouts(String assetId) async {
+    try {
+      final response = await supabaseClient
+          .from('asset_payouts')
+          .select()
+          .eq('asset_id', assetId)
+          .order('payout_date', ascending: false);
+
+      return (response as List)
+          .map((json) => AssetPayoutModel.fromJson(json as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      throw ServerException('Failed to fetch payouts: ${e.toString()}');
+    }
+  }
+
+  @override
+  Future<void> markReminderAsReceived({
+    required String reminderId,
+    required String assetId,
+    required double amount,
+    required DateTime payoutDate,
+    String? notes,
+  }) async {
+    try {
+      // 1. Create payout record
+      await supabaseClient.from('asset_payouts').insert({
+        'user_id': _currentUserId,
+        'asset_id': assetId,
+        'amount': amount,
+        'payout_date': payoutDate.toIso8601String(),
+        'notes': notes,
+      });
+
+      // 2. Get reminder details to calculate next event date
+      final reminder = await supabaseClient
+          .from('asset_reminders')
+          .select('rrule_expression, next_event_date')
+          .eq('id', reminderId)
+          .single();
+
+      final rruleExpression = reminder['rrule_expression'] as String;
+      
+      // 3. Update next_event_date using database function
+      await supabaseClient.rpc(
+        'update_reminder_next_event_date',
+        params: {
+          'p_reminder_id': reminderId,
+          'p_rrule_expression': rruleExpression,
+        },
+      );
+    } catch (e) {
+      throw ServerException('Failed to mark reminder as received: ${e.toString()}');
     }
   }
 

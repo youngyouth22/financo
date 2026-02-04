@@ -9,6 +9,7 @@ import 'package:financo/features/asset_details/presentation/pages/stock_detail_p
 import 'package:financo/features/asset_details/presentation/pages/bank_account_detail_page.dart';
 import 'package:financo/features/asset_details/presentation/pages/manual_asset_detail_page.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
+import 'package:financo/features/finance/presentation/bloc/manual_asset_detail/manual_asset_detail_bloc.dart';
 import 'package:financo/di/injection_container.dart';
 
 /// Helper class for navigating to asset detail pages
@@ -87,7 +88,11 @@ class _AssetDetailWrapperState extends State<_AssetDetailWrapper> {
         } else if (state is BankAccountDetailLoaded) {
           return BankAccountDetailPage(accountDetail: state.detail);
         } else if (state is ManualAssetDetailLoaded) {
-          return ManualAssetDetailPage(assetDetail: state.detail);
+          // Provide ManualAssetDetailBloc for manual asset detail page
+          return BlocProvider(
+            create: (context) => sl<ManualAssetDetailBloc>(),
+            child: ManualAssetDetailPage(assetDetail: state.detail),
+          );
         } else if (state is AssetDetailError) {
           return _ErrorView(
             message: state.message,

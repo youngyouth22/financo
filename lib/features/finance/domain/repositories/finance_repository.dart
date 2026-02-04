@@ -7,6 +7,7 @@ import 'package:financo/features/finance/domain/entities/crypto_wallet_detail.da
 import 'package:financo/features/finance/domain/entities/stock_detail.dart';
 import 'package:financo/features/finance/domain/entities/bank_account_detail.dart';
 import 'package:financo/features/finance/domain/entities/manual_asset_detail.dart';
+import 'package:financo/features/finance/domain/entities/asset_payout.dart';
 
 /// Repository interface for finance operations
 ///
@@ -118,6 +119,23 @@ abstract class FinanceRepository {
     required String rruleExpression,
     required DateTime nextEventDate,
     double? amountExpected,
+  });
+  
+  // --- ASSET PAYOUTS (Payment History) ---
+  
+  /// Get payout summary for a specific asset
+  Future<Either<Failure, AssetPayoutSummary>> getAssetPayoutSummary(String assetId);
+  
+  /// Get all payouts for a specific asset
+  Future<Either<Failure, List<AssetPayout>>> getAssetPayouts(String assetId);
+  
+  /// Mark a reminder as received (create payout and update next event date)
+  Future<Either<Failure, void>> markReminderAsReceived({
+    required String reminderId,
+    required String assetId,
+    required double amount,
+    required DateTime payoutDate,
+    String? notes,
   });
 
   // --- ASSET DETAILS (Edge Functions) ---
