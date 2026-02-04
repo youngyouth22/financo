@@ -364,7 +364,7 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
 
   Widget _buildDateLeading(DateTime date, bool isUpcoming) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 12),
+      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 8),
       decoration: BoxDecoration(
         color:
             // isUpcoming
@@ -377,7 +377,7 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
       child: Column(
         children: [
           Text(
-            DateFormat('MMM').format(date),
+            DateFormat('dd').format(date),
             style: TextStyle(
               color:
                   // isUpcoming ? AppColors.accentP50 :
@@ -387,7 +387,7 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
             ),
           ),
           Text(
-            DateFormat('dd').format(date),
+            DateFormat('MMM').format(date),
             style: TextStyle(
               color:
                   // isUpcoming ? AppColors.accentP50 :
