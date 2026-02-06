@@ -1,3 +1,3 @@
 class AppRoutes {
-	static final String root = "/";
+	static const String root = "/";
 }

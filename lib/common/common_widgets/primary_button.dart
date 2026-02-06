@@ -81,7 +81,7 @@ class PrimaryButton extends StatelessWidget {
                 spacing: icon != null ? AppSpacing.ten : 0,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: isLoading
-                    ? [CustomCircularLoadingIndicator()]
+                    ? [const CustomCircularLoadingIndicator()]
                     : [
                         if (icon != null) icon!,
                         Text(

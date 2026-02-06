@@ -12,7 +12,6 @@ import 'package:financo/features/finance/domain/entities/stock_detail.dart';
 import 'package:financo/features/finance/domain/entities/bank_account_detail.dart';
 import 'package:financo/features/finance/domain/entities/manual_asset_detail.dart';
 import 'package:financo/features/finance/domain/entities/asset_payout.dart';
-import 'package:financo/features/finance/data/models/asset_payout_model.dart';
 
 /// Implementation of FinanceRepository
 ///

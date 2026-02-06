@@ -140,7 +140,7 @@ class _DiversificationTabState extends State<DiversificationTab> {
               to: 50,
               color: const Color(0xFF3861FB).withOpacity(0.6),
             ),
-            MapColorMapper(from: 50, to: 100, color: const Color(0xFF3861FB)),
+            const MapColorMapper(from: 50, to: 100, color: Color(0xFF3861FB)),
           ],
         );
         _isMapLoading = false;

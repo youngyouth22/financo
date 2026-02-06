@@ -312,7 +312,7 @@ class _AddStockPageState extends State<AddStockPage> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: quantityController,
-                    keyboardType: TextInputType.numberWithOptions(
+                    keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
                     inputFormatters: [
@@ -360,7 +360,7 @@ class _AddStockPageState extends State<AddStockPage> {
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Please enter a valid quantity'),
+                            content: const Text('Please enter a valid quantity'),
                             backgroundColor: AppColors.error,
                           ),
                         );

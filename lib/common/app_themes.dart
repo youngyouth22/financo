@@ -37,7 +37,7 @@ class AppTheme {
       ),
       outlineBorder: BorderSide(color: AppColors.error),
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.grey),
+        borderSide: const BorderSide(color: Colors.grey),
         borderRadius: BorderRadius.circular(AppSpacing.twelve),
       ),
       filled: false,

@@ -688,7 +688,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
           .rpc('get_asset_payout_summary', params: {'p_asset_id': assetId})
           .single();
 
-      return AssetPayoutSummaryModel.fromJson(response as Map<String, dynamic>);
+      return AssetPayoutSummaryModel.fromJson(response);
     } catch (e) {
       throw ServerException('Failed to fetch payout summary: ${e.toString()}');
     }

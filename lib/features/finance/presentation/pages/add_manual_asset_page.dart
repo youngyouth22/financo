@@ -216,8 +216,7 @@ class _AddManualAssetPageState extends State<AddManualAssetPage> {
               onPrimary: AppColors.white,
               surface: AppColors.gray80,
               onSurface: AppColors.white,
-            ),
-            dialogBackgroundColor: AppColors.gray80,
+            ), dialogTheme: DialogThemeData(backgroundColor: AppColors.gray80),
           ),
           child: child!,
         );

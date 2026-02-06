@@ -5,7 +5,6 @@ import 'package:financo/core/error/failures.dart';
 import 'package:financo/core/usecase/usecase.dart';
 import 'package:financo/features/assets/presentation/bloc/assets_event.dart';
 import 'package:financo/features/assets/presentation/bloc/assets_state.dart';
-import 'package:financo/features/finance/data/models/asset_model.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:financo/features/finance/domain/usecases/add_crypto_wallet_usecase.dart';
 import 'package:financo/features/finance/domain/usecases/add_manual_asset_usecase.dart';

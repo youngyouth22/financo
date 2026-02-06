@@ -153,7 +153,7 @@ class _WealthArcPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 20;
-    final strokeWidth = 24.0;
+    const strokeWidth = 24.0;
 
     // Background circle
     final bgPaint = Paint()
@@ -165,7 +165,7 @@ class _WealthArcPainter extends CustomPainter {
     canvas.drawCircle(center, radius, bgPaint);
 
     // Calculate angles (leave small gaps between arcs)
-    final gapAngle = 0.05; // Small gap in radians
+    const gapAngle = 0.05; // Small gap in radians
     double startAngle = -math.pi / 2; // Start from top
 
     // Draw crypto arc

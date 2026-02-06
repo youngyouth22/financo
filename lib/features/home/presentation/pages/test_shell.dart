@@ -144,7 +144,7 @@ class AppShellPage extends StatelessWidget {
                         _buildInfoRow(
                           Icons.fingerprint,
                           'User ID',
-                          user.id.substring(0, 8) + '...',
+                          '${user.id.substring(0, 8)}...',
                         ),
                       ],
                     ),

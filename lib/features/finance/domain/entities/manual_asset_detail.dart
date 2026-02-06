@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:rrule/rrule.dart';
 
 /// Entity representing detailed manual asset information
 class ManualAssetDetail extends Equatable {

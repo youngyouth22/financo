@@ -139,9 +139,9 @@ class _ErrorView extends StatelessWidget {
                 size: 64,
               ),
               const SizedBox(height: 24),
-              Text(
+              const Text(
                 'Failed to Load Details',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
