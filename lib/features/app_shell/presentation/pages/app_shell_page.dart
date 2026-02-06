@@ -6,7 +6,9 @@ import 'package:financo/features/assets/presentation/pages/assets_page.dart';
 import 'package:financo/features/finance/presentation/pages/add_asset_choice_page.dart';
 import 'package:financo/features/insights/presentation/pages/portfolio_insights_page.dart';
 import 'package:financo/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:financo/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:financo/features/assets/presentation/bloc/assets_bloc.dart';
+import 'package:financo/features/assets/presentation/bloc/assets_event.dart';
 import 'package:financo/features/insights/presentation/bloc/insights_bloc.dart';
 import 'package:financo/features/home/presentation/pages/dashboard_page.dart';
 import 'package:financo/features/home/presentation/widgets/custom_floating_button.dart';
@@ -30,28 +32,32 @@ class _AppShellPageState extends State<AppShellPage> {
   late PageController _controller;
 
   void _startLivePriceSync() {
-  // 1. Première exécution
-  _refreshPrices();
+    // 1. Première exécution
+    _refreshPrices();
 
-  // 2. Boucle de 30 secondes
-  _priceTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-    if (mounted) {
-      _refreshPrices();
-    }
-  });
-}
-
-Future<void> _refreshPrices() async {
-  try {
-    // On appelle la nouvelle fonction légère
-    await sl<SupabaseClient>().functions.invoke('refresh-market-prices', body: {
-      'userId': sl<SupabaseClient>()..auth.currentUser!.id,
+    // 2. Boucle de 30 secondes
+    _priceTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        _refreshPrices();
+      }
     });
-    debugPrint("Market Prices Updated!");
-  } catch (e) {
-    debugPrint("Sync error: $e");
   }
-}
+
+  Future<void> _refreshPrices() async {
+    try {
+      // Get user ID safely
+      final userId = sl<SupabaseClient>().auth.currentUser?.id;
+      if (userId == null) return;
+
+      await sl<SupabaseClient>().functions.invoke(
+        'refresh-market-prices',
+        body: {'userId': userId},
+      );
+      debugPrint("Market Prices Updated!");
+    } catch (e) {
+      debugPrint("Sync error: $e");
+    }
+  }
 
   // Wrap pages with their respective BLoC providers
   List<Widget> get _pages => [
@@ -114,10 +120,27 @@ Future<void> _refreshPrices() async {
     return Scaffold(
       extendBody: true,
       floatingActionButton: CustomFloatingButton(
-        onPressed: () {
-          Navigator.of(context).push(
+        onPressed: () async {
+          // Navigate to add asset page and wait for result
+          final result = await Navigator.of(context).push(
             MaterialPageRoute(builder: (context) => const AddAssetChoicePage()),
           );
+
+          // If an asset was added (result == true), refresh all data
+          if (result == true && mounted) {
+            // Refresh Dashboard BLoC
+            final dashboardBloc = context.read<DashboardBloc>();
+            dashboardBloc.add(const RefreshDashboardEvent());
+
+            // Refresh Assets BLoC (if it's currently active)
+            try {
+              final assetsBloc = context.read<AssetsBloc>();
+              assetsBloc.add(const WatchAssetsEvent());
+            } catch (e) {
+              // AssetsBloc might not be available if not on assets page
+              debugPrint('AssetsBloc not available for refresh: $e');
+            }
+          }
         },
         isMenuOpen: false,
       ),

@@ -1,5 +1,6 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
+import 'package:financo/common/widgets/empty_states/no_data_state.dart';
 import 'package:financo/features/assets/presentation/widgets/asset_card.dart';
 import 'package:financo/common/widgets/shimmer/asset_card_shimmer.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
@@ -177,8 +178,10 @@ class _AssetsPageState extends State<AssetsPage>
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Text("No assets found", style: TextStyle(color: AppColors.gray40)),
+    return const NoDataState(
+      icon: Icons.account_balance_wallet_outlined,
+      title: 'No Assets Found',
+      message: 'Start building your portfolio by adding your first asset',
     );
   }
 }

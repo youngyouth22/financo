@@ -5,6 +5,8 @@ import 'package:financo/common/common_widgets/add_security_in_sheet.dart';
 import 'package:financo/common/common_widgets/segment_button.dart';
 import 'package:financo/common/common_widgets/status_button.dart';
 import 'package:financo/common/image_resources.dart';
+import 'package:financo/common/widgets/shimmer/dashboard_shimmer.dart';
+import 'package:financo/common/widgets/empty_states/no_data_state.dart';
 import 'package:financo/features/finance/data/models/networth_response_model.dart';
 import 'package:financo/features/home/presentation/widgets/subscription_home_row.dart';
 import 'package:financo/features/dashboard/presentation/bloc/dashboard_bloc.dart';
@@ -31,7 +33,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   @override
-  Widget build(BuildContext context) {      
+  Widget build(BuildContext context) {
     return BlocListener<DashboardBloc, DashboardState>(
       listener: (context, state) {
         if (state is DashboardError) {
@@ -39,19 +41,15 @@ class _DashboardPageState extends State<DashboardPage> {
             context,
           ).showSnackBar(SnackBar(content: Text(state.message)));
         }
-      },      child: Scaffold(
+      },
+      child: Scaffold(
         body: SingleChildScrollView(
           child: BlocBuilder<DashboardBloc, DashboardState>(
             buildWhen: (previous, current) =>
                 current is NetworthLoaded || current is DashboardLoading,
             builder: (context, state) {
               if (state is DashboardLoading) {
-                return SizedBox(
-                  height: 500,
-                  child: Center(
-                    child: CircularProgressIndicator(color: AppColors.accent),
-                  ),
-                );
+                return const DashboardShimmer();
               }
 
               if (state is NetworthLoaded) {
@@ -68,14 +66,13 @@ class _DashboardPageState extends State<DashboardPage> {
                 );
               }
 
-              return const SizedBox(
-                height: 500,
-                child: Center(
-                  child: Text(
-                    'No assets connected',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
+              return NoDataState(
+                icon: Icons.account_balance_wallet_outlined,
+                title: 'No Assets Connected',
+                message:
+                    'Add your first crypto wallet, stock, or bank account to get started',
+                actionLabel: 'Add Asset',
+                onAction: () => showAddSecurityInSheet(context),
               );
             },
           ),
@@ -252,14 +249,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget _buildListSection(List<AssetDetail> assets) {
     if (assets.isEmpty) {
-      return const SizedBox(
-        height: 100,
-        child: Center(
-          child: Text(
-            "No data available",
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
+      return const NoDataState(
+        icon: Icons.search_off,
+        title: 'No Data Available',
+        message: 'Unable to load your assets',
       );
     }
 

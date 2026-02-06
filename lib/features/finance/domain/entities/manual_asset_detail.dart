@@ -125,6 +125,7 @@ class ManualAssetMetadata extends Equatable {
 
 /// Amortization payment schedule entry
 class AmortizationPayment extends Equatable {
+   final String? id; 
   final int paymentNumber;
   final DateTime dueDate;
   final double principalAmount;
@@ -141,6 +142,7 @@ class AmortizationPayment extends Equatable {
     required this.totalPayment,
     required this.remainingBalance,
     this.isPaid = false,
+     this.id, 
   });
 
   bool get isUpcoming => dueDate.isAfter(DateTime.now()) && !isPaid;
@@ -155,5 +157,6 @@ class AmortizationPayment extends Equatable {
         totalPayment,
         remainingBalance,
         isPaid,
+        id,
       ];
 }

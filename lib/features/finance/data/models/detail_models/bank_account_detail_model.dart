@@ -1,18 +1,12 @@
 import 'package:financo/features/finance/domain/entities/bank_account_detail.dart';
 
-/// Data model for BankAccountDetail from Supabase Edge Function
+/// Data model for aggregated BankAccountDetail from Supabase Edge Function
 class BankAccountDetailModel extends BankAccountDetail {
   const BankAccountDetailModel({
-    required super.accountId,
-    required super.name,
     required super.institutionName,
-    required super.accountMask,
-    required super.accountType,
-    required super.accountSubtype,
-    required super.currentBalance,
-    required super.availableBalance,
-    super.creditLimit,
+    required super.totalNetWorth,
     required super.currency,
+    required super.accounts,
     required super.transactions,
     required super.balanceHistory,
   });
@@ -20,22 +14,25 @@ class BankAccountDetailModel extends BankAccountDetail {
   /// Factory constructor from JSON (Edge Function response)
   factory BankAccountDetailModel.fromJson(Map<String, dynamic> json) {
     return BankAccountDetailModel(
-      accountId: json['accountId'] as String? ?? '',
-      name: json['name'] as String? ?? '',
       institutionName: json['institutionName'] as String? ?? '',
-      accountMask: json['accountMask'] as String? ?? '**** 0000',
-      accountType: _parseAccountType(json['accountType'] as String?),
-      accountSubtype: _parseAccountSubtype(json['accountSubtype'] as String?),
-      currentBalance: (json['currentBalance'] as num?)?.toDouble() ?? 0.0,
-      availableBalance: (json['availableBalance'] as num?)?.toDouble() ?? 0.0,
-      creditLimit: (json['creditLimit'] as num?)?.toDouble(),
+      totalNetWorth: (json['totalNetWorth'] as num?)?.toDouble() ?? 0.0,
       currency: json['currency'] as String? ?? 'USD',
-      transactions: (json['transactions'] as List?)
-              ?.map((t) =>
-                  BankTransactionModel.fromJson(t as Map<String, dynamic>))
+      accounts:
+          (json['accounts'] as List?)
+              ?.map(
+                (a) => PlaidSubAccountModel.fromJson(a as Map<String, dynamic>),
+              )
               .toList() ??
           [],
-      balanceHistory: (json['balanceHistory'] as List?)
+      transactions:
+          (json['transactions'] as List?)
+              ?.map(
+                (t) => BankTransactionModel.fromJson(t as Map<String, dynamic>),
+              )
+              .toList() ??
+          [],
+      balanceHistory:
+          (json['balanceHistory'] as List?)
               ?.map((b) => (b as num).toDouble())
               .toList() ??
           [],
@@ -45,20 +42,53 @@ class BankAccountDetailModel extends BankAccountDetail {
   /// Convert to JSON
   Map<String, dynamic> toJson() {
     return {
-      'accountId': accountId,
-      'name': name,
       'institutionName': institutionName,
-      'accountMask': accountMask,
-      'accountType': accountType.name,
-      'accountSubtype': accountSubtype.name,
-      'currentBalance': currentBalance,
-      'availableBalance': availableBalance,
-      'creditLimit': creditLimit,
+      'totalNetWorth': totalNetWorth,
       'currency': currency,
+      'accounts': accounts
+          .map((a) => (a as PlaidSubAccountModel).toJson())
+          .toList(),
       'transactions': transactions
           .map((t) => (t as BankTransactionModel).toJson())
           .toList(),
       'balanceHistory': balanceHistory,
+    };
+  }
+}
+
+/// Data model for PlaidSubAccount
+class PlaidSubAccountModel extends PlaidSubAccount {
+  const PlaidSubAccountModel({
+    required super.accountId,
+    required super.name,
+    required super.mask,
+    required super.balance,
+    required super.isDebt,
+    required super.type,
+    required super.subtype,
+  });
+
+  factory PlaidSubAccountModel.fromJson(Map<String, dynamic> json) {
+    return PlaidSubAccountModel(
+      accountId: json['accountId'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      mask: json['mask'] as String? ?? '0000',
+      balance: (json['balance'] as num?)?.toDouble() ?? 0.0,
+      isDebt: json['isDebt'] as bool? ?? false,
+      type: _parseAccountType(json['type'] as String?),
+      subtype: _parseAccountSubtype(json['subtype'] as String?),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'accountId': accountId,
+      'name': name,
+      'mask': mask,
+      'balance': balance,
+      'isDebt': isDebt,
+      'type': type.name,
+      'subtype': subtype.name,
     };
   }
 
@@ -119,7 +149,9 @@ class BankTransactionModel extends BankTransaction {
       merchantName: json['merchantName'] as String?,
       amount: (json['amount'] as num?)?.toDouble() ?? 0.0,
       category: json['category'] as String? ?? 'General',
-      date: DateTime.parse(json['date'] as String? ?? DateTime.now().toIso8601String()),
+      date: DateTime.parse(
+        json['date'] as String? ?? DateTime.now().toIso8601String(),
+      ),
       isPending: json['isPending'] as bool? ?? false,
       logoUrl: json['logoUrl'] as String?,
     );

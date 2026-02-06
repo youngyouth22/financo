@@ -1,5 +1,8 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
+import 'package:financo/common/widgets/shimmer/insights_shimmer.dart';
+import 'package:financo/common/widgets/empty_states/error_state.dart';
+import 'package:financo/common/widgets/empty_states/no_connection_state.dart';
 import 'package:financo/features/insights/presentation/bloc/insights_bloc.dart';
 import 'package:financo/features/insights/presentation/bloc/insights_event.dart';
 import 'package:financo/features/insights/presentation/bloc/insights_state.dart';
@@ -117,35 +120,28 @@ class _PortfolioInsightsPageState extends State<PortfolioInsightsPage>
 
             // If an error occurs, show the error message
             if (state is InsightsError) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      state.message,
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    TextButton(
-                      onPressed: () => context.read<InsightsBloc>().add(
-                        const LoadInsightsEvent(),
-                      ),
-                      child: const Text("Retry"),
-                    ),
-                  ],
-                ),
+              // Check if it's a connectivity error
+              final message = state.message.toLowerCase();
+              if (message.contains('connection') ||
+                  message.contains('network') ||
+                  message.contains('offline')) {
+                return NoConnectionState(
+                  onRetry: () => context.read<InsightsBloc>().add(
+                    const LoadInsightsEvent(),
+                  ),
+                );
+              }
+
+              return ErrorState(
+                title: 'Unable to Load Insights',
+                message: state.message,
+                onRetry: () =>
+                    context.read<InsightsBloc>().add(const LoadInsightsEvent()),
               );
             }
 
-            // Show the loading spinner while waiting for data
-            return Center(
-              child: CircularProgressIndicator(color: AppColors.accent),
-            );
+            // Show the shimmer while waiting for data
+            return const InsightsShimmer();
           },
         ),
       ),

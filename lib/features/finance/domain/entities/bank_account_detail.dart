@@ -1,63 +1,71 @@
 import 'package:equatable/equatable.dart';
 
-/// Entity representing detailed bank account information from Plaid
+/// Entity representing an aggregated bank institution with multiple sub-accounts
 class BankAccountDetail extends Equatable {
-  final String accountId;
-  final String name;
   final String institutionName;
-  final String accountMask; // e.g., "**** 4242"
-  final BankAccountType accountType;
-  final BankAccountSubtype accountSubtype;
-  final double currentBalance;
-  final double availableBalance;
-  final double? creditLimit; // Only for credit cards
+  final double totalNetWorth;
   final String currency;
+  final List<PlaidSubAccount> accounts;
   final List<BankTransaction> transactions;
   final List<double> balanceHistory;
 
   const BankAccountDetail({
-    required this.accountId,
-    required this.name,
     required this.institutionName,
-    required this.accountMask,
-    required this.accountType,
-    required this.accountSubtype,
-    required this.currentBalance,
-    required this.availableBalance,
-    this.creditLimit,
+    required this.totalNetWorth,
     required this.currency,
+    required this.accounts,
     required this.transactions,
     required this.balanceHistory,
   });
 
-  bool get isCreditCard => accountType == BankAccountType.credit;
-  
-  double get creditUsed => isCreditCard && creditLimit != null 
-      ? creditLimit! - availableBalance 
-      : 0;
+  @override
+  List<Object?> get props => [
+    institutionName,
+    totalNetWorth,
+    currency,
+    accounts,
+    transactions,
+    balanceHistory,
+  ];
+}
+
+/// Entity representing a single sub-account within a bank institution
+class PlaidSubAccount extends Equatable {
+  final String accountId;
+  final String name;
+  final String mask; // e.g., "1234"
+  final double balance;
+  final bool isDebt;
+  final BankAccountType type;
+  final BankAccountSubtype subtype;
+
+  const PlaidSubAccount({
+    required this.accountId,
+    required this.name,
+    required this.mask,
+    required this.balance,
+    required this.isDebt,
+    required this.type,
+    required this.subtype,
+  });
 
   @override
   List<Object?> get props => [
-        accountId,
-        name,
-        institutionName,
-        accountMask,
-        accountType,
-        accountSubtype,
-        currentBalance,
-        availableBalance,
-        creditLimit,
-        currency,
-        transactions,
-        balanceHistory,
-      ];
+    accountId,
+    name,
+    mask,
+    balance,
+    isDebt,
+    type,
+    subtype,
+  ];
 }
 
 /// Bank account types
 enum BankAccountType {
   depository, // Checking, Savings
-  credit,     // Credit Card
-  loan,       // Mortgage, Student Loan
+  credit, // Credit Card
+  loan, // Mortgage, Student Loan
   investment, // Brokerage
   other,
 }
@@ -100,13 +108,13 @@ class BankTransaction extends Equatable {
 
   @override
   List<Object?> get props => [
-        transactionId,
-        name,
-        merchantName,
-        amount,
-        category,
-        date,
-        isPending,
-        logoUrl,
-      ];
+    transactionId,
+    name,
+    merchantName,
+    amount,
+    category,
+    date,
+    isPending,
+    logoUrl,
+  ];
 }

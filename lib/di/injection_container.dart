@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:financo/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:financo/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:financo/features/auth/domain/repositories/auth_repository.dart';
@@ -62,28 +64,44 @@ Future<void> initializeDependencies() async {
   final connectivityService = ConnectivityService();
   await connectivityService.initialize();
   sl.registerLazySingleton<ConnectivityService>(() => connectivityService);
-  
+
   // Check if we have connection before initializing Supabase
-  final hasConnection =  connectivityService.isConnected;
-  
+  final hasConnection = connectivityService.isConnected;
+
   // Initialisation de Supabase avec gestion d'erreur de connexion
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_KEY']!,
-    authOptions: FlutterAuthClientOptions(
-      authFlowType: AuthFlowType.pkce,
-      // Disable auto-refresh when offline to prevent connection errors
-      autoRefreshToken: hasConnection,
-    ),
-    realtimeClientOptions: const RealtimeClientOptions(
-      // Disable realtime when offline
-      eventsPerSecond: 2,
-    ),
-  );
+  try {
+    await Supabase.initialize(
+      url: dotenv.env['SUPABASE_URL']!,
+      anonKey: dotenv.env['SUPABASE_KEY']!,
+      authOptions: FlutterAuthClientOptions(
+        authFlowType: AuthFlowType.pkce,
+        // Disable auto-refresh when offline to prevent connection errors
+        autoRefreshToken: hasConnection,
+      ),
+      realtimeClientOptions: const RealtimeClientOptions(
+        // Disable realtime when offline
+        eventsPerSecond: 2,
+      ),
+    );
+    print('✅ Supabase initialized successfully');
+  } on AuthRetryableFetchException catch (e) {
+    // Network error during session recovery - this is OK
+    // User will see NoConnectionState in UI when they try to use features
+    print('⚠️ Supabase init: Network unavailable, will retry when online');
+    print('Error: ${e.message}');
+  } on SocketException catch (e) {
+    // Socket exception (no internet connection)
+    print('⚠️ Supabase init: No internet connection');
+    print('Error: $e');
+  } catch (e) {
+    // Other unexpected errors - log but don't crash
+    print('❌ Supabase initialization error: $e');
+    // Don't rethrow - allow app to start even if Supabase fails
+  }
 
   // Enregistrement du client Supabase
   sl.registerLazySingleton<SupabaseClient>(() => Supabase.instance.client);
-  
+
   // Initialize SupabaseErrorHandler to catch auth errors
   final errorHandler = SupabaseErrorHandler(
     connectivityService: connectivityService,
@@ -174,13 +192,13 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => AddManualAssetUseCase(sl()));
   sl.registerLazySingleton(() => AddAssetReminderUseCase(sl()));
   sl.registerLazySingleton(() => GetPortfolioInsightsUseCase(sl()));
-  
+
   // Asset Detail Use Cases
   sl.registerLazySingleton(() => GetCryptoWalletDetailsUseCase(sl()));
   sl.registerLazySingleton(() => GetStockDetailsUseCase(sl()));
   sl.registerLazySingleton(() => GetBankAccountDetailsUseCase(sl()));
   sl.registerLazySingleton(() => GetManualAssetDetailsUseCase(sl()));
-  
+
   // Asset Payout Use Cases
   sl.registerLazySingleton(() => GetAssetPayoutSummaryUseCase(sl()));
   sl.registerLazySingleton(() => GetAssetPayoutsUseCase(sl()));
@@ -208,10 +226,7 @@ Future<void> initializeDependencies() async {
 
   // Specialized BLoCs
   sl.registerFactory(
-    () => DashboardBloc(
-      getNetworthUseCase: sl(),
-      getDailyChangeUseCase: sl(),
-    ),
+    () => DashboardBloc(getNetworthUseCase: sl(), getDailyChangeUseCase: sl()),
   );
 
   sl.registerFactory(
@@ -226,11 +241,7 @@ Future<void> initializeDependencies() async {
     ),
   );
 
-  sl.registerFactory(
-    () => InsightsBloc(
-      getPortfolioInsightsUseCase: sl(),
-    ),
-  );
+  sl.registerFactory(() => InsightsBloc(getPortfolioInsightsUseCase: sl()));
 
   sl.registerFactory(
     () => AssetDetailBloc(
@@ -240,7 +251,7 @@ Future<void> initializeDependencies() async {
       getManualAssetDetailsUseCase: sl(),
     ),
   );
-  
+
   sl.registerFactory(
     () => ManualAssetDetailBloc(
       getAssetPayoutSummaryUseCase: sl(),

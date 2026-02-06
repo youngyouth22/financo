@@ -51,11 +51,16 @@ class AddAssetChoicePage extends StatelessWidget {
                 icon: Icons.account_balance_wallet_outlined,
                 title: 'Crypto Wallet',
                 description: 'Add a cryptocurrency wallet via Moralis',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const AddCryptoWalletPage(),
-                  ),
-                ),
+                onTap: () async {
+                  final result = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AddCryptoWalletPage(),
+                    ),
+                  );
+                  if (result == true && context.mounted) {
+                    Navigator.of(context).pop(true);
+                  }
+                },
               ),
               const SizedBox(height: 16),
               _buildAssetTypeCard(
@@ -63,9 +68,16 @@ class AddAssetChoicePage extends StatelessWidget {
                 icon: Icons.trending_up,
                 title: 'Stock',
                 description: 'Add stocks and ETFs via Financial Modeling Prep',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const AddStockPage()),
-                ),
+                onTap: () async {
+                  final result = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AddStockPage(),
+                    ),
+                  );
+                  if (result == true && context.mounted) {
+                    Navigator.of(context).pop(true);
+                  }
+                },
               ),
               const SizedBox(height: 16),
               _buildAssetTypeCard(
@@ -73,11 +85,16 @@ class AddAssetChoicePage extends StatelessWidget {
                 icon: Icons.account_balance,
                 title: 'Bank Account',
                 description: 'Connect your bank account via Plaid',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const AddBankAccountPage(),
-                  ),
-                ),
+                onTap: () async {
+                  final result = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AddBankAccountPage(),
+                    ),
+                  );
+                  if (result == true && context.mounted) {
+                    Navigator.of(context).pop(true);
+                  }
+                },
               ),
               const SizedBox(height: 16),
               _buildAssetTypeCard(
@@ -85,11 +102,16 @@ class AddAssetChoicePage extends StatelessWidget {
                 icon: Icons.edit,
                 title: 'Manual Asset',
                 description: 'Add real estate, commodities, liabilities, etc.',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => const AddManualAssetPage(),
-                  ),
-                ),
+                onTap: () async {
+                  final result = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AddManualAssetPage(),
+                    ),
+                  );
+                  if (result == true && context.mounted) {
+                    Navigator.of(context).pop(true);
+                  }
+                },
               ),
             ],
           ),

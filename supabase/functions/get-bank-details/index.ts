@@ -1,5 +1,5 @@
 // Supabase Edge Function: get-bank-details
-// Features: AES-GCM Decryption, Plaid Real-time Balance, and Transaction History
+// Features: Fetch real-time balances for ALL accounts in a bank, Transaction history, and Net Worth breakdown
 // Author: Finance Realtime Engine
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -14,19 +14,12 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 // --- CRYPTO HELPER ---
 async function decryptToken(encryptedToken: string, iv: string) {
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(ENCRYPTION_KEY),
-    "AES-GCM",
-    false,
-    ["decrypt"],
-  );
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(ENCRYPTION_KEY), "AES-GCM", false, ["decrypt"]);
   const decrypted = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: Uint8Array.from(atob(iv), (c) => c.charCodeAt(0)) },
     key,
@@ -36,48 +29,23 @@ async function decryptToken(encryptedToken: string, iv: string) {
 }
 
 serve(async (req: Request) => {
-  if (req.method === "OPTIONS")
-    return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
     const payload = await req.json();
-    console.log("[Log] Payload received:", JSON.stringify(payload));
+    console.log("[Log] Request for bank details:", JSON.stringify(payload));
 
     let rawItemId = payload.itemId || payload.item_id;
-    let providedAccountId = payload.accountId || payload.account_id;
     const userId = payload.userId || payload.user_id;
 
     if (!rawItemId || !userId) throw new Error("Missing itemId or userId");
 
-    // ==========================================================
-    // LOGIQUE D'EXTRACTION CRITIQUE (FIX POUR L'ERREUR 400)
-    // ==========================================================
-    let finalPlaidItemId = rawItemId;
-    let finalPlaidAccountId = providedAccountId;
-
-    // Si rawItemId est au format "plaid:item_id:account_id"
-    if (rawItemId.startsWith("plaid:")) {
-      const parts = rawItemId.split(":");
-      finalPlaidItemId = parts[1]; // Le vrai Item ID de Plaid
-      // Priorité ABSOLUE au 3ème segment du composite ID car c'est le vrai ID Plaid
-      if (parts[2]) {
-        finalPlaidAccountId = parts[2];
-        console.log(
-          `[Log] Extracted real Plaid Account ID: ${finalPlaidAccountId}`,
-        );
-      }
-    }
-
-    if (!finalPlaidAccountId || finalPlaidAccountId.includes("-")) {
-      // Si l'ID contient des tirets, c'est probablement un UUID de base de données, pas un ID Plaid.
-      console.warn(
-        "[Warning] The accountId looks like a Database UUID, this might fail Plaid API.",
-      );
-    }
+    // Extraction de l'ID Plaid réel (on retire le préfixe plaid: si présent)
+    const finalPlaidItemId = rawItemId.startsWith("plaid:") ? rawItemId.split(":")[1] : rawItemId;
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
-    // 1. Fetch connection using the extracted Item ID
+    // 1. Récupérer le token chiffré
     const { data: connection, error: connError } = await supabase
       .from("plaid_items")
       .select("access_token_encrypted, iv")
@@ -85,24 +53,15 @@ serve(async (req: Request) => {
       .eq("user_id", userId)
       .single();
 
-    if (connError || !connection) {
-      throw new Error(`Connection not found for Item ID: ${finalPlaidItemId}`);
-    }
+    if (connError || !connection) throw new Error("Bank connection not found.");
 
-    // 2. Decrypt
-    const realAccessToken = await decryptToken(
-      connection.access_token_encrypted,
-      connection.iv,
-    );
+    // 2. Décryptage
+    const realAccessToken = await decryptToken(connection.access_token_encrypted, connection.iv);
 
-    // 3. Plaid API calls
+    // 3. Appels Plaid (Balances de TOUS les comptes + Transactions)
     const plaidBaseUrl = `https://${PLAID_ENV}.plaid.com`;
     const today = new Date().toISOString().split("T")[0];
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
-
-    console.log(`[Log] Requesting Plaid for account: ${finalPlaidAccountId}`);
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
     const [balanceRes, transRes] = await Promise.all([
       fetch(`${plaidBaseUrl}/accounts/balance/get`, {
@@ -112,7 +71,6 @@ serve(async (req: Request) => {
           client_id: PLAID_CLIENT_ID,
           secret: PLAID_SECRET,
           access_token: realAccessToken,
-          options: { account_ids: [finalPlaidAccountId] }, // Doit être l'ID Plaid
         }),
       }).then((r) => r.json()),
       fetch(`${plaidBaseUrl}/transactions/get`, {
@@ -124,39 +82,64 @@ serve(async (req: Request) => {
           access_token: realAccessToken,
           start_date: thirtyDaysAgo,
           end_date: today,
-          options: { account_ids: [finalPlaidAccountId], count: 20 },
+          options: { count: 30 },
         }),
       }).then((r) => r.json()),
     ]);
 
-    if (balanceRes.error_code)
-      throw new Error(`Plaid Error: ${balanceRes.error_message}`);
+    if (balanceRes.error_code) throw new Error(`Plaid Error: ${balanceRes.error_message}`);
 
-    const account = balanceRes.accounts?.[0];
-    if (!account) throw new Error("Account not found in Plaid response");
+    // 4. Calcul du Net Worth Global et mapping des comptes
+    let totalNetWorth = 0;
+    const accounts = balanceRes.accounts.map((acc: any) => {
+      const balance = acc.balances.current || 0;
+      const isDebt = acc.type === "credit" || acc.type === "loan";
+      
+      if (isDebt) totalNetWorth -= Math.abs(balance);
+      else totalNetWorth += balance;
 
-    // 4. Map Balance History
-    let current = account.balances.current;
-    const history = [current];
-    (transRes.transactions || []).forEach((t: any) => {
-      current += t.amount;
-      history.push(current);
+      return {
+        accountId: acc.account_id,
+        name: acc.name,
+        officialName: acc.official_name || acc.name,
+        mask: acc.mask || "0000",
+        type: acc.type,
+        subtype: acc.subtype,
+        balance: balance,
+        isDebt: isDebt,
+        currency: acc.balances.iso_currency_code || "USD"
+      };
     });
 
+    // 5. Historique de balance (Somme agrégée de tous les comptes)
+    let runningNetWorth = totalNetWorth;
+    const history = [runningNetWorth];
+    (transRes.transactions || []).forEach((t: any) => {
+      // Si c'est une dépense (montant positif dans Plaid), on l'ajoute pour remonter le temps
+      runningNetWorth += t.amount;
+      history.push(runningNetWorth);
+    });
+
+    // 6. Réponse complète pour Flutter
     return new Response(
       JSON.stringify({
-        accountId: account.account_id,
-        name: account.name,
-        accountMask: `**** ${account.mask || "0000"}`,
-        currentBalance: account.balances.current,
-        currency: account.balances.iso_currency_code || "USD",
+        institutionName: payload.institutionName || "My Bank",
+        totalNetWorth: totalNetWorth,
+        currency: accounts[0]?.currency || "USD",
+        accountCount: accounts.length,
+        // Liste de TOUS les comptes pour ton UI (cartes de crédit, épargne, etc.)
+        accounts: accounts,
+        // Liste des transactions récentes
         transactions: (transRes.transactions || []).map((t: any) => ({
           transactionId: t.transaction_id,
           name: t.name,
+          merchant: t.merchant_name || t.name,
           amount: t.amount,
           date: t.date,
-          logoUrl: t.personal_finance_category_icon_url || null,
+          category: t.category?.[0] || "General",
+          pending: t.pending,
         })),
+        // Graphique combiné de la banque
         balanceHistory: history.reverse(),
       }),
       {
