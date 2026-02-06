@@ -146,7 +146,7 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
             appBar: AppBar(
               backgroundColor: AppColors.gray,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: AppColors.white),
+                icon:  Icon(Icons.arrow_back, color: AppColors.white),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
