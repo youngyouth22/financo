@@ -9,6 +9,8 @@ import 'package:financo/features/insights/presentation/bloc/insights_state.dart'
 import 'package:financo/features/insights/presentation/widgets/asset_allocation_tab.dart';
 import 'package:financo/features/insights/presentation/widgets/diversification_tab.dart';
 import 'package:financo/features/insights/presentation/widgets/risk_strategy_tab.dart';
+import 'package:financo/core/subscription/presentation/bloc/subscription_bloc.dart';
+import 'package:financo/core/subscription/presentation/widgets/premium_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -55,24 +57,34 @@ class _PortfolioInsightsPageState extends State<PortfolioInsightsPage>
 
   Tab _buildTab(int index, String label, IconData iconData) {
     bool selected = _tabController.index == index;
+    bool isPremiumTab = index > 0; // Exposure and Strategy are premium
+
     return Tab(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            iconData,
-            color: selected ? AppColors.accent : AppColors.gray20,
-            size: 18,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: AppTypography.headline2Regular.copyWith(
-              color: selected ? AppColors.accent : AppColors.gray20,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            ),
-          ),
-        ],
+      child: BlocBuilder<SubscriptionBloc, SubscriptionState>(
+        builder: (context, state) {
+          final isPremium = state.status == SubscriptionStatus.premium;
+          final showLock = isPremiumTab && !isPremium;
+
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                showLock ? Icons.lock_outline : iconData,
+                color: selected ? AppColors.accent : AppColors.gray20,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: AppTypography.headline2Regular.copyWith(
+                  color: selected ? AppColors.accent : AppColors.gray20,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -112,8 +124,16 @@ class _PortfolioInsightsPageState extends State<PortfolioInsightsPage>
                 controller: _tabController,
                 children: [
                   AssetAllocationTab(networth: networth),
-                  DiversificationTab(networth: networth),
-                  const RiskStrategyTab(),
+                  PremiumGate(
+                    message:
+                        "Analyze your diversification across countries and sectors with detailed exposure maps.",
+                    child: DiversificationTab(networth: networth),
+                  ),
+                  const PremiumGate(
+                    message:
+                        "Unlock AI-powered strategic analysis and personalized financial advice for your portfolio.",
+                    child: RiskStrategyTab(),
+                  ),
                 ],
               );
             }

@@ -6,7 +6,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 // Firebase Cloud Messaging API endpoint
-const FCM_API_URL = "https://fcm.googleapis.com/v1/projects/YOUR_PROJECT_ID/messages:send";
+const FCM_API_URL = "https://fcm.googleapis.com/v1/projects/financo-13f01/messages:send";
 
 // Types
 interface AssetReminder {

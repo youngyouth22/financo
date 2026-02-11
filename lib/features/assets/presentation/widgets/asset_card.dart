@@ -1,7 +1,9 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/common/common_widgets/mini_sparkline.dart';
+import 'package:financo/common/image_resources.dart';
 import 'package:financo/core/utils/extract_two_first_letter.dart';
+import 'package:financo/core/utils/format_price.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -35,17 +37,15 @@ class AssetCard extends StatelessWidget {
                       fit: BoxFit.cover,
                       height: 36,
                       width: 36,
-                      errorBuilder: (_, _, _) => Icon(
-                        Icons.currency_bitcoin,
-                        color: AppColors.accent,
+                      errorBuilder: (_, _, _) => Image.asset(
+                        ImageResources.placeHolderPng,
                       ),
                     )
                   : Image.network(
                       asset.iconUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Icon(
-                        Icons.account_balance_wallet,
-                        color: AppColors.accent,
+                      errorBuilder: (_, _, _) => Image.asset(
+                        ImageResources.placeHolderPng,
                       ),
                     )
             : Text(
@@ -105,70 +105,75 @@ class AssetCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
-        AssetDetailNavigator.navigateToAssetDetail(
-          context,
-          asset,
-          userId,
-        );
+        AssetDetailNavigator.navigateToAssetDetail(context, asset, userId);
       },
       child: Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: AppColors.gray80,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.gray70),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildAssetIcon(asset),
-              IconButton(
-                icon: Icon(Icons.more_vert, color: AppColors.gray40, size: 18),
-                onPressed: () {
-                  // _showAssetActions(asset);
-                },
-              ),
-            ],
-          ),
-          if (asset.sparkline != null && asset.sparkline!.isNotEmpty)
-            Center(
-              child: MiniSparkline(points: asset.sparkline!, isPositive: isPos),
-            ),
-          const Spacer(),
-          Text(
-            asset.name,
-            style: AppTypography.headline3SemiBold.copyWith(
-              color: AppColors.white,
-              fontSize: 14,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  asset.symbol,
-                  style: AppTypography.headline1Regular.copyWith(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.gray80,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.gray70),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildAssetIcon(asset),
+                IconButton(
+                  icon: Icon(
+                    Icons.more_vert,
                     color: AppColors.gray40,
-                    overflow: TextOverflow.ellipsis,
+                    size: 18,
                   ),
+                  onPressed: () {
+                    // _showAssetActions(asset);
+                  },
+                ),
+              ],
+            ),
+            if (asset.sparkline != null && asset.sparkline!.isNotEmpty)
+              Center(
+                child: MiniSparkline(
+                  points: asset.sparkline!,
+                  isPositive: isPos,
                 ),
               ),
-              if (asset.change24h > 0)
-                _buildChangeBadge(asset.change24h, isPos),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '\$${asset.balanceUsd.toStringAsFixed(2)}',
-            style: AppTypography.headline3Bold.copyWith(color: AppColors.white),
-          ),
-        ],
-      ),
+            const Spacer(),
+            Text(
+              asset.name,
+              style: AppTypography.headline3SemiBold.copyWith(
+                color: AppColors.white,
+                fontSize: 14,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    asset.symbol,
+                    style: AppTypography.headline1Regular.copyWith(
+                      color: AppColors.gray40,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                if (asset.change24h != 0)
+                  _buildChangeBadge(asset.change24h, isPos),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '\$${formatPrice(asset.balanceUsd)}',
+              style: AppTypography.headline3Bold.copyWith(
+                color: AppColors.white,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

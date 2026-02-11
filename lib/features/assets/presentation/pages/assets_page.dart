@@ -1,6 +1,7 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/common/widgets/empty_states/no_data_state.dart';
+import 'package:financo/core/subscription/presentation/bloc/subscription_bloc.dart';
 import 'package:financo/features/assets/presentation/widgets/asset_card.dart';
 import 'package:financo/common/widgets/shimmer/asset_card_shimmer.dart';
 import 'package:financo/features/finance/domain/entities/asset.dart';
@@ -40,7 +41,37 @@ class _AssetsPageState extends State<AssetsPage>
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text('Your Portfolio'),
+        title: BlocBuilder<SubscriptionBloc, SubscriptionState>(
+          builder: (context, state) {
+            final isPremium = state.status == SubscriptionStatus.premium;
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Your Portfolio'),
+                if (isPremium) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'PREMIUM',
+                      style: AppTypography.headline1Bold.copyWith(
+                        color: AppColors.white,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
+        ),
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
@@ -60,6 +91,8 @@ class _AssetsPageState extends State<AssetsPage>
           List<Asset> allAssets = [];
 
           if (state is AssetsRealTimeUpdated) {
+            allAssets = state.assets;
+          } else if (state is AssetsLoaded) {
             allAssets = state.assets;
           } else if (state is AssetsLoading) {
             return ListView.builder(

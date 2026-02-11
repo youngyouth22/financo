@@ -44,9 +44,9 @@ class CustomFloatingButton extends StatelessWidget {
         ),
         child: Center(
           child: AnimatedRotation(
-            turns: isMenuOpen ? 0.125 : 0.0, // 45 degrés
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.ease,
+            turns: isMenuOpen ? 0.375 : 0.0, // 135 deg - more vibrant rotation
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.elasticOut,
             child: SvgPicture.asset(
               ImageResources.addIcon,
               height: 18,

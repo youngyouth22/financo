@@ -34,119 +34,127 @@ class _BankAccountDetailPageState extends State<BankAccountDetailPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        forceMaterialTransparency: true,
-        title: Text(
-          widget.accountDetail.institutionName,
-          style: AppTypography.headline3SemiBold.copyWith(
-            color: AppColors.white,
-            fontSize: 18,
-          ),
-        ),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: AppColors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: AppColors.white),
-            onPressed: () {
-              // Refresh account data
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Header Section with Net Worth and Chart
-          _buildHeader(),
-
-          // Tab Bar
-          _buildTabBar(),
-
-          // Tab View Content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [_buildAccountsTab(), _buildHistoryTab()],
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            // AppBar
+            SliverAppBar(
+              pinned: true,
+              floating: false,
+              elevation: 0,
+              backgroundColor: AppColors.gray,
+              surfaceTintColor: AppColors.gray,
+              leading: IconButton(
+                icon: Icon(Icons.arrow_back, color: AppColors.white),
+                onPressed: () => Navigator.pop(context),
+              ),
+              actions: [
+                IconButton(
+                  icon: Icon(Icons.refresh, color: AppColors.white),
+                  onPressed: () {
+                    // Refresh account data
+                  },
+                ),
+              ],
             ),
-          ),
-        ],
+
+            // Header Section (Institution Name and Total Net Worth)
+            SliverToBoxAdapter(child: _buildHeader()),
+
+            // Chart Section (scrollable)
+            if (widget.accountDetail.balanceHistory.isNotEmpty)
+              SliverToBoxAdapter(child: _buildChartSection()),
+
+            // Tab Bar (pinned)
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _TabBarDelegate(child: _buildTabBar()),
+            ),
+          ];
+        },
+        body: TabBarView(
+          controller: _tabController,
+          children: [_buildAccountsTab(), _buildHistoryTab()],
+        ),
       ),
     );
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Total Net Worth Label
-          Text(
-            'Total Net Worth',
-            style: AppTypography.headline2Regular.copyWith(
-              color: AppColors.gray40,
-              fontSize: 12,
+    return Container(
+      color: AppColors.gray,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Institution Name
+            Text(
+              widget.accountDetail.institutionName,
+              style: AppTypography.headline3Bold.copyWith(
+                color: AppColors.white,
+                fontSize: 24,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
+            const SizedBox(height: 4),
 
-          // Total Net Worth Value
-          Text(
-            '${widget.accountDetail.currency} ${NumberFormat('#,##0.00').format(widget.accountDetail.totalNetWorth)}',
-            style: AppTypography.headline3Bold.copyWith(
-              color: AppColors.white,
-              fontSize: 36,
+            // Accounts Count
+            Text(
+              '${widget.accountDetail.accounts.length} account${widget.accountDetail.accounts.length != 1 ? 's' : ''}',
+              style: AppTypography.headline2Regular.copyWith(
+                color: AppColors.gray40,
+                fontSize: 12,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
+            const SizedBox(height: 16),
 
-          // Accounts Count
-          Text(
-            '${widget.accountDetail.accounts.length} account${widget.accountDetail.accounts.length != 1 ? 's' : ''}',
-            style: AppTypography.headline2Regular.copyWith(
-              color: AppColors.gray40,
-              fontSize: 14,
+            // Total Net Worth Value
+            Text(
+              '${widget.accountDetail.currency} ${NumberFormat('#,##0.00').format(widget.accountDetail.totalNetWorth)}',
+              style: AppTypography.headline3Bold.copyWith(
+                color: AppColors.white,
+                fontSize: 36,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 8),
 
-          // Sparkline Chart
-          if (widget.accountDetail.balanceHistory.isNotEmpty)
-            PriceLineChart(
-              priceHistory: widget.accountDetail.balanceHistory,
-              isPositive: true,
-              height: 180,
-              showTimeframeSelector: false,
+            // Net Worth Label
+            Text(
+              'Total Net Worth',
+              style: AppTypography.headline2Regular.copyWith(
+                color: AppColors.gray40,
+                fontSize: 14,
+              ),
             ),
-        ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChartSection() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: PriceLineChart(
+        priceHistory: widget.accountDetail.balanceHistory,
+        isPositive: true,
+        height: 200,
+        showTimeframeSelector: true,
       ),
     );
   }
 
   Widget _buildTabBar() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: AppColors.gray80,
-        borderRadius: BorderRadius.circular(12),
-      ),
+      color: AppColors.gray,
       child: TabBar(
         controller: _tabController,
-        indicator: BoxDecoration(
-          color: AppColors.accent,
-          borderRadius: BorderRadius.circular(12),
-        ),
+        indicatorColor: AppColors.accent,
+        indicatorWeight: 3,
         labelColor: AppColors.white,
         unselectedLabelColor: AppColors.gray40,
-        labelStyle: AppTypography.headline2SemiBold.copyWith(fontSize: 14),
-        unselectedLabelStyle: AppTypography.headline2Regular.copyWith(
-          fontSize: 14,
-        ),
-        indicatorSize: TabBarIndicatorSize.tab,
-        dividerColor: Colors.transparent,
+        labelStyle: AppTypography.headline2SemiBold,
+        unselectedLabelStyle: AppTypography.headline2Regular,
         tabs: const [
           Tab(text: 'Accounts'),
           Tab(text: 'History'),
@@ -158,18 +166,8 @@ class _BankAccountDetailPageState extends State<BankAccountDetailPage>
   Widget _buildAccountsTab() {
     return ListView(
       padding: const EdgeInsets.all(20),
+      physics: const ClampingScrollPhysics(), // Important pour NestedScrollView
       children: [
-        const SizedBox(height: 8),
-        Text(
-          'Sub-Accounts',
-          style: AppTypography.headline3SemiBold.copyWith(
-            color: AppColors.white,
-            fontSize: 18,
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Grid of sub-account cards
         if (widget.accountDetail.accounts.isEmpty)
           Center(
             child: Padding(
@@ -213,11 +211,11 @@ class _BankAccountDetailPageState extends State<BankAccountDetailPage>
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12), // Rounded like crypto cards
         border: Border.all(
           color: account.isDebt
               ? AppColors.warning.withValues(alpha: 0.3)
-              : AppColors.gray70,
+              : AppColors.gray80, // Matches crypto card border
           width: 1,
         ),
       ),
@@ -276,36 +274,28 @@ class _BankAccountDetailPageState extends State<BankAccountDetailPage>
   }
 
   Widget _buildHistoryTab() {
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        const SizedBox(height: 8),
-        Text(
-          'Transaction History',
-          style: AppTypography.headline3SemiBold.copyWith(
-            color: AppColors.white,
-            fontSize: 18,
+    if (widget.accountDetail.transactions.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Text(
+            'No transactions available',
+            style: AppTypography.headline2Regular.copyWith(
+              color: AppColors.gray40,
+            ),
           ),
         ),
-        const SizedBox(height: 16),
+      );
+    }
 
-        if (widget.accountDetail.transactions.isEmpty)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Text(
-                'No transactions available',
-                style: AppTypography.headline2Regular.copyWith(
-                  color: AppColors.gray40,
-                ),
-              ),
-            ),
-          )
-        else
-          ...widget.accountDetail.transactions.map(
-            (tx) => _buildTransactionCard(tx),
-          ),
-      ],
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      physics: const ClampingScrollPhysics(), // Important pour NestedScrollView
+      itemCount: widget.accountDetail.transactions.length,
+      itemBuilder: (context, index) {
+        final tx = widget.accountDetail.transactions[index];
+        return _buildTransactionCard(tx);
+      },
     );
   }
 
@@ -316,7 +306,7 @@ class _BankAccountDetailPageState extends State<BankAccountDetailPage>
       decoration: BoxDecoration(
         color: AppColors.gray80,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.gray70, width: 1),
+        border: Border.all(color: AppColors.gray80, width: 1), // Unified border
       ),
       child: Row(
         children: [
@@ -424,5 +414,31 @@ class _BankAccountDetailPageState extends State<BankAccountDetailPage>
       case BankAccountSubtype.other:
         return 'Other';
     }
+  }
+}
+
+// Custom delegate pour le TabBar fixe (Copied from CryptoWalletDetailPage)
+class _TabBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+
+  _TabBarDelegate({required this.child});
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(color: AppColors.gray, child: child);
+  }
+
+  @override
+  double get maxExtent => 48;
+
+  @override
+  double get minExtent => 48;
+  @override
+  bool shouldRebuild(_TabBarDelegate oldDelegate) {
+    return child != oldDelegate.child;
   }
 }

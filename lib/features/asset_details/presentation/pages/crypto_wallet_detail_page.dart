@@ -47,7 +47,7 @@ class _CryptoWalletDetailPageState extends State<CryptoWalletDetailPage>
               floating: false,
               elevation: 0,
               backgroundColor: AppColors.gray,
-              forceMaterialTransparency: false,
+              surfaceTintColor: AppColors.gray,
               leading: IconButton(
                 icon: Icon(Icons.arrow_back, color: AppColors.white),
                 onPressed: () => Navigator.pop(context),

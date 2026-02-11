@@ -8,6 +8,7 @@ import 'package:financo/common/image_resources.dart';
 import 'package:financo/common/widgets/shimmer/dashboard_shimmer.dart';
 import 'package:financo/common/widgets/empty_states/no_data_state.dart';
 import 'package:financo/features/finance/data/models/networth_response_model.dart';
+import 'package:financo/features/finance/domain/entities/networth_response.dart';
 import 'package:financo/features/home/presentation/widgets/subscription_home_row.dart';
 import 'package:financo/features/dashboard/presentation/bloc/dashboard_bloc.dart';
 import 'package:financo/features/dashboard/presentation/bloc/dashboard_event.dart';
@@ -58,7 +59,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
                 return Column(
                   children: [
-                    _buildTopHeader(networth.total.value, assets),
+                    _buildTopHeader(networth),
                     _buildFilterToggle(),
                     _buildListSection(assets),
                     const SizedBox(height: 110),
@@ -85,9 +86,12 @@ class _DashboardPageState extends State<DashboardPage> {
   // HEADER SECTION (Logic fixed, Design preserved)
   // ===========================================================================
 
-  Widget _buildTopHeader(double totalVal, List<AssetDetail> assets) {
+  Widget _buildTopHeader(NetworthResponse networth) {
     // LOGIQUE DE CALCUL ROBUSTE
     // On normalize les types en minuscules pour ne rater aucun actif
+    final assets = networth.assets;
+    final totalVal = networth.total.value;
+
     final cryptoAssets = assets
         .where((a) => a.type.toLowerCase() == 'crypto')
         .toList();
@@ -104,6 +108,9 @@ class _DashboardPageState extends State<DashboardPage> {
     // "Other" = Tout ce qui n'est pas crypto ou stock (Cash, Real Estate, Commodities)
     double otherSum = totalVal - cryptoSum - stockSum;
     if (otherSum < 0.01) otherSum = 0; // Nettoyage des arrondis
+
+    final dailyChange = networth.performance.dailyChange;
+    final isPositive = dailyChange.percentage >= 0;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -131,6 +138,43 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
             _buildNetworthText(totalVal),
+            const SizedBox(height: 8),
+            // Real-time daily change display
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                // color: (isPositive ? AppColors.accent : AppColors.error)
+                //     .withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isPositive ? Icons.trending_up : Icons.trending_down,
+                    color: isPositive ? AppColors.success : AppColors.error,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${isPositive ? '+' : ''}${dailyChange.percentage.toStringAsFixed(2)}%',
+                    style: AppTypography.headline3Bold.copyWith(
+                      color: isPositive ? AppColors.success : AppColors.error,
+                      fontFamily: 'JetBrainsMono',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '(${isPositive ? '+' : ''}\$${_formatCompact(dailyChange.amount)})',
+                    style: AppTypography.headline2Regular.copyWith(
+                      color: (isPositive ? AppColors.accent : AppColors.error)
+                          .withValues(alpha: 0.8),
+                      // fontFamily: 'JetBrainsMono',
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 20),
 
             // Barre d'allocation liée aux vrais chiffres
@@ -277,14 +321,7 @@ class _DashboardPageState extends State<DashboardPage> {
           itemCount: top5.length,
           itemBuilder: (context, index) {
             final a = top5[index];
-            return SubScriptionHomeRow(
-              sObj: {
-                "name": a.name,
-                "icon": a.iconUrl,
-                "price": a.value.toStringAsFixed(2),
-              },
-              onPressed: () {},
-            );
+            return SubScriptionHomeRow(asset: a, onPressed: () {});
           },
         ),
         if (assets.length > 5)

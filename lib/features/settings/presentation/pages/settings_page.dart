@@ -1,19 +1,18 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
+import 'package:financo/common/image_resources.dart';
 import 'package:financo/core/services/security_service.dart';
+import 'package:financo/core/services/subscription_service.dart';
 import 'package:financo/di/injection_container.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_event.dart';
+import 'package:financo/features/auth/presentation/bloc/auth_state.dart';
+import 'package:financo/features/settings/presentation/widgets/icon_item_row.dart';
+import 'package:financo/features/settings/presentation/widgets/icon_item_switch_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
-/// Settings page with logout and security management
-///
-/// Features:
-/// - User profile section
-/// - Security toggle (requires authentication to disable)
-/// - Logout functionality
-/// - Modern UI design
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -24,47 +23,65 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   late final SecurityService _securityService;
   bool _isSecurityEnabled = false;
-  String _biometricType = 'PIN';
+  bool _isPremium = false;
 
   @override
   void initState() {
     super.initState();
     _securityService = sl<SecurityService>();
     _loadSecurityState();
+    _loadSubscriptionStatus();
+  }
+
+  Future<void> _loadSubscriptionStatus() async {
+    final isPremium = await sl<SubscriptionService>().isPremium();
+    if (mounted) {
+      setState(() {
+        _isPremium = isPremium;
+      });
+    }
   }
 
   Future<void> _loadSecurityState() async {
     final isEnabled = _securityService.isSecurityEnabled();
-    final biometricType = await _securityService.getBiometricTypeName();
 
     setState(() {
       _isSecurityEnabled = isEnabled;
-      _biometricType = biometricType;
     });
   }
 
- bool _isProcessing = false; 
+  bool _isProcessing = false;
 
-Future<void> _toggleSecurity(bool value) async {
-    if (_isProcessing) return;
+  Future<void> _toggleSecurity(bool value) async {
+    debugPrint('[_toggleSecurity] Toggling security to: $value');
+    if (_isProcessing) {
+      debugPrint('[_toggleSecurity] Already processing, ignoring request');
+      return;
+    }
     setState(() => _isProcessing = true);
 
     try {
       if (value) {
+        debugPrint('[_toggleSecurity] Calling setupSecurity...');
         final result = await _securityService.setupSecurity();
+        debugPrint(
+          '[_toggleSecurity] setupSecurity result: ${result.success}, ${result.message}',
+        );
         if (result.success) {
           setState(() {
             _isSecurityEnabled = true;
-            _biometricType = result.biometricType ?? 'PIN';
           });
           _showSnackBar(result.message, Colors.green);
         } else {
           setState(() => _isSecurityEnabled = false);
+          _showSnackBar(result.message, Colors.red);
         }
       } else {
+        debugPrint('[_toggleSecurity] Calling authenticate to disable...');
         final authenticated = await _securityService.authenticate(
           reason: 'Authenticate to disable app lock',
         );
+        debugPrint('[_toggleSecurity] authentication result: $authenticated');
 
         if (authenticated) {
           await _securityService.disableSecurity();
@@ -74,19 +91,27 @@ Future<void> _toggleSecurity(bool value) async {
           _showSnackBar('Security disabled', Colors.orange);
         } else {
           setState(() => _isSecurityEnabled = true);
+          _showSnackBar('Authentication failed', Colors.red);
         }
       }
+    } catch (e) {
+      debugPrint('[_toggleSecurity] Error: $e');
+      _showSnackBar('Error: ${e.toString()}', Colors.red);
+      // Reset state based on original service state
+      _loadSecurityState();
     } finally {
       if (mounted) setState(() => _isProcessing = false);
+      debugPrint('[_toggleSecurity] Processing finished');
     }
   }
-void _showSnackBar(String message, Color color) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(message), backgroundColor: color),
-  );
-}
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
+  }
+
   Future<void> _handleLogout() async {
-    // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -117,9 +142,7 @@ void _showSnackBar(String message, Color color) {
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(
               'Logout',
-              style: AppTypography.headline3Medium.copyWith(
-                color: Colors.red,
-              ),
+              style: AppTypography.headline3Medium.copyWith(color: Colors.red),
             ),
           ),
         ],
@@ -127,7 +150,6 @@ void _showSnackBar(String message, Color color) {
     );
 
     if (confirmed == true && mounted) {
-      // Dispatch logout event to AuthBloc
       context.read<AuthBloc>().add(const AuthSignOutRequested());
     }
   }
@@ -135,241 +157,159 @@ void _showSnackBar(String message, Color color) {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.background,
-        elevation: 0,
-        title: Text(
-          'Settings',
-          style: AppTypography.headline3SemiBold.copyWith(
-            color: AppColors.white,
-            fontSize: 20,
-          ),
-        ),
-        centerTitle: true,
-      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Profile Section
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.gray70),
-              ),
-              child: Row(
+        child: SafeArea(
+          child: BlocBuilder<AuthBloc, AuthState>(
+            builder: (context, state) {
+              final user = state is Authenticated ? state.user : null;
+              final name = user?.name ?? "User Account";
+              final email = user?.email ?? "Sign in to sync your data";
+              final photoUrl = user?.photoUrl;
+
+              return Column(
                 children: [
-                  // Avatar
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: AppColors.accent.withValues(alpha: 0.2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.person_rounded,
-                      size: 32,
-                      color: AppColors.accent,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  // User Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'User Account',
-                          style: AppTypography.headline3SemiBold.copyWith(
-                            color: AppColors.white,
-                            fontSize: 18,
-                          ),
+                  const SizedBox(height: 20),
+                  // Profile Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 70,
+                        height: 70,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.gray70,
+                          image: photoUrl != null
+                              ? DecorationImage(
+                                  image: NetworkImage(photoUrl),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Manage your account settings',
-                          style: AppTypography.headline2Regular.copyWith(
-                            color: AppColors.gray30,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Security Section
-            Text(
-              'Security',
-              style: AppTypography.headline3SemiBold.copyWith(
-                color: AppColors.white,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Security Toggle
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.card,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.gray70),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: _isSecurityEnabled
-                          ? Colors.green.withValues(alpha: 0.2)
-                          : AppColors.gray80,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      _isSecurityEnabled
-                          ? Icons.lock_rounded
-                          : Icons.lock_open_rounded,
-                      size: 20,
-                      color: _isSecurityEnabled ? Colors.green : AppColors.gray40,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'App Lock',
-                          style: AppTypography.headline3Medium.copyWith(
-                            color: AppColors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _isSecurityEnabled
-                              ? 'Secured with $_biometricType'
-                              : 'Not enabled',
-                          style: AppTypography.headline1Regular.copyWith(
-                            color: AppColors.gray40,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Switch(
-                    value: _isSecurityEnabled,
-                    onChanged: _toggleSecurity,
-                    activeThumbColor: Colors.green,
-                    activeTrackColor: Colors.green.withValues(alpha: 0.5),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // Account Section
-            Text(
-              'Account',
-              style: AppTypography.headline3SemiBold.copyWith(
-                color: AppColors.white,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Logout Button
-            InkWell(
-              onTap: _handleLogout,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.card,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.red.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(8),
+                        child: photoUrl == null
+                            ? Image.asset(
+                                ImageResources.placeHolderPng,
+                                width: 70,
+                                height: 70,
+                              )
+                            : null,
                       ),
-                      child: const Icon(
-                        Icons.logout_rounded,
-                        size: 20,
-                        color: Colors.red,
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        name,
+                        style: TextStyle(
+                          color: AppColors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Logout',
-                            style: AppTypography.headline3Medium.copyWith(
-                              color: Colors.red,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Sign out of your account',
-                            style: AppTypography.headline1Regular.copyWith(
-                              color: AppColors.gray40,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                      color: Colors.red.withValues(alpha: 0.5),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // App Info
-            Center(
-              child: Column(
-                children: [
-                  Text(
-                    'Financo',
-                    style: AppTypography.headline3SemiBold.copyWith(
-                      color: AppColors.gray50,
-                      fontSize: 14,
-                    ),
+                    ],
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    'Version 1.0.0',
-                    style: AppTypography.headline1Regular.copyWith(
-                      color: AppColors.gray60,
-                      fontSize: 12,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        email,
+                        style: TextStyle(
+                          color: AppColors.gray30,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 20,
+                      horizontal: 20,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 15, bottom: 8),
+                          child: Text(
+                            "Account & Security",
+                            style: TextStyle(
+                              color: AppColors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: AppColors.border.withValues(alpha: 0.1),
+                            ),
+                            color: AppColors.gray60.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            children: [
+                              IconItemSwitchRow(
+                                title: "App Lock",
+                                icon: Icons.lock,
+                                value: _isSecurityEnabled,
+                                isLoading: _isProcessing,
+                                didChange: (val) {
+                                  if (!_isProcessing) {
+                                    _toggleSecurity(val);
+                                  }
+                                },
+                              ),
+                              Divider(
+                                color: AppColors.border.withValues(alpha: 0.1),
+                                height: 1,
+                                indent: 20,
+                                endIndent: 20,
+                              ),
+                              IconItemRow(
+                                title: "Plan",
+                                icon: Icons.payments,
+                                value: _isPremium ? "Premium" : "Free",
+                                onTap: () => context.push('/paywall'),
+                              ),
+                              Divider(
+                                color: AppColors.border.withValues(alpha: 0.1),
+                                height: 1,
+                                indent: 20,
+                                endIndent: 20,
+                              ),
+                              IconItemRow(
+                                title: "Logout",
+                                icon: Icons.logout,
+                                textColor: Colors.red,
+                                onTap: _handleLogout,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                        Center(
+                          child: Text(
+                            "Financo v1.0.0",
+                            style: AppTypography.headline1Regular.copyWith(
+                              color: AppColors.gray50,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
-              ),
-            ),
-          ],
+              );
+            },
+          ),
         ),
       ),
     );

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:financo/core/error/exceptions.dart';
+import 'package:financo/core/services/connectivity_service.dart';
+import 'package:financo/core/services/supabase_error_handler.dart';
 import 'package:financo/features/auth/data/models/user_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -27,10 +29,12 @@ abstract class AuthRemoteDataSource {
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final SupabaseClient supabaseClient;
   final GoogleSignIn googleSignIn;
+  final ConnectivityService connectivityService;
 
   AuthRemoteDataSourceImpl({
     required this.supabaseClient,
     required this.googleSignIn,
+    required this.connectivityService,
   });
 
   bool _isGoogleSignInInitialized = false;
@@ -96,12 +100,23 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> signOut() async {
     try {
-      // Déconnexion de Google Sign-In
+      // Déconnexion de Google Sign-In (toujours tenter, c'est local si déjà signé)
       await googleSignIn.signOut();
 
-      // Déconnexion de Supabase
-      await supabaseClient.auth.signOut();
+      // Déconnexion de Supabase seulement si en ligne
+      await supabaseClient.executeIfOnline(
+        () => supabaseClient.auth.signOut(),
+        connectivityService,
+      );
     } catch (e) {
+      // Si c'est une erreur réseau, on l'ignore car la session est déjà "perdue" pour l'utilisateur
+      final errorStr = e.toString().toLowerCase();
+      if (errorStr.contains('socketexception') ||
+          errorStr.contains('authretryablefetchexception') ||
+          errorStr.contains('failed host lookup')) {
+        debugPrint('[AuthRemoteDataSource] Sign out network error suppressed');
+        return;
+      }
       throw AuthException('Erreur lors de la déconnexion: ${e.toString()}');
     }
   }

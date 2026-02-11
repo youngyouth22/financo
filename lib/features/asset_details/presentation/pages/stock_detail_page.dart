@@ -28,6 +28,7 @@ class _StockDetailPageState extends State<StockDetailPage> {
       appBar: AppBar(
         elevation: 0,
         forceMaterialTransparency: true,
+        surfaceTintColor: AppColors.gray,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: AppColors.white),
           onPressed: () => Navigator.pop(context),
@@ -47,33 +48,35 @@ class _StockDetailPageState extends State<StockDetailPage> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Section
-            _buildHeader(isPositive),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Section
+              _buildHeader(isPositive),
 
-            // Chart Section
-            _buildChartSection(isPositive),
+              // Chart Section
+              _buildChartSection(isPositive),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // Market Stats
-            _buildMarketStats(),
+              // Market Stats
+              _buildMarketStats(),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // Diversification Info
-            _buildDiversificationInfo(),
+              // Diversification Info
+              _buildDiversificationInfo(),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // Description
-            _buildDescription(),
+              // Description
+              _buildDescription(),
 
-            const SizedBox(height: 32),
-          ],
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );

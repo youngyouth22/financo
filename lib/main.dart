@@ -3,9 +3,16 @@ import 'dart:io';
 import 'package:financo/common/app_themes.dart';
 import 'package:financo/core/router/app_router.dart';
 import 'package:financo/core/widgets/no_internet_banner.dart';
+import 'package:financo/core/services/notification_service.dart';
 import 'package:financo/di/injection_container.dart';
+import 'package:financo/features/assets/presentation/bloc/assets_bloc.dart';
+import 'package:financo/features/assets/presentation/bloc/assets_event.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_event.dart';
+import 'package:financo/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:financo/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:financo/features/insights/presentation/bloc/insights_bloc.dart';
+import 'package:financo/core/subscription/presentation/bloc/subscription_bloc.dart';
 import 'package:financo/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -15,13 +22,16 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   // Load environment variables from .env file
   await dotenv.load(fileName: ".env");
 
   // Initialize dependencies (Supabase, Google Sign-In, etc.)
   await initializeDependencies();
   await initializeRevenueCat();
+
+  // Initialize Notifications
+  await sl<NotificationService>().initialize();
 
   runApp(const MainApp());
 }
@@ -45,9 +55,24 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      // Provide AuthBloc at the root level for global access
-      create: (context) => sl<AuthBloc>()..add(const AuthCheckRequested()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => sl<AuthBloc>()..add(const AuthCheckRequested()),
+        ),
+        BlocProvider(
+          create: (context) =>
+              sl<DashboardBloc>()..add(const LoadDashboardEvent()),
+        ),
+        BlocProvider(
+          create: (context) => sl<AssetsBloc>()..add(const WatchAssetsEvent()),
+        ),
+        BlocProvider(create: (context) => sl<InsightsBloc>()),
+        BlocProvider(
+          create: (context) =>
+              sl<SubscriptionBloc>()..add(CheckSubscriptionStatusEvent()),
+        ),
+      ],
       child: MaterialApp.router(
         debugShowCheckedModeBanner: false,
         title: 'Financo',
@@ -55,10 +80,8 @@ class MainApp extends StatelessWidget {
         themeMode: ThemeMode.dark,
         theme: ThemeData.dark(useMaterial3: true),
         routerConfig: AppRouter.createRouter(),
-         builder: (context, child) {
-          return NoInternetBanner(
-            child: child ?? const SizedBox.shrink(),
-          );
+        builder: (context, child) {
+          return NoInternetBanner(child: child ?? const SizedBox.shrink());
         },
       ),
     );

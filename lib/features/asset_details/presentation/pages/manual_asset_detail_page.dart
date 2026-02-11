@@ -145,8 +145,9 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
             backgroundColor: AppColors.gray,
             appBar: AppBar(
               backgroundColor: AppColors.gray,
+              forceMaterialTransparency: true,
               leading: IconButton(
-                icon:  Icon(Icons.arrow_back, color: AppColors.white),
+                icon: Icon(Icons.arrow_back, color: AppColors.white),
                 onPressed: () => Navigator.pop(context),
               ),
             ),
@@ -178,7 +179,7 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
+                      backgroundColor: AppColors.accent,
                     ),
                     child: const Text('Retry'),
                   ),
@@ -220,7 +221,8 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
                         assetId: widget.assetDetail.assetId,
                         amount: amount,
                         payoutDate: date,
-                        reminderId: 'manual_${DateTime.now().millisecondsSinceEpoch}',
+                        reminderId:
+                            'manual_${DateTime.now().millisecondsSinceEpoch}',
                         notes: notes,
                       ),
                     );
@@ -228,8 +230,8 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
                 ),
               );
             },
-            backgroundColor: AppColors.primary,
-            icon:  Icon(Icons.add, color: AppColors.white),
+            backgroundColor: AppColors.accent,
+            icon: Icon(Icons.add, color: AppColors.white),
             label: Text(
               'Add Payment',
               style: AppTypography.headline3Regular.copyWith(
@@ -244,6 +246,8 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
                 SliverAppBar(
                   pinned: true,
                   backgroundColor: AppColors.gray,
+                  shadowColor: AppColors.gray,
+                  surfaceTintColor: AppColors.gray,
                   leading: IconButton(
                     icon: Icon(Icons.arrow_back, color: AppColors.white),
                     onPressed: () => Navigator.pop(context),
@@ -283,7 +287,7 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
               'Total Expected',
               '\$${NumberFormat('#,##0.00').format(summary.totalExpected)}',
               Icons.account_balance_wallet,
-              AppColors.primary,
+              AppColors.accent,
             ),
           ),
           const SizedBox(width: 12),
@@ -372,7 +376,7 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
         'No upcoming payments',
         'Check your recurrence rule',
         Icons.calendar_today,
-        AppColors.primary,
+        AppColors.accent,
       );
     }
 
@@ -427,7 +431,10 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
                   if (!isPaid)
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadiusGeometry.circular(8),
+                        ),
+                        backgroundColor: AppColors.accent.withAlpha(30),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 4,
@@ -455,7 +462,10 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
                           ),
                         );
                       },
-                      child: const Text('Pay', style: TextStyle(fontSize: 12)),
+                      child: Text(
+                        'Pay',
+                        style: TextStyle(fontSize: 12, color: AppColors.accent),
+                      ),
                     )
                   else
                     const Icon(

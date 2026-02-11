@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:financo/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:financo/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:financo/features/auth/domain/repositories/auth_repository.dart';
@@ -7,6 +5,7 @@ import 'package:financo/features/auth/domain/usecases/get_current_user_usecase.d
 import 'package:financo/features/auth/domain/usecases/login_with_google_usecase.dart';
 import 'package:financo/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:financo/features/auth/presentation/bloc/onboarding_bloc.dart';
 import 'package:financo/features/finance/data/datasources/finance_remote_datasource.dart';
 import 'package:financo/features/finance/data/repositories/finance_repository_impl.dart';
 import 'package:financo/features/finance/domain/repositories/finance_repository.dart';
@@ -41,7 +40,10 @@ import 'package:financo/features/finance/presentation/bloc/manual_asset_detail/m
 import 'package:financo/core/services/connectivity_service.dart';
 import 'package:financo/core/services/security_service.dart';
 import 'package:financo/core/services/supabase_error_handler.dart';
+import 'package:financo/core/services/notification_service.dart';
+import 'package:financo/core/services/subscription_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:financo/core/subscription/presentation/bloc/subscription_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:local_auth/local_auth.dart';
@@ -70,9 +72,16 @@ Future<void> initializeDependencies() async {
 
   // Initialisation de Supabase avec gestion d'erreur de connexion
   try {
+    final url = dotenv.env['SUPABASE_URL'];
+    final anonKey = dotenv.env['SUPABASE_KEY'];
+
+    if (url == null || anonKey == null) {
+      throw Exception('Missing Supabase environment variables');
+    }
+
     await Supabase.initialize(
-      url: dotenv.env['SUPABASE_URL']!,
-      anonKey: dotenv.env['SUPABASE_KEY']!,
+      url: url,
+      anonKey: anonKey,
       authOptions: FlutterAuthClientOptions(
         authFlowType: AuthFlowType.pkce,
         // Disable auto-refresh when offline to prevent connection errors
@@ -84,18 +93,26 @@ Future<void> initializeDependencies() async {
       ),
     );
     print('✅ Supabase initialized successfully');
-  } on AuthRetryableFetchException catch (e) {
-    // Network error during session recovery - this is OK
-    // User will see NoConnectionState in UI when they try to use features
-    print('⚠️ Supabase init: Network unavailable, will retry when online');
-    print('Error: ${e.message}');
-  } on SocketException catch (e) {
-    // Socket exception (no internet connection)
-    print('⚠️ Supabase init: No internet connection');
-    print('Error: $e');
   } catch (e) {
-    // Other unexpected errors - log but don't crash
-    print('❌ Supabase initialization error: $e');
+    // Catch all initialization errors including SocketException and AuthRetryableFetchException
+    final errorStr = e.toString().toLowerCase();
+    final isNetworkError =
+        errorStr.contains('socketexception') ||
+        errorStr.contains('failed host lookup') ||
+        errorStr.contains('no address associated with hostname') ||
+        errorStr.contains('connection refused') ||
+        errorStr.contains('connection closed') ||
+        e is AuthRetryableFetchException;
+
+    if (isNetworkError) {
+      print(
+        '⚠️ Supabase init: Network unavailable or DNS issue, will retry when online',
+      );
+      print('Error: $e');
+    } else {
+      // Other unexpected errors - log but don't crash
+      print('❌ Supabase initialization error: $e');
+    }
     // Don't rethrow - allow app to start even if Supabase fails
   }
 
@@ -107,7 +124,12 @@ Future<void> initializeDependencies() async {
     connectivityService: connectivityService,
   );
   await errorHandler.initialize(Supabase.instance.client);
+  await errorHandler.initialize(Supabase.instance.client);
   sl.registerLazySingleton<SupabaseErrorHandler>(() => errorHandler);
+
+  // Initialize Notification Service
+  final notificationService = NotificationService();
+  sl.registerLazySingleton<NotificationService>(() => notificationService);
 
   // Enregistrement de SharedPreferences
   final sharedPreferences = await SharedPreferences.getInstance();
@@ -130,13 +152,20 @@ Future<void> initializeDependencies() async {
 
   sl.registerLazySingleton<GoogleSignIn>(() => googleSignIn);
 
+  // Initialize Subscription Service
+  sl.registerLazySingleton<SubscriptionService>(() => SubscriptionService());
+
   // ============================================================================
   // Features - Authentication
   // ============================================================================
 
   // Data Sources
   sl.registerLazySingleton<AuthRemoteDataSource>(
-    () => AuthRemoteDataSourceImpl(supabaseClient: sl(), googleSignIn: sl()),
+    () => AuthRemoteDataSourceImpl(
+      supabaseClient: sl(),
+      googleSignIn: sl(),
+      connectivityService: sl(),
+    ),
   );
 
   // Repositories
@@ -158,6 +187,8 @@ Future<void> initializeDependencies() async {
       authRepository: sl(),
     ),
   );
+
+  sl.registerFactory(() => OnboardingBloc());
 
   // ============================================================================
   // Features - Finance
@@ -259,4 +290,6 @@ Future<void> initializeDependencies() async {
       markReminderAsReceivedUseCase: sl(),
     ),
   );
+
+  sl.registerFactory(() => SubscriptionBloc(sl()));
 }

@@ -1,5 +1,6 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
+import 'package:financo/features/insights/presentation/pages/insight_detail_page.dart';
 import 'package:flutter/material.dart';
 
 enum InsightType { warning, action, success }
@@ -20,6 +21,7 @@ class InsightCard extends StatelessWidget {
   final String title;
   final String description;
   final String? actionLabel;
+  final String? actionDetail;
   final VoidCallback? onActionPressed;
   const InsightCard({
     super.key,
@@ -28,6 +30,7 @@ class InsightCard extends StatelessWidget {
     required this.title,
     required this.description,
     this.actionLabel,
+    this.actionDetail,
     this.onActionPressed,
   });
 
@@ -93,8 +96,36 @@ class InsightCard extends StatelessWidget {
           if (actionLabel != null) ...[
             const SizedBox(height: 16),
             InkWell(
-              // Changed to InkWell for better touch feedback
-              onTap: onActionPressed,
+              onTap: () {
+                if (actionDetail != null) {
+                  Navigator.of(context).push(
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) =>
+                          InsightDetailPage(
+                            title: actionLabel!,
+                            detail: actionDetail!,
+                            themeColor: color,
+                          ),
+                      transitionsBuilder:
+                          (context, animation, secondaryAnimation, child) {
+                            const begin = Offset(0.0, -1.0);
+                            const end = Offset.zero;
+                            const curve = Curves.easeOutQuart;
+                            var tween = Tween(
+                              begin: begin,
+                              end: end,
+                            ).chain(CurveTween(curve: curve));
+                            return SlideTransition(
+                              position: animation.drive(tween),
+                              child: child,
+                            );
+                          },
+                    ),
+                  );
+                } else {
+                  onActionPressed?.call();
+                }
+              },
               borderRadius: BorderRadius.circular(8),
               child: Row(
                 mainAxisSize: MainAxisSize.min,

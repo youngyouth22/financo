@@ -5,7 +5,9 @@ import 'package:financo/features/insights/presentation/widgets/insight_card.dart
 
 /// The Catalog defines the widgets the AI is allowed to use.
 /// Following the official GenUI documentation with Data Binding.
-final financeAiCatalog = Catalog([insightcatalog]);
+final financeAiCatalog = CoreCatalogItems.asCatalog().copyWith([
+  insightcatalog,
+]);
 
 final insightcatalog = CatalogItem(
   name: 'InsightCard',
@@ -29,6 +31,9 @@ final insightcatalog = CatalogItem(
       'title': S.string(description: 'The headline of the insight.'),
       'description': S.string(description: 'The detailed strategy text.'),
       'actionLabel': S.string(description: 'Optional button text.'),
+      'actionDetail': S.string(
+        description: 'Deep, detailed strategic advice text.',
+      ),
     },
     required: ['type', 'icon', 'title', 'description'],
   ),
@@ -41,6 +46,7 @@ final insightcatalog = CatalogItem(
     final title = data['title'] as String?;
     final description = data['description'] as String?;
     final actionLabel = data['actionLabel'] as String?;
+    final actionDetail = data['actionDetail'] as String?;
     // final typeNotifier = context.dataContext.subscribeToString(
     //   data['type'] as Map<String, Object?>?,
     // );
@@ -61,12 +67,13 @@ final insightcatalog = CatalogItem(
     return InsightCard(
       type: _parseInsightType(type),
       icon: _parseIconData(icon),
-      title: title?? 'Insight',
+      title: title ?? 'Insight',
       description: description ?? '',
       actionLabel: actionLabel,
+      actionDetail: actionDetail,
       // Submits the interaction back to the AI context
       onActionPressed: () {
-        // => context.submit()
+        // Handled via context or callback in tab
       },
     );
   },
