@@ -155,6 +155,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     color: isPositive ? AppColors.success : AppColors.error,
                     size: 16,
                   ),
+                    
                   const SizedBox(width: 6),
                   Text(
                     '${isPositive ? '+' : ''}${dailyChange.percentage.toStringAsFixed(2)}%',
