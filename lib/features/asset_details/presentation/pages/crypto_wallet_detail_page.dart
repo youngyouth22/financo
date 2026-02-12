@@ -1,6 +1,7 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/common/common_widgets/price_line_chart.dart';
+import 'package:financo/core/services/toast_service.dart';
 import 'package:financo/core/utils/extract_two_first_letter.dart';
 import 'package:financo/features/finance/domain/entities/crypto_wallet_detail.dart';
 import 'package:flutter/material.dart';
@@ -113,8 +114,9 @@ class _CryptoWalletDetailPageState extends State<CryptoWalletDetailPage>
                 Clipboard.setData(
                   ClipboardData(text: widget.walletDetail.walletAddress),
                 );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Address copied to clipboard')),
+                ToastService.showSuccess(
+                  context,
+                  'Address copied to clipboard',
                 );
               },
               child: Row(

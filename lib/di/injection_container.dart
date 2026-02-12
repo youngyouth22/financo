@@ -179,7 +179,7 @@ Future<void> initializeDependencies() async {
   sl.registerLazySingleton(() => GetCurrentUserUseCase(sl()));
 
   // BLoC
-  sl.registerFactory(
+  sl.registerLazySingleton(
     () => AuthBloc(
       loginWithGoogleUseCase: sl(),
       logoutUseCase: sl(),

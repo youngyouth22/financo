@@ -1,4 +1,5 @@
 import 'package:financo/common/app_colors.dart';
+import 'package:financo/core/services/toast_service.dart';
 import 'package:financo/di/injection_container.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
@@ -23,11 +24,7 @@ class AddAssetReminderPage extends StatefulWidget {
   final String? assetId;
   final String? assetName;
 
-  const AddAssetReminderPage({
-    super.key,
-    this.assetId,
-    this.assetName,
-  });
+  const AddAssetReminderPage({super.key, this.assetId, this.assetName});
 
   @override
   State<AddAssetReminderPage> createState() => _AddAssetReminderPageState();
@@ -47,9 +44,21 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
 
   final List<Map<String, dynamic>> _frequencies = [
     {'value': 'DAILY', 'label': 'Daily', 'icon': Icons.today_rounded},
-    {'value': 'WEEKLY', 'label': 'Weekly', 'icon': Icons.calendar_view_week_rounded},
-    {'value': 'MONTHLY', 'label': 'Monthly', 'icon': Icons.calendar_month_rounded},
-    {'value': 'YEARLY', 'label': 'Yearly', 'icon': Icons.calendar_today_rounded},
+    {
+      'value': 'WEEKLY',
+      'label': 'Weekly',
+      'icon': Icons.calendar_view_week_rounded,
+    },
+    {
+      'value': 'MONTHLY',
+      'label': 'Monthly',
+      'icon': Icons.calendar_month_rounded,
+    },
+    {
+      'value': 'YEARLY',
+      'label': 'Yearly',
+      'icon': Icons.calendar_today_rounded,
+    },
   ];
 
   @override
@@ -72,7 +81,9 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
       case 'DAILY':
         return 'FREQ=DAILY;INTERVAL=$_interval';
       case 'WEEKLY':
-        final weekday = _nextEventDate.weekday == 7 ? 'SU' : ['MO', 'TU', 'WE', 'TH', 'FR', 'SA'][_nextEventDate.weekday - 1];
+        final weekday = _nextEventDate.weekday == 7
+            ? 'SU'
+            : ['MO', 'TU', 'WE', 'TH', 'FR', 'SA'][_nextEventDate.weekday - 1];
         return 'FREQ=WEEKLY;INTERVAL=$_interval;BYDAY=$weekday';
       case 'MONTHLY':
         return 'FREQ=MONTHLY;INTERVAL=$_interval;BYMONTHDAY=${_nextEventDate.day}';
@@ -87,7 +98,7 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
     final rruleString = _generateRRule();
     try {
       final rrule = RecurrenceRule.fromString(rruleString);
-      
+
       // Generate human-readable description
       String description = '';
       if (_interval == 1) {
@@ -117,7 +128,8 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
             description = 'Every $_interval weeks on $weekday';
             break;
           case 'MONTHLY':
-            description = 'Every $_interval months on day ${_nextEventDate.day}';
+            description =
+                'Every $_interval months on day ${_nextEventDate.day}';
             break;
           case 'YEARLY':
             final date = DateFormat('MMMM d').format(_nextEventDate);
@@ -145,7 +157,8 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
               onPrimary: AppColors.white,
               surface: AppColors.gray80,
               onSurface: AppColors.white,
-            ), dialogTheme: DialogThemeData(backgroundColor: AppColors.gray80),
+            ),
+            dialogTheme: DialogThemeData(backgroundColor: AppColors.gray80),
           ),
           child: child!,
         );
@@ -161,12 +174,7 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
   void _handleSubmit() {
     if (_formKey.currentState!.validate()) {
       if (_selectedAssetId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Please select an asset'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        ToastService.showError(context, 'Please select an asset');
         return;
       }
 
@@ -176,14 +184,14 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
           : double.tryParse(_amountController.text.replaceAll(',', ''));
 
       context.read<FinanceBloc>().add(
-            AddAssetReminderEvent(
-              assetId: _selectedAssetId!,
-              title: _titleController.text.trim(),
-              rruleExpression: rruleExpression,
-              nextEventDate: _nextEventDate,
-              amountExpected: amount,
-            ),
-          );
+        AddAssetReminderEvent(
+          assetId: _selectedAssetId!,
+          title: _titleController.text.trim(),
+          rruleExpression: rruleExpression,
+          nextEventDate: _nextEventDate,
+          amountExpected: amount,
+        ),
+      );
     }
   }
 
@@ -197,23 +205,11 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
             setState(() => _isLoading = true);
           } else if (state is AssetReminderAdded) {
             setState(() => _isLoading = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('✓ Reminder added successfully!'),
-                backgroundColor: AppColors.success,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            ToastService.showSuccess(context, '✓ Reminder added successfully!');
             Navigator.pop(context, true);
           } else if (state is FinanceError) {
             setState(() => _isLoading = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.error,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            ToastService.showError(context, state.message);
           }
         },
         child: Scaffold(
@@ -257,18 +253,31 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
                         color: AppColors.gray80,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                       child: Row(
                         children: [
-                          Icon(Icons.account_balance_wallet_rounded, color: AppColors.gray40),
+                          Icon(
+                            Icons.account_balance_wallet_rounded,
+                            color: AppColors.gray40,
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'Select an asset to add reminder',
-                              style: TextStyle(color: AppColors.gray50, fontSize: 16),
+                              style: TextStyle(
+                                color: AppColors.gray50,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
-                          Icon(Icons.arrow_forward_ios_rounded, color: AppColors.gray40, size: 16),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            color: AppColors.gray40,
+                            size: 16,
+                          ),
                         ],
                       ),
                     ),
@@ -288,15 +297,26 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
                         color: AppColors.gray80,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                       child: Row(
                         children: [
-                          Icon(Icons.check_circle_rounded, color: AppColors.success, size: 24),
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: AppColors.success,
+                            size: 24,
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               _selectedAssetName ?? 'Selected Asset',
-                              style: TextStyle(color: AppColors.white, fontSize: 16, fontWeight: FontWeight.w500),
+                              style: TextStyle(
+                                color: AppColors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                         ],
@@ -327,7 +347,10 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
@@ -351,33 +374,44 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
                   GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 2.5,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 2.5,
+                        ),
                     itemCount: _frequencies.length,
                     itemBuilder: (context, index) {
                       final freq = _frequencies[index];
                       final isSelected = _selectedFrequency == freq['value'];
                       return GestureDetector(
-                        onTap: () => setState(() => _selectedFrequency = freq['value']),
+                        onTap: () =>
+                            setState(() => _selectedFrequency = freq['value']),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primary.withOpacity(0.2) : AppColors.gray80,
+                            color: isSelected
+                                ? AppColors.primary.withOpacity(0.2)
+                                : AppColors.gray80,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: isSelected ? AppColors.primary : Colors.transparent,
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.transparent,
                               width: 2,
                             ),
                           ),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
                           child: Row(
                             children: [
                               Icon(
                                 freq['icon'],
-                                color: isSelected ? AppColors.primary : AppColors.gray40,
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.gray40,
                                 size: 24,
                               ),
                               const SizedBox(width: 8),
@@ -385,9 +419,13 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
                                 child: Text(
                                   freq['label'],
                                   style: TextStyle(
-                                    color: isSelected ? AppColors.white : AppColors.gray30,
+                                    color: isSelected
+                                        ? AppColors.white
+                                        : AppColors.gray30,
                                     fontSize: 14,
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
                                   ),
                                 ),
                               ),
@@ -412,8 +450,15 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
                   Row(
                     children: [
                       IconButton(
-                        onPressed: _interval > 1 ? () => setState(() => _interval--) : null,
-                        icon: Icon(Icons.remove_circle_outline_rounded, color: _interval > 1 ? AppColors.primary : AppColors.gray60),
+                        onPressed: _interval > 1
+                            ? () => setState(() => _interval--)
+                            : null,
+                        icon: Icon(
+                          Icons.remove_circle_outline_rounded,
+                          color: _interval > 1
+                              ? AppColors.primary
+                              : AppColors.gray60,
+                        ),
                       ),
                       Expanded(
                         child: Container(
@@ -434,8 +479,15 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
                         ),
                       ),
                       IconButton(
-                        onPressed: _interval < 99 ? () => setState(() => _interval++) : null,
-                        icon: Icon(Icons.add_circle_outline_rounded, color: _interval < 99 ? AppColors.primary : AppColors.gray60),
+                        onPressed: _interval < 99
+                            ? () => setState(() => _interval++)
+                            : null,
+                        icon: Icon(
+                          Icons.add_circle_outline_rounded,
+                          color: _interval < 99
+                              ? AppColors.primary
+                              : AppColors.gray60,
+                        ),
                       ),
                     ],
                   ),
@@ -458,15 +510,26 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
                         color: AppColors.gray80,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                       child: Row(
                         children: [
-                          Icon(Icons.calendar_today_rounded, color: AppColors.primary),
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            color: AppColors.primary,
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              DateFormat('EEEE, MMMM d, yyyy').format(_nextEventDate),
-                              style: TextStyle(color: AppColors.white, fontSize: 16),
+                              DateFormat(
+                                'EEEE, MMMM d, yyyy',
+                              ).format(_nextEventDate),
+                              style: TextStyle(
+                                color: AppColors.white,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
                         ],
@@ -480,12 +543,18 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.3),
+                      ),
                     ),
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline_rounded, color: AppColors.primary, size: 20),
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -514,8 +583,14 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: _amountController,
-                    style: TextStyle(color: AppColors.white, fontSize: 18, fontWeight: FontWeight.w600),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    style: TextStyle(
+                      color: AppColors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
                     ],
@@ -523,14 +598,20 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
                       hintText: '0.00',
                       hintStyle: TextStyle(color: AppColors.gray50),
                       prefixText: '\$ ',
-                      prefixStyle: TextStyle(color: AppColors.gray40, fontSize: 18),
+                      prefixStyle: TextStyle(
+                        color: AppColors.gray40,
+                        fontSize: 18,
+                      ),
                       filled: true,
                       fillColor: AppColors.gray80,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
                       ),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -555,7 +636,9 @@ class _AddAssetReminderPageState extends State<AddAssetReminderPage> {
                               width: 24,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.white,
+                                ),
                               ),
                             )
                           : Text(

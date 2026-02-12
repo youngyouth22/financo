@@ -1,14 +1,18 @@
 import 'dart:async';
 
+import 'package:flutter/services.dart';
+
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
+import 'package:financo/common/common_widgets/primary_button.dart';
+import 'package:financo/core/services/toast_service.dart';
 import 'package:financo/di/injection_container.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:plaid_flutter/plaid_flutter.dart'; 
+import 'package:plaid_flutter/plaid_flutter.dart';
 
 /// Page for adding bank accounts via Plaid using real SDK
 class AddBankAccountPage extends StatefulWidget {
@@ -23,7 +27,7 @@ class _AddBankAccountPageState extends State<AddBankAccountPage> {
   bool _isLoading = false;
   String? _linkToken;
   StreamSubscription<LinkSuccess>? _successSubscription;
-StreamSubscription<LinkExit>? _exitSubscription;
+  StreamSubscription<LinkExit>? _exitSubscription;
 
   @override
   void initState() {
@@ -47,7 +51,6 @@ StreamSubscription<LinkExit>? _exitSubscription;
           if (state is PlaidLinkTokenLoaded) {
             setState(() {
               _linkToken = state.tokenData['link_token'];
-              _isLoading = false;
             });
             // Une fois le token reçu, on ouvre automatiquement Plaid
             _openPlaidLink();
@@ -55,20 +58,13 @@ StreamSubscription<LinkExit>? _exitSubscription;
             setState(() => _isLoading = false);
             // Succès final : on ferme la page et on prévient l'utilisateur
             Navigator.of(context).pop(true);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Bank account connected and synced successfully'),
-                backgroundColor: AppColors.success,
-              ),
+            ToastService.showSuccess(
+              context,
+              'Bank account connected and synced successfully',
             );
           } else if (state is FinanceError) {
             setState(() => _isLoading = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.error,
-              ),
-            );
+            ToastService.showError(context, state.message);
           } else if (state is FinanceLoading) {
             setState(() => _isLoading = true);
           }
@@ -95,22 +91,17 @@ StreamSubscription<LinkExit>? _exitSubscription;
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _buildSandboxCredentials(),
+                  const SizedBox(height: 24),
                   _buildInfoCard(),
-                  const SizedBox(height: 32),
-                  if (_isLoading) ...[
-                    const Center(child: CircularProgressIndicator()),
-                    const SizedBox(height: 16),
-                    Center(
-                      child: Text(
-                        'Communicating with bank servers...',
-                        style: AppTypography.headline2Regular.copyWith(
-                          color: AppColors.gray50,
-                        ),
-                      ),
-                    ),
-                  ] else ...[
-                    _buildConnectButton(),
-                  ],
+                  const Spacer(),
+                  PrimaryButton(
+                    text: 'Connect with Plaid',
+                    onClick: _getLinkToken,
+                    isLoading: _isLoading,
+                    icon: Icon(Icons.link, color: AppColors.white),
+                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -120,57 +111,136 @@ StreamSubscription<LinkExit>? _exitSubscription;
     );
   }
 
-  Widget _buildInfoCard() {
+  Widget _buildSandboxCredentials() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withValues(alpha:0.3), width: 1),
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.security, color: AppColors.primary, size: 24),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.science_rounded,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
               const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Secure Bank Connection',
-                  style: AppTypography.headline3SemiBold.copyWith(
-                    color: AppColors.white,
-                  ),
+              Text(
+                'Sandbox Environment',
+                style: AppTypography.headline3Bold.copyWith(
+                  color: AppColors.white,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
-            'We use Plaid to securely connect your bank. Your credentials are encrypted and never visible to us.',
-            style: AppTypography.headline2Regular.copyWith(
-              color: AppColors.gray50,
+            'Use these credentials to test the integration:',
+            style: AppTypography.bodySmallRegular.copyWith(
+              color: AppColors.gray40,
             ),
+          ),
+          const SizedBox(height: 16),
+          _buildCredentialRow('Username', 'user_good'),
+          const SizedBox(height: 8),
+          _buildCredentialRow('Password', 'mypassword'),
+          const SizedBox(height: 8),
+          _buildCredentialRow('MFA Pin', '1234'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCredentialRow(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: AppTypography.bodySmallMedium.copyWith(
+              color: AppColors.gray40,
+            ),
+          ),
+          Row(
+            children: [
+              Text(
+                value,
+                style: AppTypography.bodySmallBold.copyWith(
+                  color: AppColors.white,
+                  fontFamily: 'Courier',
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: value));
+                  ToastService.showSuccess(context, '$label copied');
+                },
+                child: Icon(
+                  Icons.copy_rounded,
+                  size: 14,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildConnectButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _getLinkToken,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-        child: Text(
-          'Get Started',
-          style: AppTypography.headline3SemiBold,
-        ),
+  Widget _buildInfoCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.gray80,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.gray70),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.shield_rounded, color: AppColors.success, size: 24),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Bank-Grade Security',
+                  style: AppTypography.headline4Bold.copyWith(
+                    color: AppColors.white,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Your credentials are encrypted and never stored on our servers.',
+                  style: AppTypography.bodySmallRegular.copyWith(
+                    color: AppColors.gray40,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -182,45 +252,41 @@ StreamSubscription<LinkExit>? _exitSubscription;
 
   /// Étape 2 : Ouvrir l'interface native Plaid
   Future<void> _openPlaidLink() async {
-    try
-    {if (_linkToken == null) return;
+    try {
+      if (_linkToken == null) return;
 
-    // 1. On crée la configuration
-    LinkTokenConfiguration configuration = LinkTokenConfiguration(
-      token: _linkToken!,
-    );
+      // 1. On crée la configuration
+      LinkTokenConfiguration configuration = LinkTokenConfiguration(
+        token: _linkToken!,
+      );
 
-    // 2. On annule les anciens abonnements s'ils existent
-    _successSubscription?.cancel();
-    _exitSubscription?.cancel();
+      // 2. On annule les anciens abonnements s'ils existent
+      _successSubscription?.cancel();
+      _exitSubscription?.cancel();
 
-    // 3. On écoute le Stream de SUCCÈS
-    _successSubscription = PlaidLink.onSuccess.listen((LinkSuccess event) {
-      print("Plaid Success: Exchanging public token...");
-      // Le publicToken se trouve dans l'objet 'event'
-      _financeBloc.add(ExchangePlaidTokenEvent(event.publicToken));
-    });
+      // 3. On écoute le Stream de SUCCÈS
+      _successSubscription = PlaidLink.onSuccess.listen((LinkSuccess event) {
+        debugPrint("Plaid Success: Exchanging public token...");
+        // Le publicToken se trouve dans l'objet 'event'
+        _financeBloc.add(ExchangePlaidTokenEvent(event.publicToken));
+      });
 
-    // 4. On écoute le Stream de SORTIE (User a fermé la fenêtre)
-    _exitSubscription = PlaidLink.onExit.listen((LinkExit event) {
-      print("User exited Plaid");
-      if (mounted) setState(() => _isLoading = false);
-    });
+      // 4. On écoute le Stream de SORTIE (User a fermé la fenêtre)
+      _exitSubscription = PlaidLink.onExit.listen((LinkExit event) {
+        debugPrint("User exited Plaid");
+        if (mounted) setState(() => _isLoading = false);
+      });
 
-    // 5. On ouvre le portail Plaid
-    // Note : Dans les versions récentes, 'configuration' est le premier paramètre positionnel
-    // ou nommé selon la sous-version. Si 'configuration:' ne marche pas, retire le nom.
-    await PlaidLink.create(configuration: configuration);
-    PlaidLink.open();}catch (e) {
-      print("Error opening Plaid Link: $e");
+      // 5. On ouvre le portail Plaid
+      // Note : Dans les versions récentes, 'configuration' est le premier paramètre positionnel
+      // ou nommé selon la sous-version. Si 'configuration:' ne marche pas, retire le nom.
+      await PlaidLink.create(configuration: configuration);
+      PlaidLink.open();
+    } catch (e) {
+      debugPrint("Error opening Plaid Link: $e");
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error opening Plaid: $e'),
-            backgroundColor: AppColors.error,
-          ),
-        );
+        ToastService.showError(context, 'Error opening Plaid: $e');
       }
     }
   }

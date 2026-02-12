@@ -73,7 +73,7 @@ abstract class FinanceRemoteDataSource {
     required DateTime nextEventDate,
     double? amountExpected,
   });
-  
+
   // --- ASSET PAYOUTS (Payment History) ---
   Future<AssetPayoutSummary> getAssetPayoutSummary(String assetId);
   Future<List<AssetPayout>> getAssetPayouts(String assetId);
@@ -90,19 +90,19 @@ abstract class FinanceRemoteDataSource {
     required String address,
     String chain = 'eth',
   });
-  
+
   Future<StockDetail> getStockDetails({
     required String symbol,
     required String userId,
     String timeframe = '1hour',
   });
-  
+
   Future<BankAccountDetail> getBankAccountDetails({
     required String itemId,
     required String accountId,
     required String userId,
   });
-  
+
   Future<ManualAssetDetail> getManualAssetDetails({
     required String assetId,
     required String userId,
@@ -160,7 +160,10 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
       // Soft delete - marquer comme inactif
       await supabaseClient
           .from('assets')
-          .update({'status': 'inactive', 'updated_at': DateTime.now().toIso8601String()})
+          .update({
+            'status': 'inactive',
+            'updated_at': DateTime.now().toIso8601String(),
+          })
           .eq('id', assetId)
           .eq('user_id', _currentUserId);
     } catch (e) {
@@ -323,10 +326,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
     try {
       final response = await supabaseClient.functions.invoke(
         'fmp-manager',
-        body: {
-          'action': 'update_prices',
-          'userId': _currentUserId,
-        },
+        body: {'action': 'update_prices', 'userId': _currentUserId},
       );
 
       if (response.status != 200) {
@@ -408,10 +408,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
     try {
       final response = await supabaseClient.functions.invoke(
         'plaid-manager',
-        body: {
-          'action': 'sync_accounts',
-          'userId': _currentUserId,
-        },
+        body: {'action': 'sync_accounts', 'userId': _currentUserId},
       );
 
       if (response.status != 200) {
@@ -475,10 +472,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
     try {
       final response = await supabaseClient.functions.invoke(
         'get-networth',
-        body: {
-          'userId': _currentUserId,
-          'forceRefresh': forceRefresh,
-        },
+        body: {'userId': _currentUserId, 'forceRefresh': forceRefresh},
       );
 
       if (response.status != 200) {
@@ -557,7 +551,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
     try {
       // Garde seulement les 90 derniers jours
       final ninetyDaysAgo = DateTime.now().subtract(const Duration(days: 90));
-      
+
       await supabaseClient
           .from('wealth_snapshots')
           .delete()
@@ -575,7 +569,10 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
   @override
   Future<Map<String, dynamic>> getPortfolioInsights() async {
     try {
-      await supabaseClient.rpc('generate_portfolio_insights', params: {'p_user_id': _currentUserId});
+      await supabaseClient.rpc(
+        'generate_portfolio_insights',
+        params: {'p_user_id': _currentUserId},
+      );
       final response = await supabaseClient
           .from('portfolio_insights')
           .select()
@@ -599,7 +596,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
     }
   }
 
-   // ===========================================================================
+  // ===========================================================================
   // MANUAL ASSETS MANAGEMENT
   // ===========================================================================
 
@@ -618,30 +615,37 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
 
       // 2. Insert the asset into the 'assets' table and get the ID
       // We fill balance_usd directly since it's a manual entry
-      final response = await supabaseClient.from('assets').insert({
-        'user_id': _currentUserId,
-        'asset_address_or_id': manualId,
-        'provider': 'manual',
-        'type': _assetTypeToString(type),
-        'name': name,
-        'symbol': currency ?? 'USD',
-        'quantity': 1,
-        'current_price': amount,
-        'price_usd': amount,
-        'balance_usd': amount,
-        'sector': sector ?? 'Other',
-        'country': country ?? 'Global',
-        'last_sync': DateTime.now().toIso8601String(),
-        'status': 'active',
-      }).select('id').single();
-      
+      final response = await supabaseClient
+          .from('assets')
+          .insert({
+            'user_id': _currentUserId,
+            'asset_address_or_id': manualId,
+            'provider': 'manual',
+            'type': _assetTypeToString(type),
+            'name': name,
+            'symbol': currency ?? 'USD',
+            'quantity': 1,
+            'current_price': amount,
+            'price_usd': amount,
+            'balance_usd': amount,
+            'sector': sector ?? 'Other',
+            'country': country ?? 'Global',
+            'last_sync': DateTime.now().toIso8601String(),
+            'status': 'active',
+          })
+          .select('id')
+          .single();
+
       final String assetId = response['id'] as String;
 
       // 3. RE-CALCULATE ANALYTICS IMMEDIATELY (Production Requirement)
       // This ensures the diversification chart updates right away
       await recordWealthSnapshot();
-      await supabaseClient.rpc('generate_portfolio_insights', params: {'p_user_id': _currentUserId});
-      
+      await supabaseClient.rpc(
+        'generate_portfolio_insights',
+        params: {'p_user_id': _currentUserId},
+      );
+
       // 4. Return the asset ID for potential reminder creation
       return assetId;
     } catch (e) {
@@ -704,7 +708,9 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
           .order('payout_date', ascending: false);
 
       return (response as List)
-          .map((json) => AssetPayoutModel.fromJson(json as Map<String, dynamic>))
+          .map(
+            (json) => AssetPayoutModel.fromJson(json as Map<String, dynamic>),
+          )
           .toList();
     } catch (e) {
       throw ServerException('Failed to fetch payouts: ${e.toString()}');
@@ -720,7 +726,7 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
     String? notes,
   }) async {
     try {
-      // 1. Create payout record
+      // 1. Create payout record (Always happens)
       await supabaseClient.from('asset_payouts').insert({
         'user_id': _currentUserId,
         'asset_id': assetId,
@@ -729,7 +735,17 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
         'notes': notes,
       });
 
-      // 2. Get reminder details to calculate next event date
+      // 2. Check if reminder is virtual (generated locally) or real (DB)
+      // Virtual reminders often look like "rem_123456789" or don't have hyphens
+      final isVirtualReminder = !reminderId.contains('-');
+
+      if (isVirtualReminder) {
+        // Virtual reminder: We don't update the DB because it doesn't exist there yet.
+        // The payout is recorded, which is enough for history.
+        return;
+      }
+
+      // 3. For real reminders, update next_event_date
       final reminder = await supabaseClient
           .from('asset_reminders')
           .select('rrule_expression, next_event_date')
@@ -737,8 +753,8 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
           .single();
 
       final rruleExpression = reminder['rrule_expression'] as String;
-      
-      // 3. Update next_event_date using database function
+
+      // 4. Update next_event_date using database function
       await supabaseClient.rpc(
         'update_reminder_next_event_date',
         params: {
@@ -747,7 +763,9 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
         },
       );
     } catch (e) {
-      throw ServerException('Failed to mark reminder as received: ${e.toString()}');
+      throw ServerException(
+        'Failed to mark reminder as received: ${e.toString()}',
+      );
     }
   }
 
@@ -763,19 +781,22 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
     try {
       final response = await supabaseClient.functions.invoke(
         'get-wallet-details',
-        body: {
-          'address': address,
-          'chain': chain,
-        },
+        body: {'address': address, 'chain': chain},
       );
 
       if (response.status != 200) {
-        throw ServerException(response.data['error'] ?? 'Failed to fetch wallet details');
+        throw ServerException(
+          response.data['error'] ?? 'Failed to fetch wallet details',
+        );
       }
 
-      return CryptoWalletDetailModel.fromJson(response.data as Map<String, dynamic>);
+      return CryptoWalletDetailModel.fromJson(
+        response.data as Map<String, dynamic>,
+      );
     } catch (e) {
-      throw ServerException('Failed to fetch crypto wallet details: ${e.toString()}');
+      throw ServerException(
+        'Failed to fetch crypto wallet details: ${e.toString()}',
+      );
     }
   }
 
@@ -788,15 +809,13 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
     try {
       final response = await supabaseClient.functions.invoke(
         'get-stock-details',
-        body: {
-          'symbol': symbol,
-          'userId': userId,
-          'timeframe': timeframe,
-        },
+        body: {'symbol': symbol, 'userId': userId, 'timeframe': timeframe},
       );
 
       if (response.status != 200) {
-        throw ServerException(response.data['error'] ?? 'Failed to fetch stock details');
+        throw ServerException(
+          response.data['error'] ?? 'Failed to fetch stock details',
+        );
       }
 
       return StockDetailModel.fromJson(response.data as Map<String, dynamic>);
@@ -814,20 +833,22 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
     try {
       final response = await supabaseClient.functions.invoke(
         'get-bank-details',
-        body: {
-          'itemId': itemId,
-          'accountId': accountId,
-          'userId': userId,
-        },
+        body: {'itemId': itemId, 'accountId': accountId, 'userId': userId},
       );
 
       if (response.status != 200) {
-        throw ServerException(response.data['error'] ?? 'Failed to fetch bank account details');
+        throw ServerException(
+          response.data['error'] ?? 'Failed to fetch bank account details',
+        );
       }
 
-      return BankAccountDetailModel.fromJson(response.data as Map<String, dynamic>);
+      return BankAccountDetailModel.fromJson(
+        response.data as Map<String, dynamic>,
+      );
     } catch (e) {
-      throw ServerException('Failed to fetch bank account details: ${e.toString()}');
+      throw ServerException(
+        'Failed to fetch bank account details: ${e.toString()}',
+      );
     }
   }
 
@@ -839,19 +860,22 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
     try {
       final response = await supabaseClient.functions.invoke(
         'get-manual-asset-details',
-        body: {
-          'assetId': assetId,
-          'userId': userId,
-        },
+        body: {'assetId': assetId, 'userId': userId},
       );
 
       if (response.status != 200) {
-        throw ServerException(response.data['error'] ?? 'Failed to fetch manual asset details');
+        throw ServerException(
+          response.data['error'] ?? 'Failed to fetch manual asset details',
+        );
       }
 
-      return ManualAssetDetailModel.fromJson(response.data as Map<String, dynamic>);
+      return ManualAssetDetailModel.fromJson(
+        response.data as Map<String, dynamic>,
+      );
     } catch (e) {
-      throw ServerException('Failed to fetch manual asset details: ${e.toString()}');
+      throw ServerException(
+        'Failed to fetch manual asset details: ${e.toString()}',
+      );
     }
   }
 
@@ -862,14 +886,22 @@ class FinanceRemoteDataSourceImpl implements FinanceRemoteDataSource {
   /// Convert internal AssetType enum to Database String
   String _assetTypeToString(AssetType type) {
     switch (type) {
-      case AssetType.crypto: return 'crypto';
-      case AssetType.stock: return 'stock';
-      case AssetType.cash: return 'cash';
-      case AssetType.investment: return 'investment';
-      case AssetType.realEstate: return 'real_estate';
-      case AssetType.commodity: return 'commodity';
-      case AssetType.liability: return 'liability';
-      case AssetType.other: return 'other';
+      case AssetType.crypto:
+        return 'crypto';
+      case AssetType.stock:
+        return 'stock';
+      case AssetType.cash:
+        return 'cash';
+      case AssetType.investment:
+        return 'investment';
+      case AssetType.realEstate:
+        return 'real_estate';
+      case AssetType.commodity:
+        return 'commodity';
+      case AssetType.liability:
+        return 'liability';
+      case AssetType.other:
+        return 'other';
     }
   }
 }

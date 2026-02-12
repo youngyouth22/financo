@@ -15,7 +15,7 @@ import 'package:financo/features/finance/domain/usecases/watch_assets_usecase.da
 import 'package:financo/features/finance/domain/repositories/finance_repository.dart';
 
 /// BLoC for Assets
-/// 
+///
 /// Handles detailed list of assets (CRUD), real-time updates, sorting/filtering
 class AssetsBloc extends Bloc<AssetsEvent, AssetsState> {
   final GetAssetsUseCase getAssetsUseCase;
@@ -60,35 +60,31 @@ class AssetsBloc extends Bloc<AssetsEvent, AssetsState> {
 
     final result = await getAssetsUseCase.call(const NoParams());
 
-    result.fold(
-      (failure) {
-        final isOffline = failure is OfflineFailure;
-        emit(AssetsError(failure.message, isOffline: isOffline));
+    result.fold((failure) {
+      final isOffline = failure is OfflineFailure;
+      emit(AssetsError(failure.message, isOffline: isOffline));
+    }, (assets) => emit(AssetsLoaded(assets: assets)));
+  }
+
+  Future<void> _onWatchAssets(
+    WatchAssetsEvent event,
+    Emitter<AssetsState> emit,
+  ) async {
+    emit(const AssetsLoading());
+    await emit.forEach<Either<Failure, List<Asset>>>(
+      watchAssetsUseCase.call(),
+      onData: (either) {
+        return either.fold((failure) {
+          final isOffline = failure is OfflineFailure;
+          return AssetsError(failure.message, isOffline: isOffline);
+        }, (assets) => AssetsRealTimeUpdated(assets));
       },
-      (assets) => emit(AssetsLoaded(assets: assets)),
+      onError: (error, stackTrace) {
+        return AssetsError('Connection to assets lost: $error');
+      },
     );
   }
 
- Future<void> _onWatchAssets(
-  WatchAssetsEvent event,
-  Emitter<AssetsState> emit,
-) async {
-  await emit.forEach<Either<Failure, List<Asset>>>(
-    watchAssetsUseCase.call(),
-    onData: (either) {
-      return either.fold(
-        (failure) {
-          final isOffline = failure is OfflineFailure;
-          return AssetsError(failure.message, isOffline: isOffline);
-        },
-        (assets) => AssetsRealTimeUpdated(assets),
-      );
-    },
-    onError: (error, stackTrace) {
-      return AssetsError('Connection to assets lost: $error');
-    },
-  );
-}
   /// Stop watching assets
   Future<void> _onStopWatchingAssets(
     StopWatchingAssetsEvent event,
@@ -105,7 +101,9 @@ class AssetsBloc extends Bloc<AssetsEvent, AssetsState> {
   ) async {
     emit(const AssetsLoading());
 
-    final result = await addCryptoWalletUseCase.call(AddCryptoWalletParams(walletAddress:event.walletAddress));
+    final result = await addCryptoWalletUseCase.call(
+      AddCryptoWalletParams(walletAddress: event.walletAddress),
+    );
 
     result.fold(
       (failure) {
@@ -126,7 +124,9 @@ class AssetsBloc extends Bloc<AssetsEvent, AssetsState> {
   ) async {
     emit(const AssetsLoading());
 
-    final result = await financeRepository.removeCryptoWallet(event.walletAddress);
+    final result = await financeRepository.removeCryptoWallet(
+      event.walletAddress,
+    );
 
     result.fold(
       (failure) {
@@ -147,10 +147,9 @@ class AssetsBloc extends Bloc<AssetsEvent, AssetsState> {
   ) async {
     emit(const AssetsLoading());
 
-    final result = await addStockUseCase(AddStockParams(
-      symbol: event.symbol,
-      quantity: event.quantity,
-    ));
+    final result = await addStockUseCase(
+      AddStockParams(symbol: event.symbol, quantity: event.quantity),
+    );
 
     result.fold(
       (failure) {
@@ -190,10 +189,12 @@ class AssetsBloc extends Bloc<AssetsEvent, AssetsState> {
     UpdateAssetQuantityEvent event,
     Emitter<AssetsState> emit,
   ) async {
-    final result = await updateAssetQuantityUseCase(UpdateAssetQuantityParams(
-      assetId: event.assetId,
-      newQuantity: event.newQuantity,
-    ));
+    final result = await updateAssetQuantityUseCase(
+      UpdateAssetQuantityParams(
+        assetId: event.assetId,
+        newQuantity: event.newQuantity,
+      ),
+    );
 
     result.fold(
       (failure) {
@@ -235,14 +236,16 @@ class AssetsBloc extends Bloc<AssetsEvent, AssetsState> {
   ) async {
     emit(const AssetsLoading());
 
-    final result = await addManualAssetUseCase(AddManualAssetParams(
-      name: event.name,
-      type: event.type,
-      amount: event.amount,
-      currency: event.currency,
-      sector: event.sector,
-      country: event.country,
-    ));
+    final result = await addManualAssetUseCase(
+      AddManualAssetParams(
+        name: event.name,
+        type: event.type,
+        amount: event.amount,
+        currency: event.currency,
+        sector: event.sector,
+        country: event.country,
+      ),
+    );
 
     result.fold(
       (failure) {
@@ -257,10 +260,7 @@ class AssetsBloc extends Bloc<AssetsEvent, AssetsState> {
   }
 
   /// Sort assets
-  void _onSortAssets(
-    SortAssetsEvent event,
-    Emitter<AssetsState> emit,
-  ) {
+  void _onSortAssets(SortAssetsEvent event, Emitter<AssetsState> emit) {
     if (state is! AssetsLoaded) return;
 
     final currentState = state as AssetsLoaded;
@@ -280,17 +280,20 @@ class AssetsBloc extends Bloc<AssetsEvent, AssetsState> {
         sortedAssets.sort((a, b) => b.balanceUsd.compareTo(a.balanceUsd));
         break;
       case AssetSortType.typeAsc:
-        sortedAssets.sort((a, b) => a.type.toString().compareTo(b.type.toString()));
+        sortedAssets.sort(
+          (a, b) => a.type.toString().compareTo(b.type.toString()),
+        );
         break;
       case AssetSortType.typeDesc:
-        sortedAssets.sort((a, b) => b.type.toString().compareTo(a.type.toString()));
+        sortedAssets.sort(
+          (a, b) => b.type.toString().compareTo(a.type.toString()),
+        );
         break;
     }
 
-    emit(currentState.copyWith(
-      assets: sortedAssets,
-      currentSort: event.sortType,
-    ));
+    emit(
+      currentState.copyWith(assets: sortedAssets, currentSort: event.sortType),
+    );
   }
 
   /// Filter assets by type
@@ -312,10 +315,12 @@ class AssetsBloc extends Bloc<AssetsEvent, AssetsState> {
         .where((asset) => asset.type == event.filterType)
         .toList();
 
-    emit(currentState.copyWith(
-      assets: filteredAssets,
-      currentFilter: event.filterType,
-    ));
+    emit(
+      currentState.copyWith(
+        assets: filteredAssets,
+        currentFilter: event.filterType,
+      ),
+    );
   }
 
   @override

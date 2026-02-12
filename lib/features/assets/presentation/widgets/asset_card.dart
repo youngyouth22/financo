@@ -37,16 +37,14 @@ class AssetCard extends StatelessWidget {
                       fit: BoxFit.cover,
                       height: 36,
                       width: 36,
-                      errorBuilder: (_, _, _) => Image.asset(
-                        ImageResources.placeHolderPng,
-                      ),
+                      errorBuilder: (_, _, _) =>
+                          Image.asset(ImageResources.placeHolderPng),
                     )
                   : Image.network(
                       asset.iconUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Image.asset(
-                        ImageResources.placeHolderPng,
-                      ),
+                      errorBuilder: (_, _, _) =>
+                          Image.asset(ImageResources.placeHolderPng),
                     )
             : Text(
                 extractTwoFirstLetter(asset.symbol),
@@ -108,71 +106,89 @@ class AssetCard extends StatelessWidget {
         AssetDetailNavigator.navigateToAssetDetail(context, asset, userId);
       },
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.gray80,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.gray70),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                _buildAssetIcon(asset),
-                IconButton(
-                  icon: Icon(
-                    Icons.more_vert,
-                    color: AppColors.gray40,
-                    size: 18,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildAssetIcon(asset),
+                    IconButton(
+                      icon:  Icon(
+                        Icons.more_vert,
+                        color: AppColors.gray40,
+                        size: 18,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () {
+                        // _showAssetActions(asset);
+                      },
+                    ),
+                  ],
+                ),
+                if (asset.sparkline != null && asset.sparkline!.isNotEmpty)
+                  Expanded(
+                    child: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: MiniSparkline(
+                          points: asset.sparkline!,
+                          isPositive: isPos,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  const Spacer(),
+                Text(
+                  asset.name,
+                  style: AppTypography.headline3SemiBold.copyWith(
+                    color: AppColors.white,
+                    fontSize: 14,
                   ),
-                  onPressed: () {
-                    // _showAssetActions(asset);
-                  },
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
-            if (asset.sparkline != null && asset.sparkline!.isNotEmpty)
-              Center(
-                child: MiniSparkline(
-                  points: asset.sparkline!,
-                  isPositive: isPos,
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        asset.symbol,
+                        style: AppTypography.headline1Regular.copyWith(
+                          color: AppColors.gray40,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    if (asset.change24h != 0)
+                      _buildChangeBadge(asset.change24h, isPos),
+                  ],
                 ),
-              ),
-            const Spacer(),
-            Text(
-              asset.name,
-              style: AppTypography.headline3SemiBold.copyWith(
-                color: AppColors.white,
-                fontSize: 14,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            Row(
-              children: [
-                Expanded(
+                const SizedBox(height: 8),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
                   child: Text(
-                    asset.symbol,
-                    style: AppTypography.headline1Regular.copyWith(
-                      color: AppColors.gray40,
-                      overflow: TextOverflow.ellipsis,
+                    '\$${formatPrice(asset.balanceUsd)}',
+                    style: AppTypography.headline3Bold.copyWith(
+                      color: AppColors.white,
                     ),
                   ),
                 ),
-                if (asset.change24h != 0)
-                  _buildChangeBadge(asset.change24h, isPos),
               ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '\$${formatPrice(asset.balanceUsd)}',
-              style: AppTypography.headline3Bold.copyWith(
-                color: AppColors.white,
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );

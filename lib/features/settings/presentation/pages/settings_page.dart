@@ -3,6 +3,7 @@ import 'package:financo/common/app_typography.dart';
 import 'package:financo/common/image_resources.dart';
 import 'package:financo/core/services/security_service.dart';
 import 'package:financo/core/services/subscription_service.dart';
+import 'package:financo/core/services/toast_service.dart';
 import 'package:financo/di/injection_container.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_event.dart';
@@ -71,10 +72,10 @@ class _SettingsPageState extends State<SettingsPage> {
           setState(() {
             _isSecurityEnabled = true;
           });
-          _showSnackBar(result.message, Colors.green);
+          ToastService.showSuccess(context, result.message);
         } else {
           setState(() => _isSecurityEnabled = false);
-          _showSnackBar(result.message, Colors.red);
+          ToastService.showError(context, result.message);
         }
       } else {
         debugPrint('[_toggleSecurity] Calling authenticate to disable...');
@@ -88,27 +89,21 @@ class _SettingsPageState extends State<SettingsPage> {
           setState(() {
             _isSecurityEnabled = false;
           });
-          _showSnackBar('Security disabled', Colors.orange);
+          ToastService.showSuccess(context, 'Security disabled');
         } else {
           setState(() => _isSecurityEnabled = true);
-          _showSnackBar('Authentication failed', Colors.red);
+          ToastService.showError(context, 'Authentication failed');
         }
       }
     } catch (e) {
       debugPrint('[_toggleSecurity] Error: $e');
-      _showSnackBar('Error: ${e.toString()}', Colors.red);
+      ToastService.showError(context, 'Error: ${e.toString()}');
       // Reset state based on original service state
       _loadSecurityState();
     } finally {
       if (mounted) setState(() => _isProcessing = false);
       debugPrint('[_toggleSecurity] Processing finished');
     }
-  }
-
-  void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   Future<void> _handleLogout() async {

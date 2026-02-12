@@ -1,6 +1,7 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/common/common_widgets/primary_button.dart';
+import 'package:financo/core/services/toast_service.dart';
 import 'package:financo/di/injection_container.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
@@ -47,20 +48,10 @@ class _AddStockPageState extends State<AddStockPage> {
               } else if (state is StockAdded) {
                 // Success - go back
                 Navigator.of(context).pop(true);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Stock added successfully'),
-                    backgroundColor: AppColors.success,
-                  ),
-                );
+                ToastService.showSuccess(context, 'Stock added successfully');
               } else if (state is FinanceError) {
                 setState(() => _isSearching = false);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(state.message),
-                    backgroundColor: AppColors.error,
-                  ),
-                );
+                ToastService.showError(context, state.message);
               } else if (state is FinanceLoading) {
                 setState(() => _isSearching = true);
               }
@@ -282,93 +273,93 @@ class _AddStockPageState extends State<AddStockPage> {
       builder: (bottomSheetContext) {
         return BlocProvider.value(
           value: financeBloc,
-          child: StatefulBuilder(
-            builder: (context, setState) => Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Add $symbol',
-                    style: AppTypography.headline4Bold.copyWith(
-                      color: AppColors.white,
+          child: SafeArea(
+            child: StatefulBuilder(
+              builder: (context, setState) => Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Add $symbol',
+                      style: AppTypography.headline4Bold.copyWith(
+                        color: AppColors.white,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    name,
-                    style: AppTypography.headline2Regular.copyWith(
-                      color: AppColors.gray50,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Quantity',
-                    style: AppTypography.headline3SemiBold.copyWith(
-                      color: AppColors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: quantityController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
-                    ],
-                    style: AppTypography.headline3Regular.copyWith(
-                      color: AppColors.white,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'e.g., 10.5',
-                      hintStyle: AppTypography.headline3Regular.copyWith(
+                    const SizedBox(height: 8),
+                    Text(
+                      name,
+                      style: AppTypography.headline2Regular.copyWith(
                         color: AppColors.gray50,
                       ),
-                      filled: true,
-                      fillColor: AppColors.background,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.gray70),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Quantity',
+                      style: AppTypography.headline3SemiBold.copyWith(
+                        color: AppColors.white,
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.gray70),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: quantityController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: AppColors.primary,
-                          width: 2,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                      ],
+                      style: AppTypography.headline3Regular.copyWith(
+                        color: AppColors.white,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'e.g., 10.5',
+                        hintStyle: AppTypography.headline3Regular.copyWith(
+                          color: AppColors.gray50,
+                        ),
+                        filled: true,
+                        fillColor: AppColors.background,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.gray70),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.gray70),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: AppColors.primary,
+                            width: 2,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 32),
-                  PrimaryButton(
-                    text: isAdding ? 'Adding...' : 'Add Stock',
-                    onClick: () {
-                      final quantity = double.tryParse(quantityController.text);
-                      if (quantity != null && quantity > 0) {
-                        setState(() => isAdding = true);
-                        // Add stock via BLoC
-                        BlocProvider.of<FinanceBloc>(context).add(
-                          AddStockEvent(symbol: symbol, quantity: quantity),
-                        );
-                        Navigator.of(context).pop(); // Close bottom sheet
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: const Text('Please enter a valid quantity'),
-                            backgroundColor: AppColors.error,
-                          ),
-                        );
-                      }
-                    },
-                    isLoading: isAdding,
-                  ),
-                ],
+                    const SizedBox(height: 32),
+                    PrimaryButton(
+                      text: isAdding ? 'Adding...' : 'Add Stock',
+                      onClick: () {
+                        final quantity = double.tryParse(quantityController.text);
+                        if (quantity != null && quantity > 0) {
+                          setState(() => isAdding = true);
+                          // Add stock via BLoC
+                          BlocProvider.of<FinanceBloc>(context).add(
+                            AddStockEvent(symbol: symbol, quantity: quantity),
+                          );
+                          Navigator.of(context).pop(); // Close bottom sheet
+                        } else {
+                          ToastService.showError(
+                            context,
+                            'Please enter a valid quantity',
+                          );
+                        }
+                      },
+                      isLoading: isAdding,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

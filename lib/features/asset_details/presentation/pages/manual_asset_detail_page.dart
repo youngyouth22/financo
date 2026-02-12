@@ -1,4 +1,5 @@
 import 'package:financo/common/app_colors.dart';
+import 'package:financo/core/services/toast_service.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/features/finance/domain/entities/manual_asset_detail.dart';
 import 'package:financo/features/finance/presentation/bloc/manual_asset_detail/manual_asset_detail_bloc.dart';
@@ -114,21 +115,9 @@ class _ManualAssetDetailPageState extends State<ManualAssetDetailPage>
     return BlocConsumer<ManualAssetDetailBloc, ManualAssetDetailState>(
       listener: (context, state) {
         if (state is ReminderMarkedSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Payment marked as received!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
+          ToastService.showSuccess(context, 'Payment marked as received!');
         } else if (state is ManualAssetDetailError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 3),
-            ),
-          );
+          ToastService.showError(context, state.message);
         }
       },
       builder: (context, state) {

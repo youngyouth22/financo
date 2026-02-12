@@ -41,6 +41,8 @@ dependencies:
   firebase_messaging: ^16.1.1
   smooth_page_indicator: ^2.0.1
   gpt_markdown: ^1.1.5
+  syncfusion_flutter_gauges: ^32.2.4
+  toastification: ^3.0.3
 
 dev_dependencies:
   flutter_test:

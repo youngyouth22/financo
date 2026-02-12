@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/common/image_resources.dart';
+import 'package:financo/core/services/toast_service.dart';
 import 'package:financo/features/auth/presentation/widgets/onboading_step_page_widget.dart';
 import 'package:financo/features/auth/presentation/widgets/onboarding/onboarding_graphics.dart';
 import 'package:financo/features/auth/presentation/bloc/onboarding_bloc.dart';
@@ -106,9 +107,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   if (state is OnboardingSuccess) {
                     context.go('/paywall');
                   } else if (state is OnboardingFailure) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text(state.message)));
+                    ToastService.showError(context, state.message);
                   }
                 },
                 child: Stack(

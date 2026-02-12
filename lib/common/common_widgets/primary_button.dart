@@ -10,6 +10,7 @@ class PrimaryButton extends StatelessWidget {
   final VoidCallback onClick;
   final Gradient? gradient;
   final Color? textColor;
+  final Color? loadingColor;
   final Border? border;
   final double height;
   final double borderRadius;
@@ -30,6 +31,7 @@ class PrimaryButton extends StatelessWidget {
     this.icon,
     this.color,
     this.isLoading = false,
+    this.loadingColor,
   });
   // TODO: Animation de shimmer pour faire briller le bouton surtout sur les bordures lorsque isDisable passe a true
 
@@ -82,10 +84,10 @@ class PrimaryButton extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: isLoading
                     ? [
-                        const CustomCircularLoadingIndicator(
+                        CustomCircularLoadingIndicator(
                           size: 24,
                           strokeWidth: 3,
-                          color: Colors.white,
+                          color: loadingColor ?? AppColors.white,
                         ),
                       ]
                     : [

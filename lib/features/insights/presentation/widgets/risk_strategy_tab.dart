@@ -197,7 +197,9 @@ class _RiskStrategyTabState extends State<RiskStrategyTab> {
               decoration: BoxDecoration(
                 color: AppColors.card,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.accent.withValues(alpha: 0.1)),
+                border: Border.all(
+                  color: AppColors.accent.withValues(alpha: 0.1),
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -36,7 +36,7 @@ class AppTypography {
     fontWeight: FontWeight.w400,
   );
 
-  static TextStyle headline8Medium =const TextStyle(
+  static TextStyle headline8Medium = const TextStyle(
     fontSize: 56,
     fontWeight: FontWeight.w500,
   );
@@ -163,6 +163,22 @@ class AppTypography {
     fontWeight: FontWeight.w400,
   );
   static TextStyle headline1Medium = const TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+  );
+  static TextStyle bodySmallBold = const TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w700,
+  );
+  static TextStyle bodySmallSemiBold = const TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+  );
+  static TextStyle bodySmallRegular = const TextStyle(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+  );
+  static TextStyle bodySmallMedium = const TextStyle(
     fontSize: 12,
     fontWeight: FontWeight.w500,
   );

@@ -5,7 +5,7 @@ import 'package:financo/common/app_spacing.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/common/common_widgets/primary_button.dart';
 import 'package:financo/common/image_resources.dart';
-import 'package:financo/di/injection_container.dart';
+import 'package:financo/core/services/toast_service.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_event.dart';
 import 'package:financo/features/auth/presentation/bloc/auth_state.dart';
@@ -37,15 +37,8 @@ class _AuthPageState extends State<AuthPage> {
       child: Scaffold(
         body: BlocConsumer<AuthBloc, AuthState>(
           listener: (context, state) {
-            // Show error message if authentication fails
             if (state is AuthError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: Colors.red,
-                  duration: const Duration(seconds: 4),
-                ),
-              );
+              ToastService.showError(context, state.message);
             }
           },
           builder: (context, state) {
@@ -188,6 +181,7 @@ class _AuthPageState extends State<AuthPage> {
 
                         PrimaryButton(
                           text: 'Continue with Google',
+                          loadingColor: AppColors.accent,
                           icon: SvgPicture.asset(
                             ImageResources.googleIcon,
                             colorFilter: ColorFilter.mode(
@@ -201,7 +195,7 @@ class _AuthPageState extends State<AuthPage> {
                           textColor: AppColors.gray,
                           isLoading: state is AuthLoading,
                           onClick: () {
-                            sl<AuthBloc>().add(
+                            context.read<AuthBloc>().add(
                               const AuthGoogleSignInRequested(),
                             );
                           },

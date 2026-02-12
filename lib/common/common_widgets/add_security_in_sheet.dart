@@ -3,6 +3,7 @@ import 'package:financo/common/app_typography.dart';
 import 'package:financo/common/common_widgets/primary_button.dart';
 import 'package:financo/common/image_resources.dart';
 import 'package:financo/core/services/security_service.dart';
+import 'package:financo/core/services/toast_service.dart';
 import 'package:financo/di/injection_container.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -39,7 +40,6 @@ class AddSecurityInSheet extends StatefulWidget {
 }
 
 class _AddSecurityInSheetState extends State<AddSecurityInSheet> {
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -159,20 +159,11 @@ class _AddSecurityInSheetState extends State<AddSecurityInSheet> {
                       if (!mounted) return;
 
                       if (result.success) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(result.message),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
+                        ToastService.showSuccess(context, result.message);
+                        if (!context.mounted) return;
                         context.pop();
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(result.message),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
+                        ToastService.showError(context, result.message);
                       }
                     },
                   ),

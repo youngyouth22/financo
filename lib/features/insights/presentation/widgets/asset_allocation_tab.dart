@@ -1,4 +1,3 @@
-import 'package:financo/common/common_widgets/budgets_row.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
@@ -62,15 +61,13 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
     },
   };
 
-  // --- LOGIQUE MATHÉMATIQUE CORRIGÉE ---
-
   List<AssetAllocation> get allocations {
     return widget.networth.breakdown.byType.entries.map((entry) {
       final config =
           _typeConfig[entry.key.toLowerCase()] ?? _typeConfig['other'];
       return AssetAllocation(
         type: config['label'],
-        amount: entry.value, // Valeur réelle (peut être négative)
+        amount: entry.value,
         color: config['color'],
         icon: config['icon'],
         isLiquid: config['liquid'],
@@ -78,19 +75,15 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
     }).toList();
   }
 
-  // Somme de la valeur absolue de tout ce qu'on gère (pour le camembert)
   double get totalGrossWeight =>
       allocations.fold(0, (sum, item) => sum + item.amount.abs());
 
-  // Valeur réelle (Net Worth)
   double get totalNetWorth => widget.networth.total.value;
 
-  // Analyse de liquidité : Cash + Crypto (Positifs uniquement)
   double get liquidAssetsOnly => allocations
       .where((a) => a.isLiquid && a.amount > 0)
       .fold(0, (sum, item) => sum + item.amount);
 
-  // Actifs Immobilisés (Immo, etc)
   double get illiquidAssetsOnly => allocations
       .where((a) => !a.isLiquid && a.amount > 0)
       .fold(0, (sum, item) => sum + item.amount);
@@ -109,16 +102,55 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 20),
-          _buildPieChart(),
-          const SizedBox(height: 32),
+          const SizedBox(height: 10),
+          _buildOverallChartCard(),
+          const SizedBox(height: 24),
+          Text(
+            'Asset Breakdown',
+            style: AppTypography.headline3SemiBold.copyWith(
+              color: AppColors.white,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 16),
           ...allocations.asMap().entries.map(
-            (entry) => _buildLegendItem(entry.key, entry.value),
+            (entry) => _buildSoftRowItem(entry.key, entry.value),
           ),
           const SizedBox(height: 32),
+          Text(
+            'Liquidity Analysis',
+            style: AppTypography.headline3SemiBold.copyWith(
+              color: AppColors.white,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 16),
           _buildLiquidityCard(),
+          const SizedBox(height: 80), // Padding for scrolling
         ],
       ),
+    );
+  }
+
+  Widget _buildOverallChartCard() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+      decoration: BoxDecoration(
+        color: AppColors.gray80.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppColors.white.withOpacity(0.05),
+          width: 0.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(children: [_buildPieChart()]),
     );
   }
 
@@ -142,34 +174,30 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
                   });
                 },
               ),
-              centerSpaceColor: AppColors.gray80,
-              sectionsSpace: 1,
-              centerSpaceRadius: 120,
+              centerSpaceColor: Colors.transparent,
+              sectionsSpace: 2,
+              centerSpaceRadius: 100,
               sections: _buildPieSections(),
             ),
           ),
           Align(
-            alignment: AlignmentGeometry.center,
+            alignment: Alignment.center,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Total Value',
+                  'Net Worth',
                   style: AppTypography.headline2Regular.copyWith(
-                    color: AppColors.gray30,
+                    color: AppColors.gray40,
                   ),
                 ),
+                const SizedBox(height: 4),
                 Text(
-                  '\$${_formatNumber(totalGrossWeight)}',
-                  style: AppTypography.headline3Bold.copyWith(
+                  '\$${_formatNumber(totalNetWorth)}',
+                  style: AppTypography.headline5Bold.copyWith(
                     color: AppColors.white,
-                    fontSize: 32,
-                  ),
-                ),
-                Text(
-                  '+ 33.4%',
-                  style: AppTypography.headline1Regular.copyWith(
-                    color: AppColors.success,
+                    fontSize: 28,
+                    height: 1.2,
                   ),
                 ),
               ],
@@ -186,7 +214,6 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
       final allocation = entry.value;
       final isTouched = index == touchedIndex;
 
-      // On utilise la valeur ABSOLUE pour le dessin, car un camembert ne peut pas être négatif
       final absValue = allocation.amount.abs();
       final percentage = totalGrossWeight > 0
           ? (absValue / totalGrossWeight) * 100
@@ -196,45 +223,118 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
         color: allocation.color,
         value: absValue,
         showTitle: false,
-        title: percentage > 5 ? '${percentage.toStringAsFixed(0)}%' : '',
-        radius: isTouched ? 30 : 20,
-
-        titleStyle: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
-        ),
+        radius: isTouched ? 25 : 18,
+        badgeWidget: isTouched
+            ? Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: AppColors.gray80,
+                  borderRadius: BorderRadius.circular(4),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+                child: Text(
+                  '${percentage.toStringAsFixed(0)}%',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              )
+            : null,
+        badgePositionPercentageOffset: 1.3,
       );
     }).toList();
   }
 
-  Widget _buildLegendItem(int index, AssetAllocation allocation) {
+  Widget _buildSoftRowItem(int index, AssetAllocation allocation) {
     final absValue = allocation.amount.abs();
     final percentage = totalGrossWeight > 0
         ? (absValue / totalGrossWeight) * 100
         : 0;
-    final isSelected = touchedIndex == index;
 
-    return Transform.scale(
-      scale: isSelected ? 1.1 : 1.0,
-      child: BudgetsRow(
-        icon: Icon(allocation.icon, size: 30, color: AppColors.gray40),
-        title: allocation.type,
-        subtitle: '\$${_formatNumber(allocation.amount)}',
-        value: '${percentage.toStringAsFixed(1)}%',
-        percent: percentage / 100,
-        color: allocation.color,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.gray80.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.white.withOpacity(0.05),
+          width: 0.5,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: allocation.color.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(allocation.icon, size: 20, color: allocation.color),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      allocation.type,
+                      style: AppTypography.headline3SemiBold.copyWith(
+                        color: AppColors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${percentage.toStringAsFixed(1)}% portfolio',
+                      style: AppTypography.headline1Regular.copyWith(
+                        color: AppColors.gray40,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                '\$${_formatNumber(allocation.amount)}',
+                style: AppTypography.headline3Bold.copyWith(
+                  color: AppColors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: percentage / 100,
+              minHeight: 6,
+              backgroundColor: AppColors.gray60.withOpacity(0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(allocation.color),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildLiquidityCard() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.gray60.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.05)),
+        color: AppColors.gray80.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppColors.white.withOpacity(0.05),
+          width: 0.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,6 +347,11 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
                 liquidAssetsOnly,
                 const Color(0xFF00D16C),
               ),
+              Container(
+                height: 40,
+                width: 1,
+                color: AppColors.gray60.withOpacity(0.2),
+              ),
               _buildLiquidityInfo(
                 'Fixed Assets',
                 illiquidAssetsOnly,
@@ -254,26 +359,53 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: liquidityRatio / 100,
-              borderRadius: BorderRadius.circular(4),
-              minHeight: 12,
-              backgroundColor: const Color(0xFFFF4D4D).withValues(alpha: 0.3),
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                Color(0xFF00D16C),
+          const SizedBox(height: 24),
+          Stack(
+            children: [
+              Container(
+                height: 16,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFF4D4D).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-            ),
+              FractionallySizedBox(
+                widthFactor: (liquidityRatio / 100).clamp(0.0, 1.0),
+                child: Container(
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00D16C),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF00D16C).withOpacity(0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 0),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-          // const SizedBox(height: 12),
-          // Text(
-          //   '${liquidityRatio.toStringAsFixed(1)}% of your assets are liquid (Cash/Crypto)',
-          //   style: AppTypography.headline2Regular.copyWith(
-          //     color: AppColors.gray40,
-          //   ),
-          // ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${liquidityRatio.toStringAsFixed(0)}% Liquid',
+                style: AppTypography.headline1Medium.copyWith(
+                  color: AppColors.success,
+                ),
+              ),
+              Text(
+                '${(100 - liquidityRatio).toStringAsFixed(0)}% Fixed',
+                style: AppTypography.headline1Medium.copyWith(
+                  color: AppColors.error,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -281,34 +413,31 @@ class _AssetAllocationTabState extends State<AssetAllocationTab> {
 
   Widget _buildLiquidityInfo(String label, double amount, Color color) {
     return Column(
-      crossAxisAlignment: label.startsWith('L')
-          ? CrossAxisAlignment.start
-          : CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(2),
-              ),
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: AppTypography.headline2Regular.copyWith(
-                color: AppColors.gray30,
+                color: AppColors.gray40,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         Text(
           '\$${_formatNumber(amount)}',
-          style: AppTypography.headline3SemiBold.copyWith(
+          style: AppTypography.headline3Bold.copyWith(
             color: AppColors.white,
+            fontSize: 18,
           ),
         ),
       ],

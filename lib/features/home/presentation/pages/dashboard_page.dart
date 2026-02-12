@@ -7,6 +7,7 @@ import 'package:financo/common/common_widgets/status_button.dart';
 import 'package:financo/common/image_resources.dart';
 import 'package:financo/common/widgets/shimmer/dashboard_shimmer.dart';
 import 'package:financo/common/widgets/empty_states/no_data_state.dart';
+import 'package:financo/core/services/toast_service.dart';
 import 'package:financo/features/finance/data/models/networth_response_model.dart';
 import 'package:financo/features/finance/domain/entities/networth_response.dart';
 import 'package:financo/features/home/presentation/widgets/subscription_home_row.dart';
@@ -38,9 +39,7 @@ class _DashboardPageState extends State<DashboardPage> {
     return BlocListener<DashboardBloc, DashboardState>(
       listener: (context, state) {
         if (state is DashboardError) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(state.message)));
+          ToastService.showError(context, state.message);
         }
       },
       child: Scaffold(
@@ -140,42 +139,46 @@ class _DashboardPageState extends State<DashboardPage> {
             _buildNetworthText(totalVal),
             const SizedBox(height: 8),
             // Real-time daily change display
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                // color: (isPositive ? AppColors.accent : AppColors.error)
-                //     .withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isPositive ? Icons.trending_up : Icons.trending_down,
-                    color: isPositive ? AppColors.success : AppColors.error,
-                    size: 16,
-                  ),
-                    
-                  const SizedBox(width: 6),
-                  Text(
-                    '${isPositive ? '+' : ''}${dailyChange.percentage.toStringAsFixed(2)}%',
-                    style: AppTypography.headline3Bold.copyWith(
+            if (dailyChange.percentage != 0)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  // color: (isPositive ? AppColors.accent : AppColors.error)
+                  //     .withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isPositive ? Icons.trending_up : Icons.trending_down,
                       color: isPositive ? AppColors.success : AppColors.error,
-                      fontFamily: 'JetBrainsMono',
+                      size: 16,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '(${isPositive ? '+' : ''}\$${_formatCompact(dailyChange.amount)})',
-                    style: AppTypography.headline2Regular.copyWith(
-                      color: (isPositive ? AppColors.accent : AppColors.error)
-                          .withValues(alpha: 0.8),
-                      // fontFamily: 'JetBrainsMono',
+
+                    const SizedBox(width: 6),
+                    Text(
+                      '${isPositive ? '+' : ''}${dailyChange.percentage.toStringAsFixed(2)}%',
+                      style: AppTypography.headline3Bold.copyWith(
+                        color: isPositive ? AppColors.success : AppColors.error,
+                        fontFamily: 'JetBrainsMono',
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Text(
+                      '(${isPositive ? '+' : ''}\$${_formatCompact(dailyChange.amount)})',
+                      style: AppTypography.headline2Regular.copyWith(
+                        color: (isPositive ? AppColors.accent : AppColors.error)
+                            .withValues(alpha: 0.8),
+                        // fontFamily: 'JetBrainsMono',
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
             const SizedBox(height: 20),
 
             // Barre d'allocation liée aux vrais chiffres

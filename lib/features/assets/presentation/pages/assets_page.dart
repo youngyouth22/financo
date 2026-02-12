@@ -94,9 +94,15 @@ class _AssetsPageState extends State<AssetsPage>
             allAssets = state.assets;
           } else if (state is AssetsLoaded) {
             allAssets = state.assets;
-          } else if (state is AssetsLoading) {
-            return ListView.builder(
-              padding: const EdgeInsets.all(20),
+          } else if (state is AssetsLoading || state is AssetsInitial) {
+            return GridView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 200,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 1 / 1,
+              ),
               itemCount: 6,
               itemBuilder: (context, index) => const AssetCardShimmer(),
             );

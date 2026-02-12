@@ -14,11 +14,19 @@
       },
       "oauth_client": [
         {
-          "client_id": "998190074728-9enmdatgfl75ubk3omq5k9pnfjj7g1i4.apps.googleusercontent.com",
+          "client_id": "998190074728-qgs93fmvd0u3c6eo2chef29plq8us688.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.example.financo",
-            "certificate_hash": "dbfd7880bd425b20731f6d0ccbf53d62192eddf8"
+            "certificate_hash": "1d64ac123b527901e65491a8725c5b1265c49e88"
+          }
+        },
+        {
+          "client_id": "998190074728-t3cuqdm0o463idedpc8ctjrjfuom84e5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.financo",
+            "certificate_hash": "3d836652bf7b0c447071dfe8a39bd0ff26a80313"
           }
         },
         {

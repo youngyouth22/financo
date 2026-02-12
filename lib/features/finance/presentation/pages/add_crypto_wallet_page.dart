@@ -1,6 +1,7 @@
 import 'package:financo/common/app_colors.dart';
 import 'package:financo/common/app_typography.dart';
 import 'package:financo/common/common_widgets/primary_button.dart';
+import 'package:financo/core/services/toast_service.dart';
 import 'package:financo/di/injection_container.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_bloc.dart';
 import 'package:financo/features/finance/presentation/bloc/finance_event.dart';
@@ -45,21 +46,14 @@ class _AddCryptoWalletPageState extends State<AddCryptoWalletPage> {
           if (state is CryptoWalletAdded) {
             // Success - go back
             Navigator.of(context).pop(true);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Crypto wallet added successfully'),
-                backgroundColor: AppColors.success,
-              ),
+            ToastService.showSuccess(
+              context,
+              'Crypto wallet added successfully',
             );
           } else if (state is FinanceError) {
             // Error
             setState(() => _isLoading = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppColors.error,
-              ),
-            );
+            ToastService.showError(context, state.message);
           } else if (state is FinanceLoading) {
             setState(() => _isLoading = true);
           }
