@@ -212,21 +212,20 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 -- Schedule daily reminder check at 08:00 AM UTC
 -- This will invoke the send-asset-reminders Edge Function
 SELECT cron.schedule(
-  'send-daily-asset-reminders',  -- Job name
-  '0 8 * * *',                    -- Cron expression: Every day at 08:00 AM UTC
+  'send-daily-asset-reminders',
+  '0 8 * * *', -- Tous les jours à 8h00 UTC
   $$
   SELECT
     net.http_post(
       url := 'https://nbdfdlvbouoaoprbkbme.supabase.co/functions/v1/send-asset-reminders',
       headers := jsonb_build_object(
         'Content-Type', 'application/json',
-        'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key')
+        'Authorization', 'Bearer TA_SERVICE_ROLE_KEY_ICI' -- Remplace par ta vraie clé
       ),
       body := jsonb_build_object('trigger', 'cron')
     ) AS request_id;
   $$
 );
-
 -- ============================================================================
 -- 8. GRANT PERMISSIONS
 -- ============================================================================

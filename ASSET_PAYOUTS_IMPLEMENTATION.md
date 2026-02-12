@@ -231,14 +231,14 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 -- Schedule daily reminder check
 SELECT cron.schedule(
-  'send-daily-asset-reminders',
-  '0 8 * * *',
+  'send-hourly-asset-reminders', -- Nouveau nom plus explicite
+  '0 * * * *',                   -- S'exécute toutes les heures (ex: 01:00, 02:00, etc.)
   $$
   SELECT net.http_post(
-    url := 'https://YOUR_PROJECT_ID.supabase.co/functions/v1/send-asset-reminders',
+    url := 'https://nbdfdlvbouoaoprbkbme.supabase.co/functions/v1/send-asset-reminders',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key')
+      'Authorization', 'Bearer TA_CLE_SERVICE_ROLE'
     ),
     body := jsonb_build_object('trigger', 'cron')
   ) AS request_id;

@@ -197,7 +197,7 @@ class _RiskStrategyTabState extends State<RiskStrategyTab> {
               decoration: BoxDecoration(
                 color: AppColors.card,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.accent.withOpacity(0.1)),
+                border: Border.all(color: AppColors.accent.withValues(alpha: 0.1)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,7 +246,7 @@ class _RiskStrategyTabState extends State<RiskStrategyTab> {
                     child: Text(
                       "AI Advisor is generating your strategy...",
                       style: TextStyle(
-                        color: AppColors.accent.withOpacity(0.7),
+                        color: AppColors.accent.withValues(alpha: 0.7),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -258,7 +258,7 @@ class _RiskStrategyTabState extends State<RiskStrategyTab> {
             .animate(onPlay: (controller) => controller.repeat())
             .shimmer(
               duration: const Duration(seconds: 2),
-              color: AppColors.accent.withOpacity(0.2),
+              color: AppColors.accent.withValues(alpha: 0.2),
               stops: [0, 0.5, 1],
             )
             .fade(duration: const Duration(milliseconds: 500));

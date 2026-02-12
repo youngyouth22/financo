@@ -6,7 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 /// Service responsible for managing subscriptions through RevenueCat.
 /// RevenueCat is the Single Source of Truth (SSO) for premium status.
 class SubscriptionService {
-  final String entitlementId = 'premium';
+  final String entitlementId = 'Financo Pro';
 
   SubscriptionService();
 
@@ -92,9 +92,9 @@ class SubscriptionService {
   }
 
   /// Purchases a specific package.
-  Future<bool> purchasePackage(Package package) async {
+  Future<bool> purchasePackage(PurchaseParams package) async {
     try {
-      final result = await Purchases.purchasePackage(package);
+      final result = await Purchases.purchase(package);
       final premium = await isPremium(info: result.customerInfo);
 
       if (premium) {

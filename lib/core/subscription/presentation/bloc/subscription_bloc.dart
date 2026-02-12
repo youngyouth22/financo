@@ -19,7 +19,7 @@ class CheckSubscriptionStatusEvent extends SubscriptionEvent {
 }
 
 class PurchasePackageEvent extends SubscriptionEvent {
-  final Package package;
+  final PurchaseParams package;
   const PurchasePackageEvent(this.package);
   @override
   List<Object?> get props => [package];
